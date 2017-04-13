@@ -1,0 +1,79 @@
+{
+    "manifestVersion": 1,
+    "id": "bugbash_v2",
+    "version": "1.0.1",
+    "name": "Bug bash manager V2",
+    "description": "Easier way to manage bug bashes",
+    "publisher": "mohitbagra",
+    "icons": {
+        "default": "img/logo.png"
+    },
+    "scopes": [
+    	"vso.work",
+        "vso.work_write"
+	 ],
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services"
+        }
+    ],
+    "tags": [
+        "Work Item",
+        "Collaborate",
+        "Bug",
+        "Bug bash"
+    ],
+    "content": {
+        "details": {
+            "path": "README.md"
+        }
+    },
+    "repository": {
+        "type": "git",
+        "uri": "https://github.com/mohitbagra/vsts-extensions-bugbash-v2"
+    },    
+    "branding": {
+        "color": "#5C2D91",
+        "theme": "dark"
+    },    
+    "categories": [
+        "Plan and track",
+        "Collaborate"
+    ],
+    "files": [
+        {
+            "path": "scripts",
+            "addressable": true
+        },
+        {
+            "path": "css",
+            "addressable": true
+        },
+        {
+            "path": "img",
+            "addressable": true
+        },
+        {
+            "path": "index.html",
+            "addressable": true
+        },
+        {
+            "path": "README.md",
+            "addressable": true
+        }
+    ],
+    "contributions": [        
+        {
+            "id": "bugbash-hub",
+            "type": "ms.vss-web.hub",
+            "description": "Bug bash manager work item hub",
+            "targets": [
+                "ms.vss-work-web.work-hub-group"
+            ],
+            "properties": {
+                "name": "Bug Bash",
+                "uri": "index.html"
+            }
+        }
+    ]
+}

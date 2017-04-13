@@ -1,0 +1,7 @@
+{
+  "name": "bugbash_v2",
+  "globalDependencies": {
+    "tfs": "npm:vss-web-extension-sdk/typings/tfs.d.ts",
+    "vss": "npm:vss-web-extension-sdk/typings/vss.d.ts"
+  }
+}
