@@ -9,8 +9,20 @@
         "experimentalDecorators": true,
         "baseUrl": ".",
         "paths": {
-            "OfficeFabric/*": ["node_modules/office-ui-fabric-react/lib-amd/*"]
-        }
+            "OfficeFabric/*": ["node_modules/office-ui-fabric-react/lib-amd/*"],
+            "VSTS_Extension/*": ["node_modules/vsts-extension-react-widgets/lib-amd/*"]
+        },
+        "types": [
+            "q",
+            "knockout",
+            "requirejs",
+            "jquery",
+            "react",
+            "react-dom"
+        ],
+        "typeRoots": [
+            "../node_modules/@types"
+        ]
     },
     "exclude": [
         "node_modules"
