@@ -1,68 +1,50 @@
-import Service = require("VSS/Service");
 import { Constants, IBugBash } from "./Models";
 import Utils_String = require("VSS/Utils/String");
 
+import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+
 export class BugBashManager {
-    public static async readBugBashes(): Promise<IBugBash[]> {
-        let dataService: IExtensionDataService = await VSS.getService<IExtensionDataService>(VSS.ServiceIds.ExtensionData);
-
-        try {            
-            let items = await dataService.getDocuments(Constants.BUGBASH_DOCUMENT_COLLECTION_NAME);            
-            items = items.filter((item: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, item.projectId, true));
-
-            for(let item of items) {
-                BugBashManager._translateDates(item);
-            }
-
-            return items;
+    public static async readBugBashes(): Promise<IBugBash[]> {        
+        let items = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
+        items = items.filter((item: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, item.projectId, true));
+        for(let item of items) {
+            BugBashManager._translateDates(item);
         }
-        catch (e) {
-            return [];
-        }
+
+        return items;        
     }
 
     public static async readBugBash(bugBashId: string): Promise<IBugBash> {
-        try {
-            let dataService: IExtensionDataService = await VSS.getService<IExtensionDataService>(VSS.ServiceIds.ExtensionData);
-            let item = await dataService.getDocument(Constants.BUGBASH_DOCUMENT_COLLECTION_NAME, bugBashId);
-            if (!Utils_String.equals(VSS.getWebContext().project.id, item.projectId, true) || !Utils_String.equals(VSS.getWebContext().team.id, item.teamId, true)) {
+        let item = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
+        if (item) {
+            if (!Utils_String.equals(VSS.getWebContext().project.id, item.projectId, true)) {
                 return null;
             }
 
             BugBashManager._translateDates(item);
+        }
 
-            return item;
-        }
-        catch (e) {
-            return null;
-        }
+        return item;
     }
 
     public static async writeBugBash(bugBashModel: IBugBash): Promise<IBugBash> {
-        try {
-            if (!Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true) || !Utils_String.equals(VSS.getWebContext().team.id, bugBashModel.teamId, true)) {
-                return null;
-            }
-
-            let dataService: IExtensionDataService = await VSS.getService<IExtensionDataService>(VSS.ServiceIds.ExtensionData);
-            let item = await dataService.setDocument(Constants.BUGBASH_DOCUMENT_COLLECTION_NAME, bugBashModel);
-            BugBashManager._translateDates(item);
-
-            return item;
-        }
-        catch (e) {
+        if (!Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
             return null;
         }
+        
+        let item = await ExtensionDataManager.writeDocument<IBugBash>("bugbashes", bugBashModel, false);
+        BugBashManager._translateDates(item);
+
+        return item;
     }
 
     public static async deleteBugBash(bugBashModel: IBugBash): Promise<boolean> {
-        try {
-            if (!Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true) || !Utils_String.equals(VSS.getWebContext().team.id, bugBashModel.teamId, true)) {
-                return false;
-            }
+        if (!Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
+            return null;
+        }
 
-            let dataService: IExtensionDataService = await VSS.getService<IExtensionDataService>(VSS.ServiceIds.ExtensionData);
-            await dataService.deleteDocument(Constants.BUGBASH_DOCUMENT_COLLECTION_NAME, bugBashModel.id);
+        try {        
+            await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBashModel.id, false);
             return true;
         }
         catch (e) {

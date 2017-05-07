@@ -33,10 +33,11 @@
       "tfx-cli": "^0.4.5"
   },
   "dependencies": {
+      "requirejs": "^2.3.3",
       "vss-web-extension-sdk": "^2.115.0",
       "es6-promise": "^4.1.0",
       "office-ui-fabric-react": "^2.25.1",
-      "vsts-extension-react-widgets": "0.0.9",
+      "vsts-extension-react-widgets": "0.0.10",
       "bootstrap": "^3.3.7",
       "jquery": "^3.2.1",
       "summernote": "^0.8.2"

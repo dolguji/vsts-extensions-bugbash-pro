@@ -55,7 +55,8 @@ module.exports = {
             { from: "./node_modules/bootstrap/dist/js/bootstrap.min.js", to: "scripts/libs/bootstrap.min.js" },
             { from: "./node_modules/summernote/dist/summernote.min.js", to: "scripts/libs/summernote.min.js" },
             { from: "./node_modules/jquery/dist/jquery.min.js", to: "scripts/libs/jquery.min.js" },
-
+            { from: "./node_modules/requirejs/require.js", to: "scripts/libs/require.js" },
+            
             { from: "./node_modules/bootstrap/dist/css/bootstrap.min.css", to: "css/libs/bootstrap.min.css" },
             { from: "./node_modules/summernote/dist/summernote.css", to: "css/libs/summernote.css" },
             { from: "./node_modules/office-ui-fabric-react/dist/css/fabric.min.css", to: "css/libs/fabric.min.css" },

@@ -1,24 +1,3 @@
-import * as React from "react";
-import { ActionsCreator, ActionsHub } from "./Actions/ActionsCreator";
-import { StoresHub } from "./Stores/StoresHub";
-
-export interface IHubContext {
-    /**
-     * Actions hub
-     */
-    actions: ActionsHub;
-
-    /**
-     * Stores hub
-     */
-    stores: StoresHub;
-
-    /**
-     * Action creator
-     */
-    actionsCreator: ActionsCreator;
-}
-
 export module UrlActions {
     export var ACTION_NEW = "new";
     export var ACTION_ALL = "all";
@@ -27,49 +6,37 @@ export module UrlActions {
 }
 
 export module Constants {
-    export var BUGBASH_DOCUMENT_COLLECTION_NAME = "bugbashes";
-    export var WORKITEM_DOCUMENT_COLLECTION_NAME = "workitems";
-    export var COMMENT_DOCUMENT_COLLECTION_NAME = "comments";
-    export var ACCEPT_STATUS_CELL_NAME = "BugBashItemAcceptStatus";
-    export var ACCEPTED_TEXT = "Accepted";
-    export var REJECTED_TEXT = "Rejected";
-    export var ACTIONS_CELL_NAME = "Actions";
+    
 }
 
 export interface IBugBash {
-    id: string,
+    id: string;
+    readonly __etag: number;
     title: string;
     workItemType: string;
-    readonly __etag: number;
+    projectId: string;
+    itemDescriptionField: string;
+    autoAccept: boolean;
     description?: string;    
     startTime?: Date;
     endTime?: Date;
-    projectId: string;
+    acceptTemplate?: {team: string, templateId: string};
 }
 
-// work item document for 1 bug bash collection
-export interface IWorkItemDocument {
-    id: string,
-    title: string;
+// bug bash item document for 1 bug bash collection
+export interface IBugBashItemDocument {
+    id: string;
     readonly __etag: number;
+    title?: string;    
     description?: string;
-    attributes?: IDictionaryStringTo<string>;
+    workItemId?: number;
 }
 
 // work item comment document for 1 work item collection
 export interface ICommentDocument {
-    id: string,
+    id: string;
     readonly __etag: number;
     comment: string;
     addedDate: Date;
     addedBy: string;
-}
-
-export enum LoadingState {
-    Loading,
-    Loaded
-}
-
-export interface IBaseProps {
-    context: IHubContext;
 }
