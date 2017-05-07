@@ -6,20 +6,13 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 
 import { Fabric } from "OfficeFabric/Fabric";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
+import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
+import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
-// vsts imports
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 
-// components
-import { Loading } from "./Components/Loading";
-import { AllBugBashesView } from "./Components/AllBugBashesView";
-import { NewBugBashView } from "./Components/NewBugBashView";
-import { EditBugBashView } from "./Components/EditBugBashView";
-import { ViewBugBashView } from "./Components/ViewBugBashView";
-
-import { UrlActions, IHubContext } from "./Models";
-import { ActionsCreator, ActionsHub } from "./Actions/ActionsCreator";
-import { StoresHub } from "./Stores/StoresHub";
+import { UrlActions } from "./Models";
 
 export enum HubViewMode {
     All,
@@ -29,59 +22,55 @@ export enum HubViewMode {
     Loading
 }
 
-export interface IHubProps {
-
-}
-
-export interface IHubState {
-    hubViewMode: HubViewMode;
+export interface IHubState extends IBaseComponentState {
+    hubViewMode?: HubViewMode;
     id?: string;
 }
 
-export class Hub extends React.Component<IHubProps, IHubState> {
-    private _context: IHubContext;
-
-    constructor(props: IHubProps, context?: any) {
-        super(props, context);
-
-        const actionsHub = new ActionsHub();
-        const storeHub = new StoresHub(actionsHub);
-        const actionsCreator = new ActionsCreator(actionsHub, storeHub.bugBashItemStore, storeHub.workItemFieldStore, storeHub.workItemTemplateStore, storeHub.workItemTypeStore, storeHub.workItemTemplateItemStore);
-
-        this._context = {
-            actions: actionsHub,
-            stores: storeHub,
-            actionsCreator: actionsCreator
-        };     
+export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
+    protected initializeState(): void {
+        this.state = {};
     }
 
-    public componentDidMount() {
+    protected initialize() { 
         this._initialize();
-    }
-
-    public componentWillUnmount() {
-        
     }
 
     public render(): JSX.Element {
         let view;
 
-        if (!this.state) {
+        if (this.state.hubViewMode == null) {
             view = <Loading />;
         }
         else {
             switch (this.state.hubViewMode) {            
                 case HubViewMode.All:
-                    view = <AllBugBashesView context={this._context} />;
+                    view = <LazyLoad module="scripts/Components/AllBugBashesView">
+                            {(AllBugBashesView) => (
+                                <AllBugBashesView.AllBugBashesView />
+                            )}
+                        </LazyLoad>;
                     break;
                 case HubViewMode.New:
-                    view = <NewBugBashView context={this._context} />;
+                    view = <LazyLoad module="scripts/Components/NewBugBashView">
+                            {(NewBugBashView) => (
+                                <NewBugBashView.NewBugBashView />
+                            )}
+                        </LazyLoad>;
                     break;
                 case HubViewMode.Edit:
-                    view = <EditBugBashView context={this._context} id={this.state.id} />;
+                    view = <LazyLoad module="scripts/Components/EditBugBashView">
+                            {(EditBugBashView) => (
+                                <EditBugBashView.EditBugBashView id={this.state.id} />
+                            )}
+                        </LazyLoad>;
                     break;
                 case HubViewMode.View:
-                    view = <ViewBugBashView context={this._context} id={this.state.id} />;
+                    view = <LazyLoad module="scripts/Components/ViewBugBashView">
+                            {(ViewBugBashView) => (
+                                <ViewBugBashView.ViewBugBashView id={this.state.id} />
+                            )}
+                        </LazyLoad>;
                     break;
                 default:
                     view = <Loading />;

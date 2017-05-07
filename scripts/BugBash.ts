@@ -1,9 +1,7 @@
 import {  IBugBash } from "./Models";
 
 import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
 import Utils_Date = require("VSS/Utils/Date");
-import Context = require("VSS/Context");
 
 export class BugBash {
     public static getNew(): BugBash {
@@ -11,12 +9,11 @@ export class BugBash {
             id: "",
             title: "",
             __etag: 0,
-            templateId: "",
-            manualFields: [],
             projectId: VSS.getWebContext().project.id,
-            teamId: VSS.getWebContext().team.id,
             workItemType: "",
-            configTemplates: {}
+            itemDescriptionField: "",
+            autoAccept: false,
+            description: ""
         });
     }
 
@@ -26,10 +23,7 @@ export class BugBash {
 
     constructor(model: IBugBash) {
         this._model = {...model};
-        this._model.configTemplates = {...model.configTemplates};
-
         this._originalModel = {...model};
-        this._originalModel.configTemplates = {...model.configTemplates};
     }
 
     public getModel(): IBugBash {
@@ -56,32 +50,30 @@ export class BugBash {
             || !Utils_String.equals(this._model.description, this._originalModel.description)
             || !Utils_Date.equals(this._model.startTime, this._originalModel.startTime)
             || !Utils_Date.equals(this._model.endTime, this._originalModel.endTime)
-            || !Utils_String.equals(this._model.templateId, this._originalModel.templateId, true)
-            || !Utils_Array.arrayEquals(this._model.manualFields, this._originalModel.manualFields, (item1: string, item2: string) => Utils_String.equals(item1, item2, true))
-            || this._hasConfigTemplateChanged();
+            || !Utils_String.equals(this._model.itemDescriptionField, this._originalModel.itemDescriptionField, true)
+            || this._model.autoAccept !== this._originalModel.autoAccept
+            || this._hasAcceptTemplateChanged();
     }
 
-    private _hasConfigTemplateChanged(): boolean {
-        let keys1 = Object.keys(this._model.configTemplates);
-        let keys2 = Object.keys(this._originalModel.configTemplates);
-
-        if (keys1.length !== keys2.length) {
+    private _hasAcceptTemplateChanged(): boolean {
+        if (this._model.acceptTemplate == null && this._originalModel.acceptTemplate == null) {
+            return false;
+        }
+        else if (this._model.acceptTemplate != null && this._originalModel.acceptTemplate == null) {
             return true;
         }
-
-        for (let key of keys1) {
-            if (!Utils_String.equals(this._model.configTemplates[key], this._originalModel.configTemplates[key], true)) {
-                return true;
-            }
+        else if (this._model.acceptTemplate == null && this._originalModel.acceptTemplate != null) {
+            return true;
         }
-
-        return false;
+        else {
+            return !Utils_String.equals(this._model.acceptTemplate.team, this._originalModel.acceptTemplate.team) ||
+                !Utils_String.equals(this._model.acceptTemplate.templateId, this._originalModel.acceptTemplate.templateId)
+        }
     }
 
     public isValid(): boolean {
         return this._model.title.trim().length > 0
             && this._model.title.length <= 128
-            && this._model.manualFields.length > 0
             && this._model.workItemType.trim().length > 0
             && (!this._model.startTime || !this._model.endTime || Utils_Date.defaultComparer(this._model.startTime, this._model.endTime) < 0);
     }
@@ -107,18 +99,17 @@ export class BugBash {
 
     public updateWorkItemType(newType: string) {
         this._model.workItemType = newType;
-        this._model.templateId = "";  // reset template
-        this._model.configTemplates = {};
-        this.fireChanged();
-    }
-
-    public updateConfigTemplate(configName: string, templateId: string) {
-        this._model.configTemplates[configName] = templateId;
+        this._model.acceptTemplate = null;  // reset template
         this.fireChanged();
     }
 
     public updateDescription(newDescription: string) {
         this._model.description = newDescription;
+        this.fireChanged();
+    }
+
+    public updateDescriptionField(fieldRefName: string) {
+        this._model.itemDescriptionField = fieldRefName;
         this.fireChanged();
     }
 
@@ -132,13 +123,13 @@ export class BugBash {
         this.fireChanged();
     }
 
-    public updateTemplate(templateId: string) {
-        this._model.templateId = templateId;
+    public updateAutoAccept(autoAccept: boolean) {        
+        this._model.autoAccept = autoAccept;
         this.fireChanged();
     }
 
-    public updateManualFields(fieldNames: string[]) {
-        this._model.manualFields = fieldNames;
+    public updateAcceptTemplate(teamId: string, templateId: string) {
+        this._model.acceptTemplate = {team: teamId, templateId: templateId};
         this.fireChanged();
     }
 }

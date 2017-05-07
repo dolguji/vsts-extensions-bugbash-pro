@@ -6,7 +6,11 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
     target: "web",
     entry: {
-        App: "./scripts/App.tsx"
+        App: "./scripts/App.tsx",
+        AllBugBashesView: "./scripts/Components/AllBugBashesView.tsx",
+        NewBugBashView: "./scripts/Components/NewBugBashView.tsx",
+        EditBugBashView: "./scripts/Components/EditBugBashView.tsx",
+        ViewBugBashView: "./scripts/Components/ViewBugBashView.tsx",
     },
     output: {
         filename: "scripts/[name].js",

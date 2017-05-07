@@ -85,7 +85,7 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
             pastItems: this._getPastBugBashes(allItems, currentTime),
             currentItems: this._getCurrentBugBashes(allItems, currentTime),
             upcomingItems: this._getUpcomingBugBashes(allItems, currentTime),
-            loadingState: this.props.context.stores.bugBashItemStore.isLoaded() ? LoadingState.Loaded : LoadingState.Loading
+            loading: this.props.context.stores.bugBashItemStore.isLoaded() ? false : true
         };
     }
 
