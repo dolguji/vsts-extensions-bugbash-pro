@@ -9,11 +9,6 @@ import { IBugBash } from "../Models";
 import { BugBashManager } from "../BugbashManager";
 
 export class BugBashItemStore extends BaseStore<IBugBash[], IBugBash, string> {
-    constructor() {
-        super();
-        this.items = null;    
-    }
-
     protected getItemByKey(id: string): IBugBash {
          return Utils_Array.first(this.items, (item: IBugBash) => Utils_String.equals(item.id, id, true));
     }

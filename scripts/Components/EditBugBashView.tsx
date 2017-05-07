@@ -1,9 +1,12 @@
 import * as React from "react";
 
-import { IBugBash, LoadingState } from "../Models";
+import { MessageBar, MessageBarType } from 'OfficeFabric/MessageBar';
+
+import { StoreFactory } from "VSTS_Extension/Stores/BaseStore";
+import { Loading } from "VSTS_Extension/Components/Common/Loading";
+
+import { IBugBash } from "../Models";
 import { HubView, IHubViewState } from "./HubView";
-import { Loading } from "./Loading";
-import { MessagePanel, MessageType } from "./MessagePanel";
 import { BugBashEditor } from "./BugBashEditor";
 
 interface IEditHubViewState extends IHubViewState {
@@ -12,34 +15,34 @@ interface IEditHubViewState extends IHubViewState {
 
 export class EditBugBashView extends HubView<IEditHubViewState> {    
     public render(): JSX.Element {
-        if (this.state.loadingState === LoadingState.Loading) {
+        if (this.state.loading) {
             return <Loading />;
         }
         else {
             if (!this.state.item) {
-                return <MessagePanel message="This instance of bug bash doesnt exist in the context of current team." messageType={MessageType.Error} />
+                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash doesnt exist in the context of current project.</MessageBar>
             }
             else {
-                return <BugBashEditor id={this.state.item.id} context={this.props.context} />;
+                return <BugBashEditor id={this.state.item.id} />;
             }            
         }
     }
 
     protected async initialize() {
-        let found = await this.props.context.actionsCreator.ensureBugBash(this.props.id);
+        let found = await this.bugBashItemStore.ensureBugBash(this.props.id);
         if (!found) {
             this.setState({
                 item: null,
-                loadingState: LoadingState.Loaded
+                loading: false
             });
         }
     }
 
     protected getStateFromStore(): IEditHubViewState {
-        const item = this.props.context.stores.bugBashItemStore.getItem(this.props.id);
+        const item = this.bugBashItemStore.getItem(this.props.id);
         return {
             item: item,
-            loadingState: this.props.context.stores.bugBashItemStore.isLoaded() ? LoadingState.Loaded : LoadingState.Loading
+            loading: this.bugBashItemStore.isLoaded() ? false : true
         };
     }
 }

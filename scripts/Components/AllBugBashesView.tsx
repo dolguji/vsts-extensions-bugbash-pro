@@ -4,14 +4,16 @@ import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { CommandBar } from "OfficeFabric/CommandBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
+import { MessageBar, MessageBarType } from 'OfficeFabric/MessageBar';
+
+import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 
-import { UrlActions, IBugBash, LoadingState } from "../Models";
+import { UrlActions, IBugBash } from "../Models";
 import { HubView, IHubViewState } from "./HubView";
-import { Loading } from "./Loading";
-import { MessagePanel, MessageType } from "./MessagePanel";
+import { BugBashItemStore } from "../Stores/BugBashItemStore";
 
 interface IAllHubViewState extends IHubViewState {
     allItems: IBugBash[];
@@ -34,12 +36,12 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
     }
 
     private _getContents(): JSX.Element {
-        if (this.state.loadingState === LoadingState.Loading) {
+        if (this.state.loading) {
             return <Loading />;
         }
         else {
             if (this.state.allItems.length == 0) {
-                return <MessagePanel message="No instance of bug bash exists in the context of current team." messageType={MessageType.Info} />
+                return <MessageBar messageBarType={MessageBarType.info}>No instance of bug bash exists in the context of current team.</MessageBar>;
             }
             else {
                 return (                    
@@ -47,7 +49,7 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
                         <div className="instance-list-section">
                             <Label className="header">Past Bug Bashes ({this.state.pastItems.length})</Label>
                             <div className="instance-list-content">
-                                {this.state.pastItems.length === 0 && <MessagePanel message="No past bug bashes." messageType={MessageType.Info} />}
+                                {this.state.pastItems.length === 0 && <MessageBar messageBarType={MessageBarType.info}>No past bug bashes.</MessageBar>}
                                 {this.state.pastItems.length > 0 && <List items={this.state.pastItems} className="instance-list" onRenderCell={this._onRenderCell} />}
                             </div>
                         </div>
@@ -55,7 +57,7 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
                         <div className="instance-list-section">
                             <Label className="header">Ongoing Bug Bashes ({this.state.currentItems.length})</Label>
                             <div className="instance-list-content">
-                                {this.state.currentItems.length === 0 && <MessagePanel message="No ongoing bug bashes." messageType={MessageType.Info} />}
+                                {this.state.currentItems.length === 0 && <MessageBar messageBarType={MessageBarType.info}>No ongoing bugbashes.</MessageBar>}
                                 {this.state.currentItems.length > 0 && <List items={this.state.currentItems} className="instance-list" onRenderCell={this._onRenderCell} />}
                             </div>
                         </div>
@@ -63,7 +65,7 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
                         <div className="instance-list-section">
                             <Label className="header">Upcoming Bug Bashes ({this.state.upcomingItems.length})</Label>
                             <div className="instance-list-content">
-                                {this.state.upcomingItems.length === 0 && <MessagePanel message="No upcoming bug bashes." messageType={MessageType.Info} />}
+                                {this.state.upcomingItems.length === 0 && <MessageBar messageBarType={MessageBarType.info}>No upcoming bugbashes.</MessageBar>}
                                 {this.state.upcomingItems.length > 0 && <List items={this.state.upcomingItems} className="instance-list" onRenderCell={this._onRenderCell} />}
                             </div>
                         </div>
@@ -74,18 +76,19 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
     }
 
     protected initialize(): void {
-        this.props.context.actionsCreator.initializeAllBugBashes();
+        this.bugBashItemStore.initialize();
     }
 
     protected getStateFromStore(): IAllHubViewState {
-        let allItems = this.props.context.stores.bugBashItemStore.getAll();
+        let allItems = this.bugBashItemStore.getAll() || [];
         let currentTime = new Date();
+
         return {
             allItems: allItems,
             pastItems: this._getPastBugBashes(allItems, currentTime),
             currentItems: this._getCurrentBugBashes(allItems, currentTime),
             upcomingItems: this._getUpcomingBugBashes(allItems, currentTime),
-            loading: this.props.context.stores.bugBashItemStore.isLoaded() ? false : true
+            loading: this.bugBashItemStore.isLoaded() ? false : true
         };
     }
 
@@ -102,7 +105,7 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
             {
                 key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
                 onClick: (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                    this.props.context.actionsCreator.refreshAllBugBashes();
+                    this.bugBashItemStore.refreshItems();
                 }
             }
          ];

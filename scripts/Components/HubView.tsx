@@ -1,10 +1,12 @@
 import * as React from "react";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { StoreFactory } from "VSTS_Extension/Stores/BaseStore"
-import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore"
-import { WorkItemTypeStore } from "VSTS_Extension/Stores/WorkItemTypeStore"
+import { BaseStore, StoreFactory } from "VSTS_Extension/Stores/BaseStore";
+import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
+import { WorkItemTypeStore } from "VSTS_Extension/Stores/WorkItemTypeStore";
 import { WorkItemTemplateStore } from "VSTS_Extension/Stores/WorkItemTemplateStore";
+
+import { BugBashItemStore } from "../Stores/BugBashItemStore";
 
 export interface IHubViewProps extends IBaseComponentProps {
     id?: string;
@@ -14,31 +16,22 @@ export interface IHubViewState extends IBaseComponentState {
     loading: boolean;
 }
 
-export abstract class HubView<T extends IHubViewState> extends BaseComponent<IBaseComponentProps, T> {
-    constructor(props: IHubViewProps, context: any) {
-        super(props, context);
+export abstract class HubView<T extends IHubViewState> extends BaseComponent<IHubViewProps, T> {
+    
+    protected bugBashItemStore: BugBashItemStore = StoreFactory.getInstance<BugBashItemStore>(BugBashItemStore);
+    protected workItemFieldStore: WorkItemFieldStore = StoreFactory.getInstance<WorkItemFieldStore>(WorkItemFieldStore);
+    protected workItemTypeStore: WorkItemTypeStore = StoreFactory.getInstance<WorkItemTypeStore>(WorkItemTypeStore);
+    protected workItemTemplateStore: WorkItemTemplateStore = StoreFactory.getInstance<WorkItemTemplateStore>(WorkItemTemplateStore);
 
+    protected initializeState(): void {
         this.state = this.getStateFromStore();
     }
 
-    public componentDidMount() {
-        super.componentDidMount();
-        
-        this.props.context.stores.bugBashItemStore.addChangedListener(this._onStoreChanged);
-        this.props.context.stores.workItemFieldStore.addChangedListener(this._onStoreChanged);
-        this.props.context.stores.workItemTemplateStore.addChangedListener(this._onStoreChanged);
-        this.props.context.stores.workItemTypeStore.addChangedListener(this._onStoreChanged);
+    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
+        return [BugBashItemStore, WorkItemFieldStore, WorkItemTemplateStore, WorkItemTypeStore];
     }
 
-    public componentWillUnmount() {
-        super.componentWillUnmount();
-        this.props.context.stores.bugBashItemStore.removeChangedListener(this._onStoreChanged);
-        this.props.context.stores.workItemFieldStore.removeChangedListener(this._onStoreChanged);
-        this.props.context.stores.workItemTemplateStore.removeChangedListener(this._onStoreChanged);
-        this.props.context.stores.workItemTypeStore.removeChangedListener(this._onStoreChanged);
-    }
-
-    private _onStoreChanged = (handler: IEventHandler): void => {
+    protected onStoreChanged() {
         let newState = this.getStateFromStore();
         this.setState(newState);
     }

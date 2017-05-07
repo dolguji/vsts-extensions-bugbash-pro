@@ -1,26 +1,16 @@
 import * as React from "react";
 
-import { LoadingState } from "../Models";
 import { HubView, IHubViewState } from "./HubView";
-import { Loading } from "./Loading";
 import { BugBashEditor } from "./BugBashEditor";
 
-interface INewHubViewState extends IHubViewState {
-
-}
-
-export class NewBugBashView extends HubView<INewHubViewState> {    
+export class NewBugBashView extends HubView<IHubViewState> {    
     public render(): JSX.Element {
-        return <BugBashEditor context={this.props.context} />;
+        return <BugBashEditor />;
     }
 
-    protected initialize() {
-        
-    }
-
-    protected getStateFromStore(): INewHubViewState {
+    protected getStateFromStore(): IHubViewState {
         return {
-            loadingState: LoadingState.Loaded
+            loading: true
         };
     }
 }
