@@ -1,16 +1,10 @@
 import * as React from "react";
 
-import { HubView, IHubViewState } from "./HubView";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BugBashEditor } from "./BugBashEditor";
 
-export class NewBugBashView extends HubView<IHubViewState> {    
+export class NewBugBashView extends BaseComponent<IBaseComponentProps, IBaseComponentState> {    
     public render(): JSX.Element {
         return <BugBashEditor />;
-    }
-
-    protected getStateFromStore(): IHubViewState {
-        return {
-            loading: true
-        };
     }
 }

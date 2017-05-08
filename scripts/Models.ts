@@ -5,10 +5,6 @@ export module UrlActions {
     export var ACTION_EDIT = "edit";
 }
 
-export module Constants {
-    
-}
-
 export interface IBugBash {
     id: string;
     readonly __etag: number;
@@ -26,15 +22,17 @@ export interface IBugBash {
 // bug bash item document for 1 bug bash collection
 export interface IBugBashItemDocument {
     id: string;
+    bugBashId: string;
     readonly __etag: number;
-    title?: string;    
+    title: string;    
     description?: string;
-    workItemId?: number;
+    workItemId?: number;    
 }
 
 // work item comment document for 1 work item collection
 export interface ICommentDocument {
     id: string;
+    bugBashItemDocumentId: string;
     readonly __etag: number;
     comment: string;
     addedDate: Date;

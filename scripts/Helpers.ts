@@ -1,5 +1,3 @@
-import { Constants } from "./Models";
-
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
 import {JsonPatchDocument, JsonPatchOperation, Operation} from "VSS/WebApi/Contracts";
@@ -61,27 +59,6 @@ export async function createWorkItem(workItemType: string, fieldValues: IDiction
     return await WitClient.getClient().createWorkItem(patchDocument, VSS.getWebContext().project.id, workItemType);
 }
 
-export function isWorkItemAccepted(workItem: WorkItem): boolean {
-    let tags: string = workItem.fields["System.Tags"] || "";
-    let tagArr = tags.split(";");
-
-    if (Utils_Array.findIndex(tagArr, (t: string) => Utils_String.equals(t.trim(), Constants.BUGBASH_ACCEPT_TAG, true)) !== -1) {
-        return true;
-    }
-
-    return false;
-}
-
-export function isWorkItemRejected(workItem: WorkItem): boolean {
-    let tags: string = workItem.fields["System.Tags"] || "";
-    let tagArr = tags.split(";");
-
-    if (Utils_Array.findIndex(tagArr, (t: string) => Utils_String.equals(t.trim(), Constants.BUGBASH_REJECT_TAG, true)) !== -1) {
-        return true;
-    }
-
-    return false;
-}
 
 export function getBugBashTag(bugbashId: string): string {
     return `BugBash_${bugbashId}`;
@@ -97,23 +74,4 @@ export function parseTags(tags: string): string[] {
         return tagsArr.map((t: string) => t.trim());
     }
     return [];
-}
-
-export async function removeFromBugBash(bugBashId: string, workItems: WorkItem[]): Promise<void> {
-    let updates: [number, JsonPatchDocument][] = [];
-
-    for (const workItem of workItems){
-        let tagArr: string[] = parseTags(workItem.fields["System.Tags"]);
-        tagArr = Utils_Array.subtract(tagArr, [getBugBashTag(bugBashId), Constants.BUGBASH_ACCEPT_TAG, Constants.BUGBASH_REJECT_TAG], Utils_String.ignoreCaseComparer);
-        
-        let patchDocument: JsonPatchDocument & JsonPatchOperation[] = [{
-                op: Operation.Add,
-                path: `/fields/System.Tags`,
-                value: tagArr.join(";")
-            } as JsonPatchOperation];
-
-        updates.push([workItem.id, patchDocument]);
-    }
-
-    await WitBatchClient.getClient().updateWorkItemsBatch(updates);
 }

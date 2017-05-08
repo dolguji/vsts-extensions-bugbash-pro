@@ -1,4 +1,4 @@
-import {  IBugBash } from "./Models";
+import { IBugBash } from "../Models";
 
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
@@ -13,7 +13,11 @@ export class BugBash {
             workItemType: "",
             itemDescriptionField: "",
             autoAccept: false,
-            description: ""
+            description: "",
+            acceptTemplate: {
+                team: VSS.getWebContext().team.id,
+                templateId: ""
+            }
         });
     }
 
@@ -52,29 +56,15 @@ export class BugBash {
             || !Utils_Date.equals(this._model.endTime, this._originalModel.endTime)
             || !Utils_String.equals(this._model.itemDescriptionField, this._originalModel.itemDescriptionField, true)
             || this._model.autoAccept !== this._originalModel.autoAccept
-            || this._hasAcceptTemplateChanged();
-    }
-
-    private _hasAcceptTemplateChanged(): boolean {
-        if (this._model.acceptTemplate == null && this._originalModel.acceptTemplate == null) {
-            return false;
-        }
-        else if (this._model.acceptTemplate != null && this._originalModel.acceptTemplate == null) {
-            return true;
-        }
-        else if (this._model.acceptTemplate == null && this._originalModel.acceptTemplate != null) {
-            return true;
-        }
-        else {
-            return !Utils_String.equals(this._model.acceptTemplate.team, this._originalModel.acceptTemplate.team) ||
-                !Utils_String.equals(this._model.acceptTemplate.templateId, this._originalModel.acceptTemplate.templateId)
-        }
+            || !Utils_String.equals(this._model.acceptTemplate.team, this._originalModel.acceptTemplate.team)
+            || !Utils_String.equals(this._model.acceptTemplate.templateId, this._originalModel.acceptTemplate.templateId)
     }
 
     public isValid(): boolean {
         return this._model.title.trim().length > 0
             && this._model.title.length <= 128
             && this._model.workItemType.trim().length > 0
+            && this._model.itemDescriptionField.trim().length > 0
             && (!this._model.startTime || !this._model.endTime || Utils_Date.defaultComparer(this._model.startTime, this._model.endTime) < 0);
     }
 
@@ -99,7 +89,7 @@ export class BugBash {
 
     public updateWorkItemType(newType: string) {
         this._model.workItemType = newType;
-        this._model.acceptTemplate = null;  // reset template
+        this._model.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: ""};  // reset template
         this.fireChanged();
     }
 
@@ -128,8 +118,8 @@ export class BugBash {
         this.fireChanged();
     }
 
-    public updateAcceptTemplate(teamId: string, templateId: string) {
-        this._model.acceptTemplate = {team: teamId, templateId: templateId};
+    public updateAcceptTemplate(templateId: string) {
+        this._model.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: templateId};
         this.fireChanged();
     }
 }

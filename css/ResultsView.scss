@@ -1,0 +1,14 @@
+.results-view {
+    display: flex;
+    height: 100%;
+
+    .bugbash-item-grid {
+        flex: 1;
+    }
+
+    .item-viewer {
+        margin-top: 30px;
+        margin-left: 20px;
+        width: 25%;
+    }    
+}

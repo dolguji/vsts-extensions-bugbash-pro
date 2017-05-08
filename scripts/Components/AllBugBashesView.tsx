@@ -1,29 +1,65 @@
+import "../../css/AllBugBashes.scss";
+
 import * as React from "react";
+
 import { List } from "OfficeFabric/List";
 import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { CommandBar } from "OfficeFabric/CommandBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
-import { MessageBar, MessageBarType } from 'OfficeFabric/MessageBar';
+import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
+import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 
 import { UrlActions, IBugBash } from "../Models";
-import { HubView, IHubViewState } from "./HubView";
-import { BugBashItemStore } from "../Stores/BugBashItemStore";
+import { StoresHub } from "../Stores/StoresHub";
+import { BugBashStore } from "../Stores/BugBashStore";
 
-interface IAllHubViewState extends IHubViewState {
-    allItems: IBugBash[];
-    pastItems: IBugBash[];
-    currentItems: IBugBash[];
-    upcomingItems: IBugBash[];
+interface IAllHubViewState extends IBaseComponentState {
+    loading?: boolean,
+    allItems?: IBugBash[];
+    pastItems?: IBugBash[];
+    currentItems?: IBugBash[];
+    upcomingItems?: IBugBash[];
 }
 
-export class AllBugBashesView extends HubView<IAllHubViewState> {
-    
+export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllHubViewState> {
+    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
+        return [BugBashStore];
+    }
+
+    protected initializeState() {
+        this.state = {
+            allItems: [],
+            pastItems: [],
+            currentItems: [],
+            upcomingItems: [],
+            loading: true
+        };
+    }
+
+    protected initialize(): void {
+        StoresHub.bugBashStore.initialize();
+    }
+
+    protected onStoreChanged() {        
+        let allItems = StoresHub.bugBashStore.getAll() || [];
+        let currentTime = new Date();
+
+        this.updateState({
+            allItems: allItems,
+            pastItems: this._getPastBugBashes(allItems, currentTime),
+            currentItems: this._getCurrentBugBashes(allItems, currentTime),
+            upcomingItems: this._getUpcomingBugBashes(allItems, currentTime),
+            loading: StoresHub.bugBashStore.isLoaded() ? false : true
+        });
+    }
+
     public render(): JSX.Element {
         return (
             <div className="all-view">
@@ -73,24 +109,7 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
                 );                
             }
         }
-    }
-
-    protected initialize(): void {
-        this.bugBashItemStore.initialize();
-    }
-
-    protected getStateFromStore(): IAllHubViewState {
-        let allItems = this.bugBashItemStore.getAll() || [];
-        let currentTime = new Date();
-
-        return {
-            allItems: allItems,
-            pastItems: this._getPastBugBashes(allItems, currentTime),
-            currentItems: this._getCurrentBugBashes(allItems, currentTime),
-            upcomingItems: this._getUpcomingBugBashes(allItems, currentTime),
-            loading: this.bugBashItemStore.isLoaded() ? false : true
-        };
-    }
+    }    
 
     @autobind
     private _getMenuItems(): IContextualMenuItem[] {
@@ -104,8 +123,10 @@ export class AllBugBashesView extends HubView<IAllHubViewState> {
             },            
             {
                 key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
-                onClick: (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                    this.bugBashItemStore.refreshItems();
+                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                    this.updateState({loading: true});
+                    await StoresHub.bugBashStore.refreshItems();
+                    this.updateState({loading: false});
                 }
             }
          ];

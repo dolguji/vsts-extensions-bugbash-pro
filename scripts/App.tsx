@@ -1,7 +1,5 @@
-// styles
-import "../css/app.scss";
+import "../css/App.scss";
 
-// react imports
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
@@ -45,28 +43,28 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         else {
             switch (this.state.hubViewMode) {            
                 case HubViewMode.All:
-                    view = <LazyLoad module="scripts/Components/AllBugBashesView">
+                    view = <LazyLoad module="scripts/AllBugBashesView">
                             {(AllBugBashesView) => (
                                 <AllBugBashesView.AllBugBashesView />
                             )}
                         </LazyLoad>;
                     break;
                 case HubViewMode.New:
-                    view = <LazyLoad module="scripts/Components/NewBugBashView">
+                    view = <LazyLoad module="scripts/NewBugBashView">
                             {(NewBugBashView) => (
                                 <NewBugBashView.NewBugBashView />
                             )}
                         </LazyLoad>;
                     break;
                 case HubViewMode.Edit:
-                    view = <LazyLoad module="scripts/Components/EditBugBashView">
+                    view = <LazyLoad module="scripts/EditBugBashView">
                             {(EditBugBashView) => (
                                 <EditBugBashView.EditBugBashView id={this.state.id} />
                             )}
                         </LazyLoad>;
                     break;
                 case HubViewMode.View:
-                    view = <LazyLoad module="scripts/Components/ViewBugBashView">
+                    view = <LazyLoad module="scripts/ViewBugBashView">
                             {(ViewBugBashView) => (
                                 <ViewBugBashView.ViewBugBashView id={this.state.id} />
                             )}
@@ -86,7 +84,7 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
     }
 
     private async _initialize() {
-        this.setState({ hubViewMode: HubViewMode.Loading });
+        this.updateState({ hubViewMode: HubViewMode.Loading });
 
         this._attachNavigate();
 
@@ -101,24 +99,24 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
 
         navigationService.attachNavigate(UrlActions.ACTION_ALL, () => {
-            this.setState({ hubViewMode: HubViewMode.All });
+            this.updateState({ hubViewMode: HubViewMode.All });
         }, true);
 
         navigationService.attachNavigate(UrlActions.ACTION_NEW, () => {
-            this.setState({ hubViewMode: HubViewMode.New });
+            this.updateState({ hubViewMode: HubViewMode.New });
         }, true);
 
         navigationService.attachNavigate(UrlActions.ACTION_EDIT, async () => {
             const state = await navigationService.getCurrentState();
             if (state.id) {
-                this.setState({ hubViewMode: HubViewMode.Edit, id: state.id });
+                this.updateState({ hubViewMode: HubViewMode.Edit, id: state.id });
             }
         }, true);
 
         navigationService.attachNavigate(UrlActions.ACTION_VIEW, async () => {
             const state = await navigationService.getCurrentState();
             if (state.id) {
-                this.setState({ hubViewMode: HubViewMode.View, id: state.id });
+                this.updateState({ hubViewMode: HubViewMode.View, id: state.id });
             }
         }, true);
     }

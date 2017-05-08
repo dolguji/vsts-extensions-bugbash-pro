@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
-    "id": "bugbash_pro",
-    "version": "1.0.1",
+    "id": "bugbashpro",
+    "version": "1.0.5",
     "name": "Bug Bash Pro",
     "description": "Easier way to manage bug bashes",
     "publisher": "mohitbagra",
@@ -41,7 +41,6 @@
         "theme": "dark"
     },    
     "categories": [
-        "Plan and track",
         "Collaborate"
     ],
     "files": [
@@ -75,7 +74,7 @@
                 "ms.vss-work-web.work-hub-group"
             ],
             "properties": {
-                "name": "Bug Bash",
+                "name": "Bug Bash Pro",
                 "uri": "index.html"
             }
         }

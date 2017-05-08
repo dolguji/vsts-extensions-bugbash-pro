@@ -3,30 +3,63 @@ import Utils_Array = require("VSS/Utils/Array");
 import { WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
+import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
-import { IBugBash } from "../Models";
-import { BugBashManager } from "../BugbashManager";
+import { IBugBashItemDocument } from "../Models";
+import { getBugBashCollectionKey } from "../Helpers";
 
-export class BugBashItemStore extends BaseStore<IBugBash[], IBugBash, string> {
-    protected getItemByKey(id: string): IBugBash {
-         return Utils_Array.first(this.items, (item: IBugBash) => Utils_String.equals(item.id, id, true));
+export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBashItemDocument, string> {
+    constructor() {
+        super();
+        this.items = [];    
+    }
+
+    protected getItemByKey(id: string): IBugBashItemDocument {
+         return Utils_Array.first(this.items, (item: IBugBashItemDocument) => Utils_String.equals(item.id, id, true));
     }
 
     protected async initializeItems(): Promise<void> {
-        this.items = await BugBashManager.readBugBashes();
+        return;
     }
 
     public getKey(): string {
-        return "WorkItemBugBashItemStore";
+        return "BugBashItemStore";
     }    
 
-    public async ensureBugBash(id: string): Promise<boolean> {
+    public getItems(bugBashId: string): IBugBashItemDocument[] {
+        return this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true));
+    }
+
+    public async refreshItems(bugBashId: string) {
+        const models = await ExtensionDataManager.readDocuments<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), false);
+        this.items = this.items.filter(i => !Utils_String.equals(i.bugBashId, bugBashId, true));
+        this.items = this.items.concat(models);
+        this.emitChanged();
+    }
+
+    public async addOrUpdateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
+        item.id = item.id || Date.now().toString();    
+        const savedItem = await ExtensionDataManager.writeDocument(getBugBashCollectionKey(item.bugBashId), item, false);
+
+        if (savedItem) {
+            this._addItems(savedItem);
+        }
+
+        return savedItem;
+    }
+
+    public async deleteItem(item: IBugBashItemDocument): Promise<void> {
+        this._removeItems(item);
+        await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);        
+    }
+
+    public async ensureItem(bugBashId: string, id: string): Promise<boolean> {
         if (!this.itemExists(id)) {
             try {
-                const bugbash = await BugBashManager.readBugBash(id);
-                if (bugbash) {
-                    this.addItems(bugbash);
+                const model = await ExtensionDataManager.readDocument<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), id, null, false);
+                if (model) {
+                    this._addItems(model);
                     return true;
                 }
             }
@@ -41,39 +74,7 @@ export class BugBashItemStore extends BaseStore<IBugBash[], IBugBash, string> {
         }
     }
 
-    public async addOrUpdateItem(bugBash: IBugBash): Promise<IBugBash> {
-        bugBash.id = bugBash.id || Date.now().toString();    
-        const savedBugBash = await BugBashManager.writeBugBash(bugBash);
-
-        if (savedBugBash) {
-            this.addItems(savedBugBash);
-        }
-
-        return savedBugBash;
-    }
-
-    public async deleteBugBash(bugBash: IBugBash): Promise<boolean> {         
-        const deleted = await BugBashManager.deleteBugBash(bugBash);
-
-        if (deleted) {
-            this.removeItems(bugBash);
-        }
-
-        return deleted;
-    }
-
-    public async refreshItems() {
-        if (this.isLoaded()) {
-            // refresh only if the store has already been laoded
-            this.items = null;
-            this.emitChanged();
-            
-            await this.initializeItems();
-            this.emitChanged();
-        }
-    }
-
-    public addItems(items: IBugBash | IBugBash[]): void {
+    private _addItems(items: IBugBashItemDocument | IBugBashItemDocument[]): void {
         if (!items) {
             return;
         }
@@ -94,7 +95,7 @@ export class BugBashItemStore extends BaseStore<IBugBash[], IBugBash, string> {
         this.emitChanged();
     }
 
-    public removeItems(items: IBugBash | IBugBash[]): void {
+    private _removeItems(items: IBugBashItemDocument | IBugBashItemDocument[]): void {
         if (!items || !this.isLoaded()) {
             return;
         }
@@ -111,8 +112,8 @@ export class BugBashItemStore extends BaseStore<IBugBash[], IBugBash, string> {
         this.emitChanged();
     }    
 
-    private _addItem(item: IBugBash): void {
-        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(item.id, existingItem.id, true));
+    private _addItem(item: IBugBashItemDocument): void {
+        let existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItemDocument) => Utils_String.equals(item.id, existingItem.id, true));
         if (existingItemIndex != -1) {
             // Overwrite the item data
             this.items[existingItemIndex] = item;
@@ -122,8 +123,8 @@ export class BugBashItemStore extends BaseStore<IBugBash[], IBugBash, string> {
         }
     }
 
-    private _removeItem(item: IBugBash): void {
-        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(item.id, existingItem.id, true));
+    private _removeItem(item: IBugBashItemDocument): void {
+        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItemDocument) => Utils_String.equals(item.id, existingItem.id, true));
 
         if (existingItemIndex != -1) {
             this.items.splice(existingItemIndex, 1);

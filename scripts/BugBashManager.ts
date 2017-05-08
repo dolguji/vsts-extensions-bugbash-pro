@@ -1,4 +1,4 @@
-import { Constants, IBugBash } from "./Models";
+import { IBugBash } from "./Models";
 import Utils_String = require("VSS/Utils/String");
 
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
@@ -27,29 +27,15 @@ export class BugBashManager {
         return item;
     }
 
-    public static async writeBugBash(bugBashModel: IBugBash): Promise<IBugBash> {
-        if (!Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
-            return null;
-        }
-        
+    public static async writeBugBash(bugBashModel: IBugBash): Promise<IBugBash> {        
         let item = await ExtensionDataManager.writeDocument<IBugBash>("bugbashes", bugBashModel, false);
         BugBashManager._translateDates(item);
 
         return item;
     }
 
-    public static async deleteBugBash(bugBashModel: IBugBash): Promise<boolean> {
-        if (!Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
-            return null;
-        }
-
-        try {        
-            await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBashModel.id, false);
-            return true;
-        }
-        catch (e) {
-            return false;
-        }
+    public static async deleteBugBash(bugBashModel: IBugBash): Promise<void> {
+        await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBashModel.id, false);
     }
 
     private static _translateDates(item: any) {

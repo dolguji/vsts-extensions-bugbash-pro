@@ -45,6 +45,11 @@ module.exports = {
         ]
     },
     plugins: [
+        new webpack.optimize.CommonsChunkPlugin({
+            name: "common_chunks",
+            filename: "./scripts/common_chunks.js",
+            minChunks: 2
+        }),
         new UglifyJSPlugin({
             compress: {
                 warnings: false
