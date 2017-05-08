@@ -6,10 +6,12 @@ import { WorkItemTemplateItemStore } from "VSTS_Extension/Stores/WorkItemTemplat
 
 import { BugBashStore } from "../Stores/BugBashStore";
 import { BugBashItemStore } from "../Stores/BugBashItemStore";
+import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 
 export module StoresHub {
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
     export var bugBashItemStore: BugBashItemStore = StoreFactory.getInstance<BugBashItemStore>(BugBashItemStore);
+    export var bugBashItemCommentStore: BugBashItemCommentStore = StoreFactory.getInstance<BugBashItemCommentStore>(BugBashItemCommentStore);
     export var workItemFieldStore: WorkItemFieldStore = StoreFactory.getInstance<WorkItemFieldStore>(WorkItemFieldStore);
     export var workItemTypeStore: WorkItemTypeStore = StoreFactory.getInstance<WorkItemTypeStore>(WorkItemTypeStore);
     export var workItemTemplateStore: WorkItemTemplateStore = StoreFactory.getInstance<WorkItemTemplateStore>(WorkItemTemplateStore);

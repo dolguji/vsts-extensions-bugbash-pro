@@ -10,9 +10,12 @@ import { IBugBashItemDocument } from "../Models";
 import { getBugBashCollectionKey } from "../Helpers";
 
 export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBashItemDocument, string> {
+    private _dataLoadedMap: IDictionaryStringTo<boolean>;
+
     constructor() {
         super();
-        this.items = [];    
+        this.items = [];
+        this._dataLoadedMap = {};
     }
 
     protected getItemByKey(id: string): IBugBashItemDocument {
@@ -31,15 +34,21 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         return this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true));
     }
 
+    public isDataLoaded(bugBashId: string): boolean {
+        return Boolean(this._dataLoadedMap[bugBashId.toLowerCase()]);
+    }
+
     public async refreshItems(bugBashId: string) {
         const models = await ExtensionDataManager.readDocuments<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), false);
         this.items = this.items.filter(i => !Utils_String.equals(i.bugBashId, bugBashId, true));
         this.items = this.items.concat(models);
+        this._dataLoadedMap[bugBashId.toLowerCase()] = true;
+
         this.emitChanged();
     }
 
     public async addOrUpdateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
-        item.id = item.id || Date.now().toString();    
+        item.id = item.id || `${item.bugBashId}_${Date.now().toString()}`;
         const savedItem = await ExtensionDataManager.writeDocument(getBugBashCollectionKey(item.bugBashId), item, false);
 
         if (savedItem) {
@@ -52,26 +61,6 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
     public async deleteItem(item: IBugBashItemDocument): Promise<void> {
         this._removeItems(item);
         await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);        
-    }
-
-    public async ensureItem(bugBashId: string, id: string): Promise<boolean> {
-        if (!this.itemExists(id)) {
-            try {
-                const model = await ExtensionDataManager.readDocument<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), id, null, false);
-                if (model) {
-                    this._addItems(model);
-                    return true;
-                }
-            }
-            catch (e) {
-                return false;
-            }
-
-            return false;
-        }
-        else {
-            return true;
-        }
     }
 
     private _addItems(items: IBugBashItemDocument | IBugBashItemDocument[]): void {

@@ -22,9 +22,10 @@ import { Grid } from "VSTS_Extension/Components/Grids/Grid";
 import { SortOrder, GridColumn, ICommandBarProps, IContextMenuProps } from "VSTS_Extension/Components/Grids/Grid.Props";
 
 import { IBugBash, UrlActions, IBugBashItemDocument } from "../Models";
-import { BugBashItem } from "./BugBashItem";
+import { BugBashItemView } from "./BugBashItemView";
 import Helpers = require("../Helpers");
 import { BugBashStore } from "../Stores/BugBashStore";
+import { BugBashItemStore } from "../Stores/BugBashItemStore";
 import { StoresHub } from "../Stores/StoresHub";
 
 interface IViewHubViewState extends IBaseComponentState {
@@ -40,7 +41,7 @@ interface IViewHubViewProps extends IBaseComponentProps {
 
 export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubViewState> {
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashStore];
+        return [BugBashStore, BugBashItemStore];
     }
 
     protected initializeState() {
@@ -52,8 +53,10 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
         };
     }
 
-    protected async initialize() {                
-        let found = await StoresHub.bugBashStore.ensureItem(this.props.id);
+    protected async initialize() {
+        StoresHub.bugBashItemStore.refreshItems(this.props.id);
+        const found = await StoresHub.bugBashStore.ensureItem(this.props.id);
+
         if (!found) {
             this.updateState({
                 bugBashItem: null,
@@ -62,13 +65,14 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 selectedBugBashItem: null
             });
         }
-        else {
-            //this._refreshWorkItemResults();
-        }
     }   
 
     protected onStoreChanged() {
-        this.updateState({bugBashItem: StoresHub.bugBashStore.getItem(this.props.id), loading: !StoresHub.bugBashStore.isLoaded()});
+        this.updateState({
+            bugBashItem: StoresHub.bugBashStore.getItem(this.props.id),
+            items: StoresHub.bugBashItemStore.getItems(this.props.id),
+            loading: !StoresHub.bugBashStore.isLoaded() || !StoresHub.bugBashItemStore.isDataLoaded(this.props.id)
+        });
     }
 
     public render(): JSX.Element {
@@ -92,7 +96,7 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                         />
                         
                         <div className="item-viewer">
-                            <BugBashItem item={this.state.selectedBugBashItem} />
+                            <BugBashItemView itemModel={this.state.selectedBugBashItem} bugBashId={this.props.id} />
                         </div>
                     </div>
                 );

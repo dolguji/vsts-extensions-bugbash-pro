@@ -9,8 +9,8 @@ export function getBugBashCollectionKey(bugBashId: string): string {
     return `BugBashCollection_${bugBashId}`;
 }
 
-export function getBugBashItemCollectionKey(bugBashId: string, itemId: string): string {
-    return `BugBashItemCollection_${bugBashId}_${itemId}`;
+export function getBugBashItemCollectionKey(itemId: string): string {
+    return `BugBashItemCollection_${itemId}`;
 }
 
 export async function saveWorkItems(fieldValuesMap: IDictionaryNumberTo<IDictionaryStringTo<string>>): Promise<WorkItem[]> {

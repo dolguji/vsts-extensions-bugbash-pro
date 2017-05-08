@@ -34,13 +34,14 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
                 }
             }
             catch (e) {
+                console.log(e);
                 return false;
             }            
         }
         else {
             this.emitChanged();
             return true;
-        }        
+        }
     }
 
     public async addOrUpdateItem(bugBash: IBugBash): Promise<IBugBash> {
