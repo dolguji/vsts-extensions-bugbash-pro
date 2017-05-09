@@ -29,6 +29,7 @@ import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBash, UrlActions } from "../Models";
 import { BugBash } from "../Models/BugBash";
+import { RichEditor } from "./RichEditor/RichEditor";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
     id?: string;
@@ -42,7 +43,6 @@ export interface IBugBashEditorState extends IBaseComponentState {
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
     private _item: BugBash;
-    private _richEditorContainer: JQuery;
 
     protected initializeState(): void {
         if (this.props.id) {
@@ -119,7 +119,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     }
 
                     this._item.reset();
-                    this._richEditorContainer.summernote('code', this._item.getModel().description);
                 }
             },
             {
@@ -205,10 +204,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             onGetErrorMessage={this._getTitleError} />
 
                         <Label>Description</Label>
-
-                        <div>
-                            <div ref={this._renderRichEditor}/>
-                        </div>
+                        <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
                     </div>
                     <div className="second-section">
                         <div className="checkbox-container">                            
@@ -296,32 +292,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             }
         }));
     }
-
-    @autobind
-    private _renderRichEditor(container: HTMLElement) {
-        this._richEditorContainer = $(container);
-        this._richEditorContainer.summernote({
-            height: 260,
-            minHeight: 260,
-            toolbar: [
-                // [groupName, [list of button]]
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['fontsize', ['fontsize']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['insert', ['link', 'picture']],
-                ['fullscreen', ['fullscreen']]
-            ],
-            callbacks: {
-                onChange: () => {
-                    this._item.updateDescription(this._richEditorContainer.summernote('code'));
-                }
-            }
-        });
-
-        this._richEditorContainer.summernote('code', this.state.model.description);
-    }
-
+    
     @autobind
     private _getTitleError(value: string): string | IPromise<string> {
         if (!value) {

@@ -56,8 +56,6 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         model.id = model.id || `${model.bugBashId}_${Date.now().toString()}`;
         model.createdBy = model.createdBy || `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
         model.createdDate = model.createdDate || new Date(Date.now());
-        model.lastUpdatedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-        model.lastUpdatedDate = new Date(Date.now());
 
         try {
             const savedItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(model.bugBashId), model, false);
@@ -75,13 +73,9 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
 
     }
 
-    public async updateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
-        let model = {...item};
-        model.lastUpdatedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-        model.lastUpdatedDate = new Date(Date.now());
-        
+    public async updateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {        
         try {
-            const savedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(model.bugBashId), model, false);
+            const savedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(item.bugBashId), item, false);
 
             if (savedItem) {
                 this._translateDates(savedItem);
@@ -170,15 +164,6 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
             }
             else {
                 item.createdDate = new Date(item.createdDate);
-            }
-        }
-
-        if (typeof item.lastUpdatedDate === "string") {
-            if ((item.lastUpdatedDate as string).trim() === "") {
-                item.lastUpdatedDate = undefined;
-            }
-            else {
-                item.lastUpdatedDate = new Date(item.lastUpdatedDate);
             }
         }
     }

@@ -150,31 +150,6 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                     let compareValue = Utils_Date.defaultComparer(item1.createdDate, item2.createdDate)
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 }
-            },
-            {
-                key: "lastupdatedby",
-                name: "Last updated by",
-                minWidth: 100,
-                maxWidth: 250,
-                resizable: true,
-                onRenderCell: (item: IBugBashItemDocument) => <IdentityView identityDistinctName={item.lastUpdatedBy} />,
-                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(item1.lastUpdatedBy, item2.lastUpdatedBy)
-                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (item: IBugBashItemDocument, filterText: string) => Utils_String.caseInsensitiveContains(item.lastUpdatedBy, filterText)
-            },
-            {
-                key: "lastupdateddate",
-                name: "Last updated date",
-                minWidth: 80,
-                maxWidth: 150,
-                resizable: true,
-                onRenderCell: (item: IBugBashItemDocument) => <Label className={gridCellClassName}>{Utils_Date.friendly(item.lastUpdatedDate)}</Label>,
-                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
-                    let compareValue = Utils_Date.defaultComparer(item1.lastUpdatedDate, item2.lastUpdatedDate)
-                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                }
             }
         ];
     }

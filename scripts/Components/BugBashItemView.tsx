@@ -18,6 +18,7 @@ import Helpers = require("../Helpers");
 import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItem } from "../Models/BugBashItem";
+import { RichEditor } from "./RichEditor/RichEditor";
 
 export interface IBugBashItemViewProps extends IBaseComponentProps {
     id?: string;
@@ -136,10 +137,10 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
 
                 <div>
                     <Label className="item-description">Description</Label>
-                    <div ref={(container: HTMLElement) => this._renderRichEditor(container)}/>
+                    <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
                 </div>
 
-                <PrimaryButton className="create-new-button" disabled={!this._item.isDirty() || !this._item.isValid()}  onClick={this._onAddClick}>
+                <PrimaryButton className="create-new-button" disabled={this.state.saving || !this._item.isDirty() || !this._item.isValid()}  onClick={this._onAddClick}>
                     {this.state.saving ? "Saving..." : "Save" }
                 </PrimaryButton>
             </div>
@@ -154,29 +155,5 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
         else {
             StoresHub.bugBashItemStore.createItem(this.state.model);
         }
-    }
-
-    @autobind
-    private _renderRichEditor(container: HTMLElement) {
-        $(container).summernote({
-            height: 200,
-            minHeight: 200,
-            toolbar: [
-                // [groupName, [list of button]]
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['fontsize', ['fontsize']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['insert', ['link', 'picture']],
-                ['fullscreen', ['fullscreen']]
-            ],
-            callbacks: {
-                onBlur: () => {
-                    this._item.updateDescription($(container).summernote('code'));
-                }
-            }
-        });
-
-        $(container).summernote('code', this._item.getModel().description || "");
     }
 }

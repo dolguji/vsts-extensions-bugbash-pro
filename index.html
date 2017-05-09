@@ -3,15 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <script src="scripts/libs/es6-promise.min.js"></script>
-    <script src="scripts/libs/VSS.SDK.min.js"></script>
-    <script src="scripts/libs/jquery.min.js"></script>
-    <script src="scripts/libs/bootstrap.min.js"></script>    
-    <script src="scripts/libs/summernote.min.js"></script>
+    <script src="scripts/libs/VSS.SDK.min.js"></script>    
     <script src="scripts/libs/require.js"></script>
     <script src="scripts/common_chunks.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="css/libs/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="css/libs/summernote.css">
     <link rel="stylesheet" type="text/css" href="css/libs/fabric.min.css">
 </head>
 
@@ -25,9 +20,7 @@
         });
         
         // Load main entry point for extension
-        VSS.require(["scripts/App"], function (App) {
-            delete $.summernote.options.keyMap.pc.TAB;
-            delete $.summernote.options.keyMap.mac.TAB;
+        VSS.require(["scripts/App"], function (App) {            
             App.init();
             VSS.notifyLoadSucceeded();            
         });

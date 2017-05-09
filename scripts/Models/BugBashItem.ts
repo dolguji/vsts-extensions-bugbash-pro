@@ -13,8 +13,6 @@ export class BugBashItem {
             workItemId: null,
             createdBy: "",
             createdDate: null,
-            lastUpdatedBy: "",
-            lastUpdatedDate: null
         });
     }
 

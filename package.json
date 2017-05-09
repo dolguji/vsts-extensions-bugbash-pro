@@ -26,6 +26,7 @@
       "css-loader": "^0.28.1",
       "ts-loader": "^2.0.3",
       "file-loader": "^0.11.1",
+      "url-loader": "0.5.8",
       "node-sass": "^4.5.2",
       "typescript": "^2.3.2",
       "typings": "^2.1.1",        
@@ -39,8 +40,6 @@
       "es6-promise": "^4.1.0",
       "office-ui-fabric-react": "^2.26.0",
       "vsts-extension-react-widgets": "0.0.12",
-      "bootstrap": "^3.3.7",
-      "jquery": "^3.2.1",
-      "summernote": "^0.8.2"
+      "trumbowyg": "2.5.1"
   }
 }

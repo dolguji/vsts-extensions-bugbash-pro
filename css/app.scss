@@ -16,18 +16,6 @@
     }
 }
 
-/*
-** Create New Button
-*/
-.create-new-button {
-    float: right;
-
-    &:hover, &:focus {
-        color: #ffffff;
-        background-color: #005a9e;
-    }
-}
-
 .callout-container {
     max-height: 180px;
 }

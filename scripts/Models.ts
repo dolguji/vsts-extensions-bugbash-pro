@@ -29,8 +29,6 @@ export interface IBugBashItemDocument {
     workItemId?: number;
     createdDate: Date;
     createdBy: string;
-    lastUpdatedDate: Date;
-    lastUpdatedBy: string;
 }
 
 // work item comment document for 1 work item collection

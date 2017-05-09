@@ -1,0 +1,16 @@
+.item-viewer {
+    .trumbowyg-box {
+        width: auto;
+        margin: 0;
+    }
+
+    .create-new-button {
+        float: right;
+        margin-top: 20px;
+        
+        &:hover, &:focus {
+            color: #ffffff;
+            background-color: #005a9e;
+        }
+    }
+}

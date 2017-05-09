@@ -10,7 +10,7 @@ module.exports = {
         AllBugBashesView: "./scripts/Components/AllBugBashesView.tsx",
         NewBugBashView: "./scripts/Components/NewBugBashView.tsx",
         EditBugBashView: "./scripts/Components/EditBugBashView.tsx",
-        ViewBugBashView: "./scripts/Components/ViewBugBashView.tsx",
+        ViewBugBashView: "./scripts/Components/ViewBugBashView.tsx"
     },
     output: {
         filename: "scripts/[name].js",
@@ -43,8 +43,8 @@ module.exports = {
                 loaders: ["style-loader", "css-loader", "sass-loader"]
             },
             {
-                test: /\.(eot|svg|ttf|woff|woff2)$/,
-                loader: 'file-loader'
+                test: /\.(otf|eot|svg|ttf|woff|woff2)(\?.+)?$/,
+                loader: 'url-loader?limit=4096&name=[name].[ext]'
             }
         ]
     },
@@ -52,7 +52,7 @@ module.exports = {
         new webpack.optimize.CommonsChunkPlugin({
             name: "common_chunks",
             filename: "./scripts/common_chunks.js",
-            minChunks: 2
+            minChunks: 3
         }),
         new UglifyJSPlugin({
             compress: {
@@ -65,16 +65,10 @@ module.exports = {
         new CopyWebpackPlugin([
             { from: "./node_modules/vss-web-extension-sdk/lib/VSS.SDK.min.js", to: "scripts/libs/VSS.SDK.min.js" },
             { from: "./node_modules/es6-promise/dist/es6-promise.min.js", to: "scripts/libs/es6-promise.min.js" },
-            { from: "./node_modules/bootstrap/dist/js/bootstrap.min.js", to: "scripts/libs/bootstrap.min.js" },
-            { from: "./node_modules/summernote/dist/summernote.min.js", to: "scripts/libs/summernote.min.js" },
-            { from: "./node_modules/jquery/dist/jquery.min.js", to: "scripts/libs/jquery.min.js" },
             { from: "./node_modules/requirejs/require.js", to: "scripts/libs/require.js" },
 
-            { from: "./node_modules/bootstrap/dist/css/bootstrap.min.css", to: "css/libs/bootstrap.min.css" },
-            { from: "./node_modules/summernote/dist/summernote.css", to: "css/libs/summernote.css" },
+            { from: "./node_modules/trumbowyg/dist/ui/icons.svg", to: "css/libs/icons.svg" },
             { from: "./node_modules/office-ui-fabric-react/dist/css/fabric.min.css", to: "css/libs/fabric.min.css" },
-            
-            { from: "./node_modules/summernote/dist/font", to: "css/libs/font" },
             
             { from: "./img", to: "img" },
             { from: "./index.html", to: "./" },
