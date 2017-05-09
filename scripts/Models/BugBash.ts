@@ -43,8 +43,9 @@ export class BugBash {
         this.fireChanged();
     }
 
-    public renew() {
-        this._originalModel = {...this._model};
+    public renew(newModel: IBugBash) {
+        this._model = {...newModel};
+        this._originalModel = {...newModel};
         this.fireChanged();
     }
 

@@ -40,6 +40,10 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
 
     public async refreshItems(itemId: string) {
         const models = await ExtensionDataManager.readDocuments<ICommentDocument>(getBugBashItemCollectionKey(itemId), false);
+        for(let model of models) {
+            this._translateDates(model);
+        }
+
         this.items = this.items.filter(i => !Utils_String.equals(i.bugBashItemDocumentId, itemId, true));
         this.items = this.items.concat(models);
         this._dataLoadedMap[itemId.toLowerCase()] = true;
@@ -47,11 +51,26 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         this.emitChanged();
     }
 
-    public async addOrUpdateItem(item: ICommentDocument): Promise<ICommentDocument> {
+    public async createItem(item: ICommentDocument): Promise<ICommentDocument> {
         item.id = item.id || `${item.bugBashItemDocumentId}_${Date.now().toString()}`;
-        const savedItem = await ExtensionDataManager.writeDocument(getBugBashItemCollectionKey(item.bugBashItemDocumentId), item, false);
+        item.addedBy = item.addedBy || `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+        item.addedDate = item.addedDate || new Date(Date.now());
+
+        const savedItem = await ExtensionDataManager.createDocument(getBugBashItemCollectionKey(item.bugBashItemDocumentId), item, false);
 
         if (savedItem) {
+            this._translateDates(savedItem);
+            this._addItems(savedItem);
+        }
+
+        return savedItem;
+    }
+
+    public async updateItem(item: ICommentDocument): Promise<ICommentDocument> {
+        const savedItem = await ExtensionDataManager.updateDocument(getBugBashItemCollectionKey(item.bugBashItemDocumentId), item, false);
+
+        if (savedItem) {
+            this._translateDates(savedItem);
             this._addItems(savedItem);
         }
 
@@ -87,6 +106,17 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         }
         else {
             this.items.push(item);
+        }
+    }
+
+    private _translateDates(item: ICommentDocument) {
+        if (typeof item.addedDate === "string") {
+            if ((item.addedDate as string).trim() === "") {
+                item.addedDate = undefined;
+            }
+            else {
+                item.addedDate = new Date(item.addedDate);
+            }
         }
     }
 }

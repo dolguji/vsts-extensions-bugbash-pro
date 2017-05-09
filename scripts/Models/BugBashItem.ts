@@ -10,7 +10,11 @@ export class BugBashItem {
             title: "",
             __etag: 0,
             description: "",
-            workItemId: null
+            workItemId: null,
+            createdBy: "",
+            createdDate: null,
+            lastUpdatedBy: "",
+            lastUpdatedDate: null
         });
     }
 
@@ -36,8 +40,9 @@ export class BugBashItem {
         this.fireChanged();
     }
 
-    public renew() {
-        this._originalModel = {...this._model};
+    public renew(newModel: IBugBashItemDocument) {
+        this._model = {...newModel};
+        this._originalModel = {...newModel};
         this.fireChanged();
     }
 

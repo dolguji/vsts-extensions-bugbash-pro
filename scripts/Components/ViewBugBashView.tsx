@@ -19,6 +19,7 @@ import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
+import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn, ICommandBarProps, IContextMenuProps } from "VSTS_Extension/Components/Grids/Grid.Props";
 
 import { IBugBash, UrlActions, IBugBashItemDocument } from "../Models";
@@ -81,7 +82,10 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
         }
         else {
             if (!this.state.bugBashItem) {
-                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash either doesn't exist or is out of scope of current project.</MessageBar>;
+                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash doesn't exist.</MessageBar>;
+            }
+            else if(!Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashItem.projectId, true)) {
+                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash is out of scope of current project.</MessageBar>;
             }
             else {
                 return (
@@ -96,7 +100,7 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                         />
                         
                         <div className="item-viewer">
-                            <BugBashItemView itemModel={this.state.selectedBugBashItem} bugBashId={this.props.id} />
+                            <BugBashItemView id={this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : null} bugBashId={this.props.id} />
                         </div>
                     </div>
                 );
@@ -105,22 +109,72 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
     }     
 
     @autobind
-    private _showItem(item?: IBugBashItemDocument): void {
-        this.updateState({selectedBugBashItem: item});
-    }
-
-    @autobind
     private _getGridColumns(): GridColumn[] {
+        const gridCellClassName = "item-grid-cell";
+
         return [
             {
                 key: "title",
                 name: "Title",
-                minWidth: 150,
-                maxWidth: Infinity,
+                minWidth: 200,
+                maxWidth: 800,
                 resizable: true,
-                onRenderCell: (item: IBugBashItemDocument) => <Label>{item.title}</Label>,
-                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => Utils_String.ignoreCaseComparer(item1.title, item2.title),
+                onRenderCell: (item: IBugBashItemDocument) => <Label className={gridCellClassName}>{item.title}</Label>,
+                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.title, item2.title)
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
                 filterFunction: (item: IBugBashItemDocument, filterText: string) => Utils_String.caseInsensitiveContains(item.title, filterText)
+            },
+            {
+                key: "createdby",
+                name: "Created By",
+                minWidth: 100,
+                maxWidth: 250,
+                resizable: true,
+                onRenderCell: (item: IBugBashItemDocument) => <IdentityView identityDistinctName={item.createdBy} />,
+                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.createdBy, item2.createdBy)
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (item: IBugBashItemDocument, filterText: string) => Utils_String.caseInsensitiveContains(item.createdBy, filterText)
+            },
+            {
+                key: "createddate",
+                name: "Created Date",
+                minWidth: 80,
+                maxWidth: 150,
+                resizable: true,
+                onRenderCell: (item: IBugBashItemDocument) => <Label className={gridCellClassName}>{Utils_Date.friendly(item.createdDate)}</Label>,
+                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                    let compareValue = Utils_Date.defaultComparer(item1.createdDate, item2.createdDate)
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                }
+            },
+            {
+                key: "lastupdatedby",
+                name: "Last updated by",
+                minWidth: 100,
+                maxWidth: 250,
+                resizable: true,
+                onRenderCell: (item: IBugBashItemDocument) => <IdentityView identityDistinctName={item.lastUpdatedBy} />,
+                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.lastUpdatedBy, item2.lastUpdatedBy)
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (item: IBugBashItemDocument, filterText: string) => Utils_String.caseInsensitiveContains(item.lastUpdatedBy, filterText)
+            },
+            {
+                key: "lastupdateddate",
+                name: "Last updated date",
+                minWidth: 80,
+                maxWidth: 150,
+                resizable: true,
+                onRenderCell: (item: IBugBashItemDocument) => <Label className={gridCellClassName}>{Utils_Date.friendly(item.lastUpdatedDate)}</Label>,
+                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                    let compareValue = Utils_Date.defaultComparer(item1.lastUpdatedDate, item2.lastUpdatedDate)
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                }
             }
         ];
     }
@@ -137,22 +191,30 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 {
                     key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        //this._refreshWorkItemResults();
+                        this._refreshResults();
                     }
                 },
                 {
                     key: "OpenQuery", name: "Open as query", title: "Open all workitems as a query", iconProps: {iconName: "OpenInNewWindow"}, 
-                    disabled: false, //this.state.workItemResults.length === 0,
+                    disabled: this.state.items.length === 0,
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
                         //let url = `${VSS.getWebContext().host.uri}/${VSS.getWebContext().project.id}/_workitems?_a=query&wiql=${encodeURIComponent(this._getWiql().query)}`;
-                        //window.open(url, "_parent");
+                        //window.open(url, "_blank");
                     }
                 },
                 {
-                    key: "Unlink", name: "Unlink workitems", title: "Unlink all workitems from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
-                    disabled: false, //this.state.workItemResults.length === 0,
+                    key: "Clear", name: "Clear all items", title: "Clear all items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
+                    disabled: this.state.items.length === 0,
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        //this._removeWorkItemsFromBugBash();
+                        let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
+                        try {
+                            await dialogService.openMessageDialog("Are you sure you want to clear all items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.", { useBowtieStyle: true });
+                        }
+                        catch (e) {
+                            // user selected "No"" in dialog
+                            return;
+                        }
+                        StoresHub.bugBashItemStore.clearAllItems(this.props.id);
                     }
                 }
             ];
@@ -171,7 +233,35 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
     }
 
     @autobind
-    private _getContextMenuItems(selectedItems: any[]): IContextualMenuItem[] {
-        return [];
+    private _getContextMenuItems(selectedItems: IBugBashItemDocument[]): IContextualMenuItem[] {
+        return [
+            {
+                key: "OpenQuery", name: "Open as query", title: "Open selected workitems as a query", iconProps: {iconName: "OpenInNewWindow"}, 
+                disabled: selectedItems.length === 0,
+                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                    //let url = `${VSS.getWebContext().host.uri}/${VSS.getWebContext().project.id}/_workitems?_a=query&wiql=${encodeURIComponent(this._getWiql().query)}`;
+                    //window.open(url, "_blank");
+                }
+            },
+            {
+                key: "Delete", name: "Delete", title: "Delete selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
+                disabled: selectedItems.length === 0,
+                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
+                    try {
+                        await dialogService.openMessageDialog("Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.", { useBowtieStyle: true });
+                    }
+                    catch (e) {
+                        // user selected "No"" in dialog
+                        return;
+                    }
+                    StoresHub.bugBashItemStore.deleteItems(selectedItems);
+                }
+            }
+        ];
+    }
+
+    private _refreshResults() {
+        StoresHub.bugBashItemStore.refreshItems(this.props.id);
     }
 }

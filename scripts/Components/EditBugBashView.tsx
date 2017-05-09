@@ -6,6 +6,8 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
+import Utils_String = require("VSS/Utils/String");
+
 import { IBugBash } from "../Models";
 import { BugBashEditor } from "./BugBashEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
@@ -48,7 +50,10 @@ export class EditBugBashView extends BaseComponent<IEditHubViewProps, IEditHubVi
         }
         else {
             if (!this.state.item) {
-                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash either doesn't exist or is out of scope of current project.</MessageBar>
+                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash doesn't exist.</MessageBar>;
+            }
+            else if(!Utils_String.equals(VSS.getWebContext().project.id, this.state.item.projectId, true)) {
+                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash is out of scope of current project.</MessageBar>;
             }
             else {
                 return <BugBashEditor id={this.state.item.id} />;

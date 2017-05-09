@@ -26,7 +26,11 @@ export interface IBugBashItemDocument {
     readonly __etag: number;
     title: string;    
     description?: string;
-    workItemId?: number;    
+    workItemId?: number;
+    createdDate: Date;
+    createdBy: string;
+    lastUpdatedDate: Date;
+    lastUpdatedBy: string;
 }
 
 // work item comment document for 1 work item collection

@@ -39,28 +39,71 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
     }
 
     public async refreshItems(bugBashId: string) {
-        const models = await ExtensionDataManager.readDocuments<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), false);
-        this.items = this.items.filter(i => !Utils_String.equals(i.bugBashId, bugBashId, true));
-        this.items = this.items.concat(models);
-        this._dataLoadedMap[bugBashId.toLowerCase()] = true;
+        delete this._dataLoadedMap[bugBashId.toLowerCase()];
+        this._removeItems(this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true)));
 
-        this.emitChanged();
+        const models = await ExtensionDataManager.readDocuments<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), false);
+        for(let model of models) {
+            this._translateDates(model);
+        }
+        
+        this._dataLoadedMap[bugBashId.toLowerCase()] = true;
+        this._addItems(models);
     }
 
-    public async addOrUpdateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
-        item.id = item.id || `${item.bugBashId}_${Date.now().toString()}`;
-        const savedItem = await ExtensionDataManager.writeDocument(getBugBashCollectionKey(item.bugBashId), item, false);
+    public async createItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
+        let model = {...item};
+        model.id = model.id || `${model.bugBashId}_${Date.now().toString()}`;
+        model.createdBy = model.createdBy || `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+        model.createdDate = model.createdDate || new Date(Date.now());
+        model.lastUpdatedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+        model.lastUpdatedDate = new Date(Date.now());
 
-        if (savedItem) {
-            this._addItems(savedItem);
+        try {
+            const savedItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(model.bugBashId), model, false);
+
+            if (savedItem) {
+                this._translateDates(savedItem);
+                this._addItems(savedItem);
+            }
+
+            return savedItem;
+        }
+        catch (e) {
+            return null;
         }
 
-        return savedItem;
     }
 
-    public async deleteItem(item: IBugBashItemDocument): Promise<void> {
-        this._removeItems(item);
-        await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);        
+    public async updateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
+        let model = {...item};
+        model.lastUpdatedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+        model.lastUpdatedDate = new Date(Date.now());
+        
+        try {
+            const savedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(model.bugBashId), model, false);
+
+            if (savedItem) {
+                this._translateDates(savedItem);
+                this._addItems(savedItem);
+            }
+
+            return savedItem;
+        }
+        catch (e) {
+            return null;
+        }
+    }
+
+    public async deleteItems(items: IBugBashItemDocument[]): Promise<void> {
+        this._removeItems(items);
+        await Promise.all(items.map(async (item) => {
+            return await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);
+        }));        
+    }
+
+    public clearAllItems(bugBashId: string) {
+        this.deleteItems(this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true)));
     }
 
     private _addItems(items: IBugBashItemDocument | IBugBashItemDocument[]): void {
@@ -117,6 +160,26 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
 
         if (existingItemIndex != -1) {
             this.items.splice(existingItemIndex, 1);
+        }
+    }
+
+    private _translateDates(item: IBugBashItemDocument) {
+        if (typeof item.createdDate === "string") {
+            if ((item.createdDate as string).trim() === "") {
+                item.createdDate = undefined;
+            }
+            else {
+                item.createdDate = new Date(item.createdDate);
+            }
+        }
+
+        if (typeof item.lastUpdatedDate === "string") {
+            if ((item.lastUpdatedDate as string).trim() === "") {
+                item.lastUpdatedDate = undefined;
+            }
+            else {
+                item.lastUpdatedDate = new Date(item.lastUpdatedDate);
+            }
         }
     }
 }

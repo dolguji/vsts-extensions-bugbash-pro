@@ -41,6 +41,10 @@ module.exports = {
             {
                 test: /\.s?css$/,
                 loaders: ["style-loader", "css-loader", "sass-loader"]
+            },
+            {
+                test: /\.(eot|svg|ttf|woff|woff2)$/,
+                loader: 'file-loader'
             }
         ]
     },
@@ -65,7 +69,7 @@ module.exports = {
             { from: "./node_modules/summernote/dist/summernote.min.js", to: "scripts/libs/summernote.min.js" },
             { from: "./node_modules/jquery/dist/jquery.min.js", to: "scripts/libs/jquery.min.js" },
             { from: "./node_modules/requirejs/require.js", to: "scripts/libs/require.js" },
-            
+
             { from: "./node_modules/bootstrap/dist/css/bootstrap.min.css", to: "css/libs/bootstrap.min.css" },
             { from: "./node_modules/summernote/dist/summernote.css", to: "css/libs/summernote.css" },
             { from: "./node_modules/office-ui-fabric-react/dist/css/fabric.min.css", to: "css/libs/fabric.min.css" },

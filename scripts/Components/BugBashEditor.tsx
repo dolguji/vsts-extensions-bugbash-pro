@@ -24,6 +24,7 @@ import { WorkItemTemplateStore } from "VSTS_Extension/Stores/WorkItemTemplateSto
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
+import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBash, UrlActions } from "../Models";
@@ -34,15 +35,16 @@ export interface IBugBashEditorProps extends IBaseComponentProps {
 }
 
 export interface IBugBashEditorState extends IBaseComponentState {
-    loading: boolean;
-    model: IBugBash;
+    loading?: boolean;
+    model?: IBugBash;
     error?: string;
 }
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
     private _item: BugBash;
+    private _richEditorContainer: JQuery;
 
-    protected initializeState(): void {        
+    protected initializeState(): void {
         if (this.props.id) {
             this._item = new BugBash(StoresHub.bugBashStore.getItem(this.props.id));
         }
@@ -71,16 +73,11 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     protected onStoreChanged() {
-        let newState = this._getStateFromStore();
-        this.setState(newState);
-    }    
-
-    private _getStateFromStore(): IBugBashEditorState {
-        return {
+        this.updateState({
             model: this._item.getModel(),
             loading: StoresHub.workItemTypeStore.isLoaded() && StoresHub.workItemFieldStore.isLoaded() && StoresHub.workItemTemplateStore.isLoaded() ? false : true
-        };
-    }
+        });
+    }    
 
     public render(): JSX.Element {
         if (this.state.loading) {
@@ -93,16 +90,18 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 key: "save", name: "Save", title: "Save", iconProps: {iconName: "Save"}, disabled: !this._item.isDirty() || !this._item.isValid(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     if (this._item.isNew() && this._item.isDirty() && this._item.isValid()) {
-                        let savedBugBash = await StoresHub.bugBashStore.addOrUpdateItem(model);
+                        let savedBugBash = await StoresHub.bugBashStore.createItem(model);
                         let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                         navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, { id: savedBugBash.id }, true);
                     }
                     else if (!this._item.isNew() && this._item.isDirty() && this._item.isValid()) {
-                        let result = await StoresHub.bugBashStore.addOrUpdateItem(model);
-                        this._item.renew();
+                        let result = await StoresHub.bugBashStore.updateItem(model);                        
 
                         if (!result) {
-                            this.setState({...this.state, error: "The bug bash version does not match with the latest version. Please refresh the page and try again."})
+                            this.updateState({error: "The bug bash version does not match with the latest version. Please refresh the page and try again."});
+                        }
+                        else {
+                            this._item.renew(result);
                         }
                     }
                 }
@@ -120,6 +119,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     }
 
                     this._item.reset();
+                    this._richEditorContainer.summernote('code', this._item.getModel().description);
                 }
             },
             {
@@ -135,6 +135,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             return;
                         }
                         
+                        await StoresHub.bugBashItemStore.clearAllItems(model.id);
                         await StoresHub.bugBashStore.deleteItem(model);
                         let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                         navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
@@ -194,12 +195,11 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             }
                         }]} />
                 </div>
-                <div className="editor-view-contents">
-                    <div className="first-section">
-                        { this.state.error && (<MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar> )}
+                { this.state.error && (<MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar> )}
+                <div className="editor-view-contents">                    
+                    <div className="first-section">                        
                         <TextField 
                             label='Title' 
-                            required={true} 
                             value={model.title} 
                             onChanged={(newValue: string) => this._item.updateTitle(newValue)} 
                             onGetErrorMessage={this._getTitleError} />
@@ -211,11 +211,15 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         </div>
                     </div>
                     <div className="second-section">
-                        <Checkbox 
-                            className="auto-accept"
-                            label="Auto Accept?"
-                            checked={model.autoAccept}
-                            onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._item.updateAutoAccept(isChecked) } />
+                        <div className="checkbox-container">                            
+                            <Checkbox 
+                                className="auto-accept"
+                                label=""
+                                checked={model.autoAccept}
+                                onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._item.updateAutoAccept(isChecked) } />
+
+                            <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
+                        </div>
 
                         <DatePicker 
                             label="Start Date" 
@@ -233,17 +237,19 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
                         { model.startTime && model.endTime && Utils_Date.defaultComparer(model.startTime, model.endTime) >= 0 &&  (<InputError error="Bugbash end time cannot be a date before bugbash start time." />)}
 
+                        <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
                         <Dropdown 
-                            label="Work item type" 
+                            className={!model.workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
                             onRenderList={this._onRenderCallout} 
                             required={true} 
-                            options={witItems}
-                            onChanged={(option: IDropdownOption) => this._item.updateWorkItemType(option.key as string)} />      
+                            options={witItems}                            
+                            onChanged={(option: IDropdownOption) => this._item.updateWorkItemType(option.key as string)} />
 
                         { !model.workItemType && (<InputError error="A work item type is required." />) }
 
+                        <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
                         <Dropdown 
-                            label="Description Field" 
+                            className={!model.itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
                             onRenderList={this._onRenderCallout} 
                             required={true} 
                             options={fieldItems} 
@@ -251,11 +257,12 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
                         { !model.itemDescriptionField && (<InputError error="A description field is required." />) }       
 
+                        <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
                         <Dropdown 
-                            label="Work item template" 
+                            className="editor-dropdown"
                             onRenderList={this._onRenderCallout} 
                             options={this._getTemplateDropdownOptions(model.acceptTemplate.templateId)} 
-                            onChanged={(option: IDropdownOption) => this._item.updateAcceptTemplate(option.key as string)} />                        
+                            onChanged={(option: IDropdownOption) => this._item.updateAcceptTemplate(option.key as string)} />
                     </div>
                 </div>
             </div>
@@ -292,9 +299,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
     @autobind
     private _renderRichEditor(container: HTMLElement) {
-        $(container).summernote({
-            height: 275,
-            minHeight: 275,
+        this._richEditorContainer = $(container);
+        this._richEditorContainer.summernote({
+            height: 260,
+            minHeight: 260,
             toolbar: [
                 // [groupName, [list of button]]
                 ['style', ['bold', 'italic', 'underline', 'clear']],
@@ -305,13 +313,13 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 ['fullscreen', ['fullscreen']]
             ],
             callbacks: {
-                onBlur: () => {
-                    this._item.updateDescription($(container).summernote('code'));
+                onChange: () => {
+                    this._item.updateDescription(this._richEditorContainer.summernote('code'));
                 }
             }
         });
 
-        $(container).summernote('code', this.state.model.description);
+        this._richEditorContainer.summernote('code', this.state.model.description);
     }
 
     @autobind

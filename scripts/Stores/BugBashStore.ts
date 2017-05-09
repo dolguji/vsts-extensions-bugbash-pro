@@ -4,9 +4,9 @@ import { WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
 import { IBugBash } from "../Models";
-import { BugBashManager } from "../BugbashManager";
 
 export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     protected getItemByKey(id: string): IBugBash {
@@ -14,7 +14,12 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     }
 
     protected async initializeItems(): Promise<void> {
-        this.items = await BugBashManager.readBugBashes();
+        let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
+        for(let bugBash of bugBashes) {
+            this._translateDates(bugBash);
+        }
+
+        this.items = bugBashes;
     }
 
     public getKey(): string {
@@ -24,9 +29,10 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     public async ensureItem(id: string): Promise<boolean> {
         if (!this.itemExists(id)) {
             try {
-                const bugbash = await BugBashManager.readBugBash(id);
-                if (bugbash) {
-                    this._addItems(bugbash);
+                let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", id, null, false);
+                if (bugBash) {
+                    this._translateDates(bugBash);
+                    this._addItems(bugBash);
                     return true;
                 }
                 else {
@@ -44,20 +50,41 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         }
     }
 
-    public async addOrUpdateItem(bugBash: IBugBash): Promise<IBugBash> {
-        bugBash.id = bugBash.id || Date.now().toString();    
-        const savedBugBash = await BugBashManager.writeBugBash(bugBash);
-
-        if (savedBugBash) {
-            this._addItems(savedBugBash);
+    public async updateItem(bugBash: IBugBash): Promise<IBugBash> {
+        try {
+            const savedBugBash = await ExtensionDataManager.updateDocument<IBugBash>("bugbashes", bugBash, false);
+            if (savedBugBash) {
+                this._translateDates(savedBugBash);
+                this._addItems(savedBugBash);
+            }
+            return savedBugBash;
         }
+        catch (e) {
+            return null;
+        }
+    }
 
-        return savedBugBash;
+    public async createItem(bugBash: IBugBash): Promise<IBugBash> {
+        let model = {...bugBash};
+        model.id = model.id || Date.now().toString();
+        try {
+            const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
+
+            if (savedBugBash) {
+                this._translateDates(savedBugBash);
+                this._addItems(savedBugBash);
+            }
+
+            return savedBugBash;
+        }
+        catch (e) {
+            return null;
+        }
     }
 
     public async deleteItem(bugBash: IBugBash): Promise<void> {
         this._removeItems(bugBash);
-        await BugBashManager.deleteBugBash(bugBash);        
+        await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBash.id, false);
     }
 
     public async refreshItems() {
@@ -121,6 +148,25 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
 
         if (existingItemIndex != -1) {
             this.items.splice(existingItemIndex, 1);
+        }
+    }
+
+    private _translateDates(item: IBugBash) {
+        if (typeof item.startTime === "string") {
+            if ((item.startTime as string).trim() === "") {
+                item.startTime = undefined;
+            }
+            else {
+                item.startTime = new Date(item.startTime);
+            }
+        }
+        if (typeof item.endTime === "string") {
+            if ((item.endTime as string).trim() === "") {
+                item.endTime = undefined;
+            }
+            else {
+                item.endTime = new Date(item.endTime);
+            }
         }
     }
 }

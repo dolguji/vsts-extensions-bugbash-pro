@@ -15,6 +15,7 @@ import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
+import Utils_String = require("VSS/Utils/String");
 
 import { UrlActions, IBugBash } from "../Models";
 import { StoresHub } from "../Stores/StoresHub";
@@ -50,7 +51,8 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllHub
     protected onStoreChanged() {        
         let allItems = StoresHub.bugBashStore.getAll() || [];
         let currentTime = new Date();
-
+        allItems = allItems.filter((item: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, item.projectId, true));
+        
         this.updateState({
             allItems: allItems,
             pastItems: this._getPastBugBashes(allItems, currentTime),

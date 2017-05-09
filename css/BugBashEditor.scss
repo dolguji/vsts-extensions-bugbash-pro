@@ -17,5 +17,29 @@
         .ms-DatePicker {
             margin-bottom: 0;
         }
+
+        .input-error .error-icon {
+            padding: 0;
+        }
+
+        .editor-dropdown.no-margin {
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            padding: 5px 0;
+        }
+
+        .checkbox-container {
+            display: flex;
+
+            .auto-accept {            
+                margin-right: 10px;
+            }
+
+            .info-label {
+                padding-top: 7px;
+            }
+        }
     }
 }
