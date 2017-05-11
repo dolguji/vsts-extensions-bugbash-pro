@@ -63,7 +63,7 @@ export class BugBash {
 
     public isValid(): boolean {
         return this._model.title.trim().length > 0
-            && this._model.title.length <= 128
+            && this._model.title.length <= 256
             && this._model.workItemType.trim().length > 0
             && this._model.itemDescriptionField.trim().length > 0
             && (!this._model.startTime || !this._model.endTime || Utils_Date.defaultComparer(this._model.startTime, this._model.endTime) < 0);

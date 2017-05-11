@@ -65,10 +65,8 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllHub
     public render(): JSX.Element {
         return (
             <div className="all-view">
-                <div className="all-view-contents">
-                    <CommandBar className="all-view-menu-toolbar" items={this._getMenuItems()} />
-                    {this._getContents()}
-                </div>
+                <CommandBar className="all-view-menu-toolbar" items={this._getMenuItems()} />
+                {this._getContents()}
             </div>
         );
     }

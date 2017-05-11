@@ -84,8 +84,115 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             return <Loading />;
         }
 
-        let model = this.state.model;
-        let menuitems: IContextualMenuItem[] = [
+        const model = this.state.model;
+
+        let witItems: IDropdownOption[] = StoresHub.workItemTypeStore.getAll().map((workItemType: WorkItemType, index: number) => {
+            return {
+                key: workItemType.name,
+                index: index + 1,
+                text: workItemType.name,
+                selected: model.workItemType ? Utils_String.equals(model.workItemType, workItemType.name, true) : false
+            }
+        });
+
+        let fieldItems: IDropdownOption[] = StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map((field: WorkItemField, index: number) => {
+            return {
+                key: field.referenceName,
+                index: index + 1,
+                text: field.name,
+                selected: model.itemDescriptionField ? Utils_String.equals(model.itemDescriptionField, field.referenceName, true) : false
+            }
+        });
+
+        return (
+            <div className="editor-view">
+                <CommandBar 
+                    className="editor-view-menu"
+                    items={this._getCommandBarItems()} 
+                    farItems={[{
+                        key: "Home", name: "Home", title: "Return to home view", iconProps: {iconName: "Home"}, 
+                        onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                        }
+                    }]} />
+
+                { this.state.error && (<MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar> )}
+                
+                <div className="editor-view-contents">                    
+                    <div className="first-section">                        
+                        <TextField 
+                            label='Title' 
+                            value={model.title} 
+                            onChanged={(newValue: string) => this._item.updateTitle(newValue)} 
+                            onGetErrorMessage={this._getTitleError} />
+
+                        <Label>Description</Label>
+                        <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
+                    </div>
+                    <div className="second-section">
+                        <div className="checkbox-container">                            
+                            <Checkbox 
+                                className="auto-accept"
+                                label=""
+                                checked={model.autoAccept}
+                                onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._item.updateAutoAccept(isChecked) } />
+
+                            <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
+                        </div>
+
+                        <DatePicker 
+                            label="Start Date" 
+                            allowTextInput={true} 
+                            isRequired={false} 
+                            value={model.startTime}
+                            onSelectDate={(newValue: Date) => this._item.updateStartTime(newValue)} />
+
+                        <DatePicker 
+                            label="Finish Date" 
+                            allowTextInput={true}
+                            isRequired={false} 
+                            value={model.endTime} 
+                            onSelectDate={(newValue: Date) => this._item.updateEndTime(newValue)} />
+
+                        { model.startTime && model.endTime && Utils_Date.defaultComparer(model.startTime, model.endTime) >= 0 &&  (<InputError error="Bugbash end time cannot be a date before bugbash start time." />)}
+
+                        <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
+                        <Dropdown 
+                            className={!model.workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
+                            onRenderList={this._onRenderCallout} 
+                            required={true} 
+                            options={witItems}                            
+                            onChanged={(option: IDropdownOption) => this._item.updateWorkItemType(option.key as string)} />
+
+                        { !model.workItemType && (<InputError error="A work item type is required." />) }
+
+                        <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
+                        <Dropdown 
+                            className={!model.itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
+                            onRenderList={this._onRenderCallout} 
+                            required={true} 
+                            options={fieldItems} 
+                            onChanged={(option: IDropdownOption) => this._item.updateDescriptionField(option.key as string)} />
+
+                        { !model.itemDescriptionField && (<InputError error="A description field is required." />) }       
+
+                        <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
+                        <Dropdown 
+                            className="editor-dropdown"
+                            onRenderList={this._onRenderCallout} 
+                            options={this._getTemplateDropdownOptions(model.acceptTemplate.templateId)} 
+                            onChanged={(option: IDropdownOption) => this._item.updateAcceptTemplate(option.key as string)} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    private _getCommandBarItems(): IContextualMenuItem[] {
+        const model = this.state.model;
+
+        return [
             {
                 key: "save", name: "Save", title: "Save", iconProps: {iconName: "Save"}, disabled: !this._item.isDirty() || !this._item.isValid(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
@@ -161,108 +268,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     }
                 }
             },
-        ];        
-
-        let witItems: IDropdownOption[] = StoresHub.workItemTypeStore.getAll().map((workItemType: WorkItemType, index: number) => {
-            return {
-                key: workItemType.name,
-                index: index + 1,
-                text: workItemType.name,
-                selected: model.workItemType ? Utils_String.equals(model.workItemType, workItemType.name, true) : false
-            }
-        });
-
-        let fieldItems: IDropdownOption[] = StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map((field: WorkItemField, index: number) => {
-            return {
-                key: field.referenceName,
-                index: index + 1,
-                text: field.name,
-                selected: model.itemDescriptionField ? Utils_String.equals(model.itemDescriptionField, field.referenceName, true) : false
-            }
-        });
-
-        return (
-            <div className="editor-view">
-                <div className="editor-view-menu">
-                    <CommandBar 
-                        items={menuitems} 
-                        farItems={[{
-                            key: "Home", name: "Home", title: "Return to home view", iconProps: {iconName: "Home"}, 
-                            onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                                let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
-                            }
-                        }]} />
-                </div>
-                { this.state.error && (<MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar> )}
-                <div className="editor-view-contents">                    
-                    <div className="first-section">                        
-                        <TextField 
-                            label='Title' 
-                            value={model.title} 
-                            onChanged={(newValue: string) => this._item.updateTitle(newValue)} 
-                            onGetErrorMessage={this._getTitleError} />
-
-                        <Label>Description</Label>
-                        <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
-                    </div>
-                    <div className="second-section">
-                        <div className="checkbox-container">                            
-                            <Checkbox 
-                                className="auto-accept"
-                                label=""
-                                checked={model.autoAccept}
-                                onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._item.updateAutoAccept(isChecked) } />
-
-                            <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
-                        </div>
-
-                        <DatePicker 
-                            label="Start Date" 
-                            allowTextInput={true} 
-                            isRequired={false} 
-                            value={model.startTime}
-                            onSelectDate={(newValue: Date) => this._item.updateStartTime(newValue)} />
-
-                        <DatePicker 
-                            label="Finish Date" 
-                            allowTextInput={true}
-                            isRequired={false} 
-                            value={model.endTime} 
-                            onSelectDate={(newValue: Date) => this._item.updateEndTime(newValue)} />
-
-                        { model.startTime && model.endTime && Utils_Date.defaultComparer(model.startTime, model.endTime) >= 0 &&  (<InputError error="Bugbash end time cannot be a date before bugbash start time." />)}
-
-                        <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
-                        <Dropdown 
-                            className={!model.workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
-                            onRenderList={this._onRenderCallout} 
-                            required={true} 
-                            options={witItems}                            
-                            onChanged={(option: IDropdownOption) => this._item.updateWorkItemType(option.key as string)} />
-
-                        { !model.workItemType && (<InputError error="A work item type is required." />) }
-
-                        <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
-                        <Dropdown 
-                            className={!model.itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
-                            onRenderList={this._onRenderCallout} 
-                            required={true} 
-                            options={fieldItems} 
-                            onChanged={(option: IDropdownOption) => this._item.updateDescriptionField(option.key as string)} />
-
-                        { !model.itemDescriptionField && (<InputError error="A description field is required." />) }       
-
-                        <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
-                        <Dropdown 
-                            className="editor-dropdown"
-                            onRenderList={this._onRenderCallout} 
-                            options={this._getTemplateDropdownOptions(model.acceptTemplate.templateId)} 
-                            onChanged={(option: IDropdownOption) => this._item.updateAcceptTemplate(option.key as string)} />
-                    </div>
-                </div>
-            </div>
-        );
+        ];
     }
 
     @autobind
@@ -298,8 +304,8 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         if (!value) {
             return "Title is required";
         }
-        if (value.length > 128) {
-            return `The length of the title should less than 128 characters, actual is ${value.length}.`
+        if (value.length > 256) {
+            return `The length of the title should less than 256 characters, actual is ${value.length}.`
         }
         return "";
     }

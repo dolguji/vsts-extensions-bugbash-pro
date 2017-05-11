@@ -6,6 +6,8 @@ import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
 import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
+import { CommandBar } from "OfficeFabric/CommandBar";
+import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
@@ -71,7 +73,7 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
                 comments: StoresHub.bugBashItemCommentStore.getItems(this._item.getModel().id),
                 loadingComments: !StoresHub.bugBashItemCommentStore.isDataLoaded(this._item.getModel().id)
             });
-        }        
+        }
     }
 
     public componendWillUnmount() {
@@ -123,37 +125,95 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
         }
 
         return (
-            <div className="add-workitem-contents">
-                { this.state.workItemError && <MessageBar messageBarType={MessageBarType.error}>{this.state.workItemError}</MessageBar>}
+            <div className="item-view">
+                <CommandBar 
+                    className="item-view-menu"
+                    items={this._getToolbarItems()} 
+                    farItems={this._getFarMenuItems()}
+                />
 
-                <div className="header">
-                    <Label className="add-workitem-label">Create work item</Label>
-                </div>
+                { this.state.workItemError && <MessageBar messageBarType={MessageBarType.error}>{this.state.workItemError}</MessageBar>}                 
 
                 <TextField label="Title" 
                         value={model.title}
                         required={true} 
+                        onGetErrorMessage={this._getTitleError}
                         onChanged={(newValue: string) => this._item.updateTitle(newValue)} />
 
                 <div>
                     <Label className="item-description">Description</Label>
                     <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
                 </div>
-
-                <PrimaryButton className="create-new-button" disabled={this.state.saving || !this._item.isDirty() || !this._item.isValid()}  onClick={this._onAddClick}>
-                    {this.state.saving ? "Saving..." : "Save" }
-                </PrimaryButton>
             </div>
         );
     }
 
-    @autobind
-    private async _onAddClick() {
-        if (this.state.model.id) {
-            StoresHub.bugBashItemStore.updateItem(this.state.model);
+    private _getFarMenuItems(): IContextualMenuItem[] {
+        if (!this._item.isNew()) {
+            return [
+                {
+                    key: "createnew", name: "New", 
+                    title: "Create new item", iconProps: {iconName: "Add"}, 
+                    onClick: () => {
+                        
+                    }
+                }
+            ]
         }
         else {
-            StoresHub.bugBashItemStore.createItem(this.state.model);
+            return [];
         }
+    }
+
+    private _getToolbarItems(): IContextualMenuItem[] {
+        return [
+            {
+                key: "save", name: "Save", 
+                title: "Save", iconProps: {iconName: "Save"}, 
+                disabled: this.state.saving || !this._item.isDirty() || !this._item.isValid(),
+                onClick: () => {
+                    if (this.state.model.id) {
+                        StoresHub.bugBashItemStore.updateItem(this.state.model);
+                    }
+                    else {
+                        StoresHub.bugBashItemStore.createItem(this.state.model);
+                    }
+                }
+            },
+            {
+                key: "undo", name: "Undo", 
+                title: "Undo changes", iconProps: {iconName: "Undo"}, 
+                disabled: !this._item.isDirty(),
+                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
+                    try {
+                        await dialogService.openMessageDialog("Are you sure you want to undo your changes to this item?", { useBowtieStyle: true });
+                    }
+                    catch (e) {
+                        // user selected "No"" in dialog
+                        return;
+                    }
+
+                    this._item.reset();
+                }
+            },
+            {
+                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this._item.isNew(),
+                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                    
+                }
+            },
+        ]
+    }
+
+    @autobind
+    private _getTitleError(value: string): string | IPromise<string> {
+        if (!value) {
+            return "Title is required";
+        }
+        if (value.length > 256) {
+            return `The length of the title should less than 256 characters, actual is ${value.length}.`
+        }
+        return "";
     }
 }
