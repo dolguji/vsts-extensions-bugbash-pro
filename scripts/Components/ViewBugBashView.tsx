@@ -22,7 +22,7 @@ import { Grid } from "VSTS_Extension/Components/Grids/Grid";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn, ICommandBarProps, IContextMenuProps } from "VSTS_Extension/Components/Grids/Grid.Props";
 
-import { IBugBash, UrlActions, IBugBashItemDocument } from "../Models";
+import { IBugBash, UrlActions, IBugBashItem } from "../Models";
 import { BugBashItemView } from "./BugBashItemView";
 import Helpers = require("../Helpers");
 import { BugBashStore } from "../Stores/BugBashStore";
@@ -31,8 +31,8 @@ import { StoresHub } from "../Stores/StoresHub";
 
 interface IViewHubViewState extends IBaseComponentState {
     bugBashItem?: IBugBash;
-    items?: IBugBashItemDocument[];
-    selectedBugBashItem?: IBugBashItemDocument;
+    items?: IBugBashItem[];
+    selectedBugBashItem?: IBugBashItem;
     loading?: boolean;
 }
 
@@ -96,11 +96,22 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                             columns={this._getGridColumns()}
                             commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                             contextMenuProps={{menuItems: this._getContextMenuItems}}
-                            onItemInvoked={(item: IBugBashItemDocument) => this.updateState({selectedBugBashItem: item})}
+                            onItemInvoked={(item: IBugBashItem) => this.updateState({selectedBugBashItem: item})}
                         />
                         
                         <div className="item-viewer">
-                            <BugBashItemView id={this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : null} bugBashId={this.props.id} />
+                            <BugBashItemView 
+                                id={this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : null} 
+                                bugBashId={this.props.id} 
+                                onClickNew={() => {
+                                    this.updateState({selectedBugBashItem: null});
+                                }} 
+                                onSave={(item: IBugBashItem) => {
+                                    this.updateState({selectedBugBashItem: item});
+                                }}
+                                onDelete={(item: IBugBashItem) => {
+                                    this.updateState({selectedBugBashItem: null});                                    
+                                }} />
                         </div>
                     </div>
                 );
@@ -119,12 +130,12 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 minWidth: 200,
                 maxWidth: 800,
                 resizable: true,
-                onRenderCell: (item: IBugBashItemDocument) => <Label className={gridCellClassName}>{item.title}</Label>,
-                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                onRenderCell: (item: IBugBashItem) => <Label className={gridCellClassName}>{item.title}</Label>,
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(item1.title, item2.title)
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 },
-                filterFunction: (item: IBugBashItemDocument, filterText: string) => Utils_String.caseInsensitiveContains(item.title, filterText)
+                filterFunction: (item: IBugBashItem, filterText: string) => Utils_String.caseInsensitiveContains(item.title, filterText)
             },
             {
                 key: "createdby",
@@ -132,12 +143,12 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 minWidth: 100,
                 maxWidth: 250,
                 resizable: true,
-                onRenderCell: (item: IBugBashItemDocument) => <IdentityView identityDistinctName={item.createdBy} />,
-                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                onRenderCell: (item: IBugBashItem) => <IdentityView identityDistinctName={item.createdBy} />,
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(item1.createdBy, item2.createdBy)
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 },
-                filterFunction: (item: IBugBashItemDocument, filterText: string) => Utils_String.caseInsensitiveContains(item.createdBy, filterText)
+                filterFunction: (item: IBugBashItem, filterText: string) => Utils_String.caseInsensitiveContains(item.createdBy, filterText)
             },
             {
                 key: "createddate",
@@ -145,8 +156,8 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 minWidth: 80,
                 maxWidth: 150,
                 resizable: true,
-                onRenderCell: (item: IBugBashItemDocument) => <Label className={gridCellClassName}>{Utils_Date.friendly(item.createdDate)}</Label>,
-                sortFunction: (item1: IBugBashItemDocument, item2: IBugBashItemDocument, sortOrder: SortOrder) => {
+                onRenderCell: (item: IBugBashItem) => <Label className={gridCellClassName}>{Utils_Date.friendly(item.createdDate)}</Label>,
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
                     let compareValue = Utils_Date.defaultComparer(item1.createdDate, item2.createdDate)
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 }
@@ -165,8 +176,10 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 },
                 {
                     key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
-                    onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        this._refreshResults();
+                    onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {                        
+                        StoresHub.bugBashItemCommentStore.clear();
+                        await StoresHub.bugBashItemStore.refreshItems(this.props.id);
+                        this.updateState({selectedBugBashItem: null});
                     }
                 },
                 {
@@ -189,6 +202,8 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                             // user selected "No"" in dialog
                             return;
                         }
+
+                        this.updateState({selectedBugBashItem: null});
                         StoresHub.bugBashItemStore.clearAllItems(this.props.id);
                     }
                 }
@@ -208,7 +223,7 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
     }
 
     @autobind
-    private _getContextMenuItems(selectedItems: IBugBashItemDocument[]): IContextualMenuItem[] {
+    private _getContextMenuItems(selectedItems: IBugBashItem[]): IContextualMenuItem[] {
         return [
             {
                 key: "OpenQuery", name: "Open as query", title: "Open selected workitems as a query", iconProps: {iconName: "OpenInNewWindow"}, 
@@ -230,13 +245,13 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                         // user selected "No"" in dialog
                         return;
                     }
+
+                    if (this.state.selectedBugBashItem && Utils_Array.findIndex(selectedItems, item => item.id === this.state.selectedBugBashItem.id) !== -1) {
+                        this.updateState({selectedBugBashItem: null});
+                    }
                     StoresHub.bugBashItemStore.deleteItems(selectedItems);
                 }
             }
         ];
-    }
-
-    private _refreshResults() {
-        StoresHub.bugBashItemStore.refreshItems(this.props.id);
     }
 }

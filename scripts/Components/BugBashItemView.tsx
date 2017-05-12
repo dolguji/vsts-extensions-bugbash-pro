@@ -14,108 +14,97 @@ import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { WorkItemFormNavigationService } from "TFS/WorkItemTracking/Services";
+import Utils_String = require("VSS/Utils/String");
 
-import { IBugBashItemDocument, ICommentDocument } from "../Models";
+import { IBugBashItem, IBugBashItemComment } from "../Models";
 import Helpers = require("../Helpers");
 import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashItem } from "../Models/BugBashItem";
 import { RichEditor } from "./RichEditor/RichEditor";
 
 export interface IBugBashItemViewProps extends IBaseComponentProps {
     id?: string;
     bugBashId: string;
+    onClickNew: () => void;
+    onDelete: (item: IBugBashItem) => void;
+    onSave: (item: IBugBashItem) => void;
 }
 
 export interface IBugBashItemViewState extends IBaseComponentState {
-    model?: IBugBashItemDocument;
-    comments?: ICommentDocument[];
+    originalModel?: IBugBashItem;
+    model?: IBugBashItem;
+    comments?: IBugBashItemComment[];
     loadingComments?: boolean;
-    workItemError?: string;
-    saving?: boolean;
+    error?: string;
+    disableToolbar?: boolean;
 }
 
 export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBashItemViewState> {
-    private _item: BugBashItem;
+    public static getNewModel(bugBashId: string) {
+        return {
+            id: "",
+            bugBashId: bugBashId,
+            title: "",
+            __etag: 0,
+            description: "",
+            workItemId: null,
+            createdBy: "",
+            createdDate: null,
+        };
+    }
 
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
         return [BugBashItemCommentStore];
     }
 
     protected initializeState() {
-        if (this.props.id) {
-            this._item = new BugBashItem(StoresHub.bugBashItemStore.getItem(this.props.id));
-        }
-        else {
-            this._item = BugBashItem.getNew(this.props.bugBashId);
-        }
-
-        const model = this._item.getModel();
-
-        this.state = {
-            model: model,
-            comments: [],
-            loadingComments: true
-        };
+        this._initializeState(this.props);
     }
 
     protected initialize() {
-        if (this._item) {
-            this._item.detachChanged();        
-        }
-
         this._initialize();
     }   
 
     protected onStoreChanged() {
-        if (this._item) {
+        if (this.state.model.id) {
             this.updateState({
-                comments: StoresHub.bugBashItemCommentStore.getItems(this._item.getModel().id),
-                loadingComments: !StoresHub.bugBashItemCommentStore.isDataLoaded(this._item.getModel().id)
+                comments: StoresHub.bugBashItemCommentStore.getItems(this.state.model.id),
+                loadingComments: !StoresHub.bugBashItemCommentStore.isDataLoaded(this.state.model.id)
             });
         }
     }
 
-    public componendWillUnmount() {
-        super.componentWillUnmount();
-        if (this._item) {
-            this._item.detachChanged();        
-        }
-    }
-
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemViewProps>): void {
-        if (this._item) {
-            this._item.detachChanged();        
+        if (!Utils_String.equals(this.props.id, nextProps.id, true)) {
+            this._initializeState(nextProps);
+            this._initialize();
         }
-
-        if (nextProps.id) {
-            this._item = new BugBashItem(StoresHub.bugBashItemStore.getItem(nextProps.id));
-        }
-        else {
-            this._item = BugBashItem.getNew(nextProps.bugBashId);
-        }
-
-        this.updateState({
-            model: this._item.getModel(),
-            comments: [],
-            loadingComments: true
-        });
-
-        this._initialize();
     }
 
     private _initialize() {        
-        const model = this._item.getModel();
-        if (model.id) {
-            StoresHub.bugBashItemCommentStore.refreshItems(model.id);
+        if (this.state.model.id) {
+            StoresHub.bugBashItemCommentStore.refreshItems(this.state.model.id);
         }
         else {
             this.updateState({loadingComments: false});
         }
+    }
 
-        this._item.attachChanged(() => {
-            this.updateState({model: this._item.getModel()});
-        }); 
+    private _initializeState(props: IBugBashItemViewProps) {
+        let model: IBugBashItem;
+        if (props.id) {
+            model = StoresHub.bugBashItemStore.getItem(props.id);
+        }
+        else {
+            model = BugBashItemView.getNewModel(props.bugBashId);
+        }
+
+        this.state = {
+            model: model,
+            originalModel: {...model},
+            comments: [],
+            loadingComments: true
+        };
     }
 
     public render(): JSX.Element {
@@ -132,37 +121,53 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
                     farItems={this._getFarMenuItems()}
                 />
 
-                { this.state.workItemError && <MessageBar messageBarType={MessageBarType.error}>{this.state.workItemError}</MessageBar>}                 
+                { this.state.error && <MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar>}
 
                 <TextField label="Title" 
                         value={model.title}
                         required={true} 
                         onGetErrorMessage={this._getTitleError}
-                        onChanged={(newValue: string) => this._item.updateTitle(newValue)} />
+                        onChanged={(newValue: string) => {
+                            let newModel = {...this.state.model};
+                            newModel.title = newValue;
+                            this.updateState({model: newModel});
+                        }} />
 
                 <div>
                     <Label className="item-description">Description</Label>
-                    <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
+                    <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => {
+                        let newModel = {...this.state.model};
+                        newModel.description = newValue;
+                        this.updateState({model: newModel});
+                    }} />
                 </div>
             </div>
         );
     }
 
+    private _isDirty(): boolean {        
+        return !Utils_String.equals(this.state.originalModel.title, this.state.model.title)
+            || !Utils_String.equals(this.state.originalModel.description, this.state.model.description);
+    }
+
+    private _isValid(): boolean {
+        return this.state.model.title.trim().length > 0 && this.state.model.title.length <= 256;
+    }
+
+    private _isNew(): boolean {
+        return !this.state.model.id;
+    }
+
     private _getFarMenuItems(): IContextualMenuItem[] {
-        if (!this._item.isNew()) {
-            return [
-                {
-                    key: "createnew", name: "New", 
-                    title: "Create new item", iconProps: {iconName: "Add"}, 
-                    onClick: () => {
-                        
-                    }
+        return [
+            {
+                key: "createnew", name: "New", disabled: this._isNew(),
+                title: "Create new item", iconProps: {iconName: "Add"}, 
+                onClick: () => {
+                    this.props.onClickNew();
                 }
-            ]
-        }
-        else {
-            return [];
-        }
+            }
+        ]
     }
 
     private _getToolbarItems(): IContextualMenuItem[] {
@@ -170,49 +175,112 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
             {
                 key: "save", name: "Save", 
                 title: "Save", iconProps: {iconName: "Save"}, 
-                disabled: this.state.saving || !this._item.isDirty() || !this._item.isValid(),
-                onClick: () => {
+                disabled: this.state.disableToolbar || !this._isDirty() || !this._isValid(),
+                onClick: async () => {
+                    this.updateState({disableToolbar: true, error: null});
+                    let updatedModel: IBugBashItem;
+
                     if (this.state.model.id) {
-                        StoresHub.bugBashItemStore.updateItem(this.state.model);
+                        try {
+                            updatedModel = await StoresHub.bugBashItemStore.updateItem(this.state.model);
+                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, error: null, disableToolbar: false});
+                        }
+                        catch (e) {
+                            this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
+                            return;
+                        }
                     }
                     else {
-                        StoresHub.bugBashItemStore.createItem(this.state.model);
+                        try {
+                            updatedModel = await StoresHub.bugBashItemStore.createItem(this.state.model);
+                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, error: null, disableToolbar: false});
+                        }
+                        catch (e) {
+                            this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
+                            return;
+                        }
+                    }
+
+                    this.props.onSave(updatedModel);
+                }
+            },
+            {
+                key: "refresh", name: "Refresh", 
+                title: "Refresh", iconProps: {iconName: "Refresh"}, 
+                disabled: this.state.disableToolbar || this._isNew(),
+                onClick: async () => {
+                    this.updateState({disableToolbar: true, error: null});
+                    let newModel: IBugBashItem;
+
+                    if (this._isDirty()) {
+                        let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
+                        try {
+                            await dialogService.openMessageDialog("Refreshing the item will undo your unsaved changes. Are you sure you want to do that?", { useBowtieStyle: true });
+                        }
+                        catch (e) {
+                            // user selected "No"" in dialog
+                            this.updateState({disableToolbar: false});
+                            return;
+                        }
+                    }
+
+                    try {
+                        newModel = await StoresHub.bugBashItemStore.refreshItem(this.state.model);
+                        this.updateState({model: {...newModel}, originalModel: {...newModel}, error: null, disableToolbar: false});
+                    }
+                    catch (e) {
+                        this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
+                        return;
                     }
                 }
             },
             {
                 key: "undo", name: "Undo", 
                 title: "Undo changes", iconProps: {iconName: "Undo"}, 
-                disabled: !this._item.isDirty(),
+                disabled: this.state.disableToolbar || !this._isDirty(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                    this.updateState({disableToolbar: true});
+
                     let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
                     try {
                         await dialogService.openMessageDialog("Are you sure you want to undo your changes to this item?", { useBowtieStyle: true });
                     }
                     catch (e) {
                         // user selected "No"" in dialog
+                        this.updateState({disableToolbar: false});
                         return;
                     }
 
-                    this._item.reset();
+                    this.updateState({model: {...this.state.originalModel}, disableToolbar: false, error: null});
                 }
             },
             {
-                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this._item.isNew(),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    
+                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this.state.disableToolbar || this._isNew(),
+                onClick: async () => {
+                    this.updateState({disableToolbar: true});
+
+                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
+                    try {
+                        await dialogService.openMessageDialog("Are you sure you want to delete this item?", { useBowtieStyle: true });
+                    }
+                    catch (e) {
+                        this.updateState({disableToolbar: false});
+                        // user selected "No"" in dialog
+                        return;
+                    }
+
+                    this.updateState({disableToolbar: false, error: null});
+                    StoresHub.bugBashItemStore.deleteItems([this.state.model]);
+                    this.props.onDelete(this.state.model);
                 }
-            },
+            }
         ]
     }
 
     @autobind
     private _getTitleError(value: string): string | IPromise<string> {
-        if (!value) {
-            return "Title is required";
-        }
         if (value.length > 256) {
-            return `The length of the title should less than 256 characters, actual is ${value.length}.`
+            return `The length of the title should less than 256 characters, actual is ${value.length}.`;
         }
         return "";
     }

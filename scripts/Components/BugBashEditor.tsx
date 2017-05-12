@@ -28,7 +28,6 @@ import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBash, UrlActions } from "../Models";
-import { BugBash } from "../Models/BugBash";
 import { RichEditor } from "./RichEditor/RichEditor";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
@@ -36,24 +35,43 @@ export interface IBugBashEditorProps extends IBaseComponentProps {
 }
 
 export interface IBugBashEditorState extends IBaseComponentState {
-    loading?: boolean;
+    originalModel?: IBugBash;
     model?: IBugBash;
+    loading?: boolean;
     error?: string;
+    disableToolbar?: boolean;
 }
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
-    private _item: BugBash;
+    public static getNewModel(): IBugBash {
+        return {
+            id: "",
+            title: "",
+            __etag: 0,
+            projectId: VSS.getWebContext().project.id,
+            workItemType: "",
+            itemDescriptionField: "",
+            autoAccept: false,
+            description: "",
+            acceptTemplate: {
+                team: VSS.getWebContext().team.id,
+                templateId: ""
+            }
+        };
+    }
 
     protected initializeState(): void {
+        let model: IBugBash;
         if (this.props.id) {
-            this._item = new BugBash(StoresHub.bugBashStore.getItem(this.props.id));
+            model = StoresHub.bugBashStore.getItem(this.props.id);
         }
         else {
-            this._item = BugBash.getNew();
+            model = BugBashEditor.getNewModel();
         }
 
         this.state = {
-            model: this._item.getModel(),
+            model: model,
+            originalModel: {...model},
             loading: true,
             error: null
         };
@@ -67,14 +85,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         StoresHub.workItemFieldStore.initialize();
         StoresHub.workItemTemplateStore.initialize();
         StoresHub.workItemTypeStore.initialize();
-        this._item.attachChanged(() => {
-            this.onStoreChanged();
-        }); 
     }
 
     protected onStoreChanged() {
         this.updateState({
-            model: this._item.getModel(),
             loading: StoresHub.workItemTypeStore.isLoaded() && StoresHub.workItemFieldStore.isLoaded() && StoresHub.workItemTemplateStore.isLoaded() ? false : true
         });
     }    
@@ -124,11 +138,11 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         <TextField 
                             label='Title' 
                             value={model.title} 
-                            onChanged={(newValue: string) => this._item.updateTitle(newValue)} 
+                            onChanged={(newValue: string) => this._updateTitle(newValue)} 
                             onGetErrorMessage={this._getTitleError} />
 
                         <Label>Description</Label>
-                        <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._item.updateDescription(newValue)} />
+                        <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._updateDescription(newValue)} />
                     </div>
                     <div className="second-section">
                         <div className="checkbox-container">                            
@@ -136,7 +150,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                                 className="auto-accept"
                                 label=""
                                 checked={model.autoAccept}
-                                onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._item.updateAutoAccept(isChecked) } />
+                                onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._updateAutoAccept(isChecked) } />
 
                             <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
                         </div>
@@ -146,14 +160,14 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             allowTextInput={true} 
                             isRequired={false} 
                             value={model.startTime}
-                            onSelectDate={(newValue: Date) => this._item.updateStartTime(newValue)} />
+                            onSelectDate={(newValue: Date) => this._updateStartTime(newValue)} />
 
                         <DatePicker 
                             label="Finish Date" 
                             allowTextInput={true}
                             isRequired={false} 
                             value={model.endTime} 
-                            onSelectDate={(newValue: Date) => this._item.updateEndTime(newValue)} />
+                            onSelectDate={(newValue: Date) => this._updateEndTime(newValue)} />
 
                         { model.startTime && model.endTime && Utils_Date.defaultComparer(model.startTime, model.endTime) >= 0 &&  (<InputError error="Bugbash end time cannot be a date before bugbash start time." />)}
 
@@ -163,7 +177,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             onRenderList={this._onRenderCallout} 
                             required={true} 
                             options={witItems}                            
-                            onChanged={(option: IDropdownOption) => this._item.updateWorkItemType(option.key as string)} />
+                            onChanged={(option: IDropdownOption) => this._updateWorkItemType(option.key as string)} />
 
                         { !model.workItemType && (<InputError error="A work item type is required." />) }
 
@@ -173,7 +187,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             onRenderList={this._onRenderCallout} 
                             required={true} 
                             options={fieldItems} 
-                            onChanged={(option: IDropdownOption) => this._item.updateDescriptionField(option.key as string)} />
+                            onChanged={(option: IDropdownOption) => this._updateDescriptionField(option.key as string)} />
 
                         { !model.itemDescriptionField && (<InputError error="A description field is required." />) }       
 
@@ -182,7 +196,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             className="editor-dropdown"
                             onRenderList={this._onRenderCallout} 
                             options={this._getTemplateDropdownOptions(model.acceptTemplate.templateId)} 
-                            onChanged={(option: IDropdownOption) => this._item.updateAcceptTemplate(option.key as string)} />
+                            onChanged={(option: IDropdownOption) => this._updateAcceptTemplate(option.key as string)} />
                     </div>
                 </div>
             </div>
@@ -194,65 +208,83 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
         return [
             {
-                key: "save", name: "Save", title: "Save", iconProps: {iconName: "Save"}, disabled: !this._item.isDirty() || !this._item.isValid(),
+                key: "save", name: "Save", title: "Save", iconProps: {iconName: "Save"}, disabled: this.state.disableToolbar || !this._isDirty() || !this._isValid(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    if (this._item.isNew() && this._item.isDirty() && this._item.isValid()) {
-                        let savedBugBash = await StoresHub.bugBashStore.createItem(model);
-                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                        navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, { id: savedBugBash.id }, true);
-                    }
-                    else if (!this._item.isNew() && this._item.isDirty() && this._item.isValid()) {
-                        let result = await StoresHub.bugBashStore.updateItem(model);                        
+                    this.updateState({disableToolbar: true, error: null});
 
-                        if (!result) {
-                            this.updateState({error: "The bug bash version does not match with the latest version. Please refresh the page and try again."});
+                    if (this._isNew() && this._isDirty() && this._isValid()) {
+                        try {
+                            let createdModel = await StoresHub.bugBashStore.createItem(model);
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, { id: createdModel.id }, true, undefined, undefined, true);
+
+                            this.updateState({model: {...createdModel}, originalModel: {...createdModel}, error: null, disableToolbar: false});
                         }
-                        else {
-                            this._item.renew(result);
+                        catch (e) {
+                            this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
+                        }
+                    }
+                    else if (!this._isNew() && this._isDirty() && this._isValid()) {
+                        try {
+                            let updatedModel = await StoresHub.bugBashStore.updateItem(model);
+                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, error: null, disableToolbar: false});
+                        }
+                        catch (e) {
+                            this.updateState({error: "This bug bash instance has been modified by some one else. Please refresh the page to get the latest version and try updating it again.", disableToolbar: false});
                         }
                     }
                 }
             },
             {
-                key: "undo", name: "Undo", title: "Undo changes", iconProps: {iconName: "Undo"}, disabled: this._item.isNew() || !this._item.isDirty(),
+                key: "undo", name: "Undo", title: "Undo changes", iconProps: {iconName: "Undo"}, disabled: this.state.disableToolbar || !this._isDirty(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                    this.updateState({disableToolbar: true});
+
                     let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
                     try {
                         await dialogService.openMessageDialog("Are you sure you want to undo your changes to this instance?", { useBowtieStyle: true });
                     }
                     catch (e) {
                         // user selected "No"" in dialog
+                        this.updateState({disableToolbar: false});
                         return;
                     }
 
-                    this._item.reset();
+                    this.updateState({model: {...this.state.originalModel}, disableToolbar: false, error: null});
                 }
             },
             {
-                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this._item.isNew(),
+                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    if (!this._item.isNew()) {
+                    this.updateState({disableToolbar: true});
+
+                    if (!this._isNew()) {
                         let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
                         try {
                             await dialogService.openMessageDialog("Are you sure you want to delete this instance?", { useBowtieStyle: true });
                         }
                         catch (e) {
                             // user selected "No"" in dialog
+                            this.updateState({disableToolbar: false});
                             return;
                         }
                         
-                        await StoresHub.bugBashItemStore.clearAllItems(model.id);
-                        await StoresHub.bugBashStore.deleteItem(model);
-                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                        navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                        try {
+                            await StoresHub.bugBashStore.deleteItem(model);
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                        }
+                        catch (e) {
+                            this.updateState({error: "We encountered some error while deleting the bug bash. Please refresh the page and try again.", disableToolbar: false});
+                        }                    
                     }
                 }
             },
             {
-                key: "results", name: "Show results", title: "Show results", iconProps: {iconName: "ShowResults"}, disabled: this._item.isNew(),
+                key: "results", name: "Show results", title: "Show results", iconProps: {iconName: "ShowResults"}, disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    if (!this._item.isNew()) {
-                        if (this._item.isDirty()) {
+                    if (!this._isNew()) {
+                        if (this._isDirty()) {
                             let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
                             try {
                                 await dialogService.openMessageDialog("Are you sure you want to go back to results view? This action will reset your unsaved changes.", { useBowtieStyle: true });
@@ -262,7 +294,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                                 return;
                             }
                         }
-                        this._item.reset();
+                        this.updateState({model: {...this.state.originalModel}, error: null});
                         let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                         navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: model.id});
                     }
@@ -308,5 +340,78 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             return `The length of the title should less than 256 characters, actual is ${value.length}.`
         }
         return "";
+    }
+
+    private _isNew(): boolean {
+        return !this.state.model.id;
+    }
+
+    private _isDirty(): boolean {        
+        return !Utils_String.equals(this.state.model.title, this.state.originalModel.title)
+            || !Utils_String.equals(this.state.model.workItemType, this.state.originalModel.workItemType, true)
+            || !Utils_String.equals(this.state.model.description, this.state.originalModel.description)
+            || !Utils_Date.equals(this.state.model.startTime, this.state.originalModel.startTime)
+            || !Utils_Date.equals(this.state.model.endTime, this.state.originalModel.endTime)
+            || !Utils_String.equals(this.state.model.itemDescriptionField, this.state.originalModel.itemDescriptionField, true)
+            || this.state.model.autoAccept !== this.state.originalModel.autoAccept
+            || !Utils_String.equals(this.state.model.acceptTemplate.team, this.state.originalModel.acceptTemplate.team)
+            || !Utils_String.equals(this.state.model.acceptTemplate.templateId, this.state.originalModel.acceptTemplate.templateId)
+    }
+
+    private _isValid(): boolean {
+        return this.state.model.title.trim().length > 0
+            && this.state.model.title.length <= 256
+            && this.state.model.workItemType.trim().length > 0
+            && this.state.model.itemDescriptionField.trim().length > 0
+            && (!this.state.model.startTime || !this.state.model.endTime || Utils_Date.defaultComparer(this.state.model.startTime, this.state.model.endTime) < 0);
+    }
+
+    private _updateTitle(newTitle: string) {
+        let newModel = {...this.state.model};
+        newModel.title = newTitle;
+        this.updateState({model: newModel});
+    }
+
+    private _updateWorkItemType(newType: string) {
+        let newModel = {...this.state.model};
+        newModel.workItemType = newType;
+        newModel.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: ""};  // reset template
+        this.updateState({model: newModel});
+    }
+
+    private _updateDescription(newDescription: string) {
+        let newModel = {...this.state.model};
+        newModel.description = newDescription;
+        this.updateState({model: newModel});
+    }
+
+    private _updateDescriptionField(fieldRefName: string) {
+        let newModel = {...this.state.model};
+        newModel.itemDescriptionField = fieldRefName;
+        this.updateState({model: newModel});
+    }
+
+    private _updateStartTime(newStartTime: Date) {
+        let newModel = {...this.state.model};
+        newModel.startTime = newStartTime;
+        this.updateState({model: newModel});
+    }
+
+    private _updateEndTime(newEndTime: Date) {        
+        let newModel = {...this.state.model};
+        newModel.endTime = newEndTime;
+        this.updateState({model: newModel});
+    }
+
+    private _updateAutoAccept(autoAccept: boolean) {        
+        let newModel = {...this.state.model};
+        newModel.autoAccept = autoAccept;
+        this.updateState({model: newModel});
+    }
+
+    private _updateAcceptTemplate(templateId: string) {
+        let newModel = {...this.state.model};
+        newModel.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: templateId};
+        this.updateState({model: newModel});
     }
 }

@@ -5,10 +5,12 @@ import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import * as WitBatchClient from "TFS/WorkItemTracking/BatchRestClient";
 
+// Used to retrieve all items in a bug bash
 export function getBugBashCollectionKey(bugBashId: string): string {
     return `BugBashCollection_${bugBashId}`;
 }
 
+// Used to retrieve all comments in a bug bash item
 export function getBugBashItemCollectionKey(itemId: string): string {
     return `BugBashItemCollection_${itemId}`;
 }

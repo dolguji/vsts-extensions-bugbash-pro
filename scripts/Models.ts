@@ -20,7 +20,7 @@ export interface IBugBash {
 }
 
 // bug bash item document for 1 bug bash collection
-export interface IBugBashItemDocument {
+export interface IBugBashItem {
     id: string;
     bugBashId: string;
     readonly __etag: number;
@@ -32,9 +32,9 @@ export interface IBugBashItemDocument {
 }
 
 // work item comment document for 1 work item collection
-export interface ICommentDocument {
+export interface IBugBashItemComment {
     id: string;
-    bugBashItemDocumentId: string;
+    bugBashItemId: string;
     readonly __etag: number;
     comment: string;
     addedDate: Date;

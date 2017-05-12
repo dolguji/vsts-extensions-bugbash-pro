@@ -1,7 +1,5 @@
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
-import { WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
@@ -51,35 +49,24 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     }
 
     public async updateItem(bugBash: IBugBash): Promise<IBugBash> {
-        try {
-            const savedBugBash = await ExtensionDataManager.updateDocument<IBugBash>("bugbashes", bugBash, false);
-            if (savedBugBash) {
-                this._translateDates(savedBugBash);
-                this._addItems(savedBugBash);
-            }
-            return savedBugBash;
-        }
-        catch (e) {
-            return null;
-        }
+        const savedBugBash = await ExtensionDataManager.updateDocument<IBugBash>("bugbashes", bugBash, false);
+
+        this._translateDates(savedBugBash);
+        this._addItems(savedBugBash);
+
+        return savedBugBash;
     }
 
     public async createItem(bugBash: IBugBash): Promise<IBugBash> {
         let model = {...bugBash};
         model.id = model.id || Date.now().toString();
-        try {
-            const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
 
-            if (savedBugBash) {
-                this._translateDates(savedBugBash);
-                this._addItems(savedBugBash);
-            }
+        const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
 
-            return savedBugBash;
-        }
-        catch (e) {
-            return null;
-        }
+        this._translateDates(savedBugBash);
+        this._addItems(savedBugBash);
+
+        return savedBugBash;
     }
 
     public async deleteItem(bugBash: IBugBash): Promise<void> {

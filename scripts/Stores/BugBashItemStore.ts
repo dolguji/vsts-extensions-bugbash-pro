@@ -1,15 +1,13 @@
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
-import { WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
-import { IBugBashItemDocument } from "../Models";
+import { IBugBashItem } from "../Models";
 import { getBugBashCollectionKey } from "../Helpers";
 
-export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBashItemDocument, string> {
+export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, string> {
     private _dataLoadedMap: IDictionaryStringTo<boolean>;
 
     constructor() {
@@ -18,8 +16,8 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         this._dataLoadedMap = {};
     }
 
-    protected getItemByKey(id: string): IBugBashItemDocument {
-         return Utils_Array.first(this.items, (item: IBugBashItemDocument) => Utils_String.equals(item.id, id, true));
+    protected getItemByKey(id: string): IBugBashItem {
+         return Utils_Array.first(this.items, (item: IBugBashItem) => Utils_String.equals(item.id, id, true));
     }
 
     protected async initializeItems(): Promise<void> {
@@ -30,7 +28,7 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         return "BugBashItemStore";
     }    
 
-    public getItems(bugBashId: string): IBugBashItemDocument[] {
+    public getItems(bugBashId: string): IBugBashItem[] {
         return this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true));
     }
 
@@ -42,7 +40,7 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         delete this._dataLoadedMap[bugBashId.toLowerCase()];
         this._removeItems(this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true)));
 
-        const models = await ExtensionDataManager.readDocuments<IBugBashItemDocument>(getBugBashCollectionKey(bugBashId), false);
+        const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
         for(let model of models) {
             this._translateDates(model);
         }
@@ -51,48 +49,41 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         this._addItems(models);
     }
 
-    public async createItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {
+    public async refreshItem(item: IBugBashItem): Promise<IBugBashItem> {
+        let refreshedItem = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(item.bugBashId), item.id, null, false);
+        this._addItems(refreshedItem);
+        return refreshedItem;
+    }
+
+    public async createItem(item: IBugBashItem): Promise<IBugBashItem> {
         let model = {...item};
         model.id = model.id || `${model.bugBashId}_${Date.now().toString()}`;
         model.createdBy = model.createdBy || `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
         model.createdDate = model.createdDate || new Date(Date.now());
+        const savedItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(model.bugBashId), model, false);
 
-        try {
-            const savedItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(model.bugBashId), model, false);
+        this._translateDates(savedItem);
+        this._addItems(savedItem);
 
-            if (savedItem) {
-                this._translateDates(savedItem);
-                this._addItems(savedItem);
-            }
-
-            return savedItem;
-        }
-        catch (e) {
-            return null;
-        }
-
+        return savedItem;
     }
 
-    public async updateItem(item: IBugBashItemDocument): Promise<IBugBashItemDocument> {        
-        try {
-            const savedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(item.bugBashId), item, false);
-
-            if (savedItem) {
-                this._translateDates(savedItem);
-                this._addItems(savedItem);
-            }
-
-            return savedItem;
-        }
-        catch (e) {
-            return null;
-        }
+    public async updateItem(item: IBugBashItem): Promise<IBugBashItem> {        
+        const savedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(item.bugBashId), item, false);
+        this._translateDates(savedItem);
+        this._addItems(savedItem);
+        return savedItem;
     }
 
-    public async deleteItems(items: IBugBashItemDocument[]): Promise<void> {
+    public async deleteItems(items: IBugBashItem[]): Promise<void> {
         this._removeItems(items);
         await Promise.all(items.map(async (item) => {
-            return await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);
+            try {
+                return await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);
+            }
+            catch (e) {
+                return null;
+            }
         }));        
     }
 
@@ -100,7 +91,7 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         this.deleteItems(this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true)));
     }
 
-    private _addItems(items: IBugBashItemDocument | IBugBashItemDocument[]): void {
+    private _addItems(items: IBugBashItem | IBugBashItem[]): void {
         if (!items) {
             return;
         }
@@ -121,7 +112,7 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         this.emitChanged();
     }
 
-    private _removeItems(items: IBugBashItemDocument | IBugBashItemDocument[]): void {
+    private _removeItems(items: IBugBashItem | IBugBashItem[]): void {
         if (!items || !this.isLoaded()) {
             return;
         }
@@ -138,8 +129,8 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         this.emitChanged();
     }    
 
-    private _addItem(item: IBugBashItemDocument): void {
-        let existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItemDocument) => Utils_String.equals(item.id, existingItem.id, true));
+    private _addItem(item: IBugBashItem): void {
+        let existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItem) => Utils_String.equals(item.id, existingItem.id, true));
         if (existingItemIndex != -1) {
             // Overwrite the item data
             this.items[existingItemIndex] = item;
@@ -149,15 +140,15 @@ export class BugBashItemStore extends BaseStore<IBugBashItemDocument[], IBugBash
         }
     }
 
-    private _removeItem(item: IBugBashItemDocument): void {
-        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItemDocument) => Utils_String.equals(item.id, existingItem.id, true));
+    private _removeItem(item: IBugBashItem): void {
+        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItem) => Utils_String.equals(item.id, existingItem.id, true));
 
         if (existingItemIndex != -1) {
             this.items.splice(existingItemIndex, 1);
         }
     }
 
-    private _translateDates(item: IBugBashItemDocument) {
+    private _translateDates(item: IBugBashItem) {
         if (typeof item.createdDate === "string") {
             if ((item.createdDate as string).trim() === "") {
                 item.createdDate = undefined;

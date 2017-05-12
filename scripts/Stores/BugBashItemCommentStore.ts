@@ -1,15 +1,13 @@
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
-import { WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
-import { ICommentDocument } from "../Models";
+import { IBugBashItemComment } from "../Models";
 import { getBugBashItemCollectionKey } from "../Helpers";
 
-export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], ICommentDocument, string> {
+export class BugBashItemCommentStore extends BaseStore<IBugBashItemComment[], IBugBashItemComment, string> {
     private _dataLoadedMap: IDictionaryStringTo<boolean>;
 
     constructor() {
@@ -18,8 +16,8 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         this._dataLoadedMap = {};
     }
 
-    protected getItemByKey(id: string): ICommentDocument {
-         return Utils_Array.first(this.items, (item: ICommentDocument) => Utils_String.equals(item.id, id, true));
+    protected getItemByKey(id: string): IBugBashItemComment {
+         return Utils_Array.first(this.items, (item: IBugBashItemComment) => Utils_String.equals(item.id, id, true));
     }
 
     protected async initializeItems(): Promise<void> {
@@ -30,33 +28,39 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         return "BugBashItemCommentStore";
     }    
 
-    public getItems(itemId: string): ICommentDocument[] {
-        return this.items.filter(i => Utils_String.equals(i.bugBashItemDocumentId, itemId, true));
+    public getItems(itemId: string): IBugBashItemComment[] {
+        return this.items.filter(i => Utils_String.equals(i.bugBashItemId, itemId, true));
     }
 
     public isDataLoaded(itemId: string): boolean {
         return Boolean(this._dataLoadedMap[itemId.toLowerCase()]);
     }
 
+    public clear(): void {
+        this._dataLoadedMap = {};
+        this.items = [];
+        this.emitChanged();
+    }
+
     public async refreshItems(itemId: string) {
-        const models = await ExtensionDataManager.readDocuments<ICommentDocument>(getBugBashItemCollectionKey(itemId), false);
+        delete this._dataLoadedMap[itemId.toLowerCase()];
+        this._removeItems(this.items.filter(i => Utils_String.equals(i.bugBashItemId, itemId, true)));
+
+        const models = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(itemId), false);
         for(let model of models) {
             this._translateDates(model);
         }
 
-        this.items = this.items.filter(i => !Utils_String.equals(i.bugBashItemDocumentId, itemId, true));
-        this.items = this.items.concat(models);
         this._dataLoadedMap[itemId.toLowerCase()] = true;
-
-        this.emitChanged();
+        this._addItems(models);
     }
 
-    public async createItem(item: ICommentDocument): Promise<ICommentDocument> {
-        item.id = item.id || `${item.bugBashItemDocumentId}_${Date.now().toString()}`;
+    public async createItem(item: IBugBashItemComment): Promise<IBugBashItemComment> {
+        item.id = item.id || `${item.bugBashItemId}_${Date.now().toString()}`;
         item.addedBy = item.addedBy || `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
         item.addedDate = item.addedDate || new Date(Date.now());
 
-        const savedItem = await ExtensionDataManager.createDocument(getBugBashItemCollectionKey(item.bugBashItemDocumentId), item, false);
+        const savedItem = await ExtensionDataManager.createDocument(getBugBashItemCollectionKey(item.bugBashItemId), item, false);
 
         if (savedItem) {
             this._translateDates(savedItem);
@@ -66,18 +70,7 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         return savedItem;
     }
 
-    public async updateItem(item: ICommentDocument): Promise<ICommentDocument> {
-        const savedItem = await ExtensionDataManager.updateDocument(getBugBashItemCollectionKey(item.bugBashItemDocumentId), item, false);
-
-        if (savedItem) {
-            this._translateDates(savedItem);
-            this._addItems(savedItem);
-        }
-
-        return savedItem;
-    }
-
-    private _addItems(items: ICommentDocument | ICommentDocument[]): void {
+    private _addItems(items: IBugBashItemComment | IBugBashItemComment[]): void {
         if (!items) {
             return;
         }
@@ -98,8 +91,8 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         this.emitChanged();
     }
 
-    private _addItem(item: ICommentDocument): void {
-        let existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: ICommentDocument) => Utils_String.equals(item.id, existingItem.id, true));
+    private _addItem(item: IBugBashItemComment): void {
+        let existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItemComment) => Utils_String.equals(item.id, existingItem.id, true));
         if (existingItemIndex != -1) {
             // Overwrite the item data
             this.items[existingItemIndex] = item;
@@ -109,7 +102,32 @@ export class BugBashItemCommentStore extends BaseStore<ICommentDocument[], IComm
         }
     }
 
-    private _translateDates(item: ICommentDocument) {
+    private _removeItems(items: IBugBashItemComment | IBugBashItemComment[]): void {
+        if (!items || !this.isLoaded()) {
+            return;
+        }
+
+        if (Array.isArray(items)) {
+            for (const item of items) {
+                this._removeItem(item);
+            }
+        }
+        else {
+            this._removeItem(items);
+        }
+
+        this.emitChanged();
+    }
+
+    private _removeItem(item: IBugBashItemComment): void {
+        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBashItemComment) => Utils_String.equals(item.id, existingItem.id, true));
+
+        if (existingItemIndex != -1) {
+            this.items.splice(existingItemIndex, 1);
+        }
+    }
+
+    private _translateDates(item: IBugBashItemComment) {
         if (typeof item.addedDate === "string") {
             if ((item.addedDate as string).trim() === "") {
                 item.addedDate = undefined;
