@@ -6,15 +6,13 @@ import "trumbowyg/dist/ui/trumbowyg.min.css";
 
 export interface IRichEditorProps {
     containerId: string;
+    placeholder?: string
     data: string;
-    onChange: (newValue: string) => void
+    onChange: (newValue: string) => void;
+    editorOptions?: any;
 }
 
-export interface IRichEditorState{
-
-}
-
-export class RichEditor extends React.Component<IRichEditorProps, IRichEditorState> {
+export class RichEditor extends React.Component<IRichEditorProps, {}> {
     private _richEditorContainer: JQuery;
 
     constructor(props: IRichEditorProps, context) {
@@ -24,9 +22,7 @@ export class RichEditor extends React.Component<IRichEditorProps, IRichEditorSta
 
     public componentDidMount() {
         this._richEditorContainer = $("#" + this.props.containerId);
-        this._richEditorContainer.trumbowyg({
-
-        })
+        this._richEditorContainer.trumbowyg(this.props.editorOptions || {})
         .on("tbwchange", () => this.props.onChange(this._richEditorContainer.trumbowyg("html")));
 
         this._richEditorContainer.trumbowyg("html", this.props.data);
@@ -44,7 +40,7 @@ export class RichEditor extends React.Component<IRichEditorProps, IRichEditorSta
 
     public render() {
         return (
-            <div id={this.props.containerId}>
+            <div id={this.props.containerId} placeholder={this.props.placeholder || ""}>
                 
             </div>
         );

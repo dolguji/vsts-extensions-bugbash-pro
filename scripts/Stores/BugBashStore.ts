@@ -38,7 +38,6 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
                 }
             }
             catch (e) {
-                console.log(e);
                 return false;
             }            
         }
@@ -59,7 +58,7 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
 
     public async createItem(bugBash: IBugBash): Promise<IBugBash> {
         let model = {...bugBash};
-        model.id = model.id || Date.now().toString();
+        model.id = Date.now().toString();
 
         const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
 

@@ -4,21 +4,16 @@ import * as React from "react";
 import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
-import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { CommandBar } from "OfficeFabric/CommandBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
-import { WorkItemFormNavigationService } from "TFS/WorkItemTracking/Services";
 import Utils_String = require("VSS/Utils/String");
 
-import { IBugBashItem, IBugBashItemComment } from "../Models";
-import Helpers = require("../Helpers");
-import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
+import { IBugBashItem } from "../Models";
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditor } from "./RichEditor/RichEditor";
 
@@ -32,15 +27,14 @@ export interface IBugBashItemViewProps extends IBaseComponentProps {
 
 export interface IBugBashItemViewState extends IBaseComponentState {
     originalModel?: IBugBashItem;
+    loadError?: string;
     model?: IBugBashItem;
-    comments?: IBugBashItemComment[];
-    loadingComments?: boolean;
     error?: string;
     disableToolbar?: boolean;
 }
 
 export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBashItemViewState> {
-    public static getNewModel(bugBashId: string) {
+    public static getNewModel(bugBashId: string): IBugBashItem {
         return {
             id: "",
             bugBashId: bugBashId,
@@ -49,67 +43,37 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
             description: "",
             workItemId: null,
             createdBy: "",
-            createdDate: null,
+            createdDate: null
         };
     }
 
-    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashItemCommentStore];
-    }
-
     protected initializeState() {
-        this._initializeState(this.props);
+        let model = this.props.id ? StoresHub.bugBashItemStore.getItem(this.props.id) : BugBashItemView.getNewModel(this.props.bugBashId);
+
+        this.state = {
+            model: {...model},
+            originalModel: {...model}
+        };
     }
 
-    protected initialize() {
-        this._initialize();
-    }   
+    public componentWillReceiveProps(nextProps: Readonly<IBugBashItemViewProps>): void {
+        if (this.props.id !== nextProps.id) {
+            let model = nextProps.id ? StoresHub.bugBashItemStore.getItem(nextProps.id) : BugBashItemView.getNewModel(nextProps.bugBashId);
 
-    protected onStoreChanged() {
-        if (this.state.model.id) {
             this.updateState({
-                comments: StoresHub.bugBashItemCommentStore.getItems(this.state.model.id),
-                loadingComments: !StoresHub.bugBashItemCommentStore.isDataLoaded(this.state.model.id)
+                model: {...model},
+                originalModel: {...model}
             });
         }
     }
 
-    public componentWillReceiveProps(nextProps: Readonly<IBugBashItemViewProps>): void {
-        if (!Utils_String.equals(this.props.id, nextProps.id, true)) {
-            this._initializeState(nextProps);
-            this._initialize();
-        }
-    }
-
-    private _initialize() {        
-        if (this.state.model.id) {
-            StoresHub.bugBashItemCommentStore.refreshItems(this.state.model.id);
-        }
-        else {
-            this.updateState({loadingComments: false});
-        }
-    }
-
-    private _initializeState(props: IBugBashItemViewProps) {
-        let model: IBugBashItem;
-        if (props.id) {
-            model = StoresHub.bugBashItemStore.getItem(props.id);
-        }
-        else {
-            model = BugBashItemView.getNewModel(props.bugBashId);
-        }
-
-        this.state = {
-            model: model,
-            originalModel: {...model},
-            comments: [],
-            loadingComments: true
-        };
-    }
-
     public render(): JSX.Element {
         let model = this.state.model;
-        if (!model) {
+
+        if (this.state.loadError) {
+
+        }
+        else if (!model) {
             return <Loading />;
         }
 
@@ -134,12 +98,27 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
                         }} />
 
                 <div>
-                    <Label className="item-description">Description</Label>
-                    <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => {
-                        let newModel = {...this.state.model};
-                        newModel.description = newValue;
-                        this.updateState({model: newModel});
-                    }} />
+                    <Label>Description</Label>
+                    <RichEditor 
+                        containerId="rich-editor" 
+                        data={model.description} 
+                        editorOptions={{
+                            btns: [
+                                ['formatting'],
+                                ['bold', 'italic'], 
+                                ['link'],
+                                ['superscript', 'subscript'],
+                                ['insertImage'],
+                                'btnGrp-lists',
+                                ['removeformat'],
+                                ['fullscreen']
+                            ]
+                        }}
+                        onChange={(newValue: string) => {
+                            let newModel = {...this.state.model};
+                            newModel.description = newValue;
+                            this.updateState({model: newModel});
+                        }} />
                 </div>
             </div>
         );
@@ -225,8 +204,14 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
                     }
 
                     try {
+                        this.updateState({model: null, originalModel: null});
                         newModel = await StoresHub.bugBashItemStore.refreshItem(this.state.model);
-                        this.updateState({model: {...newModel}, originalModel: {...newModel}, error: null, disableToolbar: false});
+                        if (newModel) {
+                            this.updateState({model: {...newModel}, originalModel: {...newModel}, error: null, disableToolbar: false});
+                        }
+                        else {
+                            this.updateState({model: null, originalModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
+                        }                        
                     }
                     catch (e) {
                         this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
@@ -255,7 +240,8 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
                 }
             },
             {
-                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this.state.disableToolbar || this._isNew(),
+                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, 
+                disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async () => {
                     this.updateState({disableToolbar: true});
 

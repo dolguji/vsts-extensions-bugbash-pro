@@ -12,6 +12,15 @@
             margin: 0;
             display: inline;
             font-size: 13px;
+
+            &.title-cell {
+                cursor: pointer;
+
+                &:hover {
+                    text-decoration: underline;
+                    color: #0078d7;
+                }
+            }
         }
 
         .identity-view {

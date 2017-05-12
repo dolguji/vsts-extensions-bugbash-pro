@@ -3,8 +3,6 @@ import "../../css/ResultsView.scss";
 import * as React from "react";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
-import { Wiql, WorkItem } from "TFS/WorkItemTracking/Contracts";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
@@ -16,15 +14,13 @@ import { autobind } from "OfficeFabric/Utilities";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
-import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
-import { SortOrder, GridColumn, ICommandBarProps, IContextMenuProps } from "VSTS_Extension/Components/Grids/Grid.Props";
+import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 
 import { IBugBash, UrlActions, IBugBashItem } from "../Models";
 import { BugBashItemView } from "./BugBashItemView";
-import Helpers = require("../Helpers");
 import { BugBashStore } from "../Stores/BugBashStore";
 import { BugBashItemStore } from "../Stores/BugBashItemStore";
 import { StoresHub } from "../Stores/StoresHub";
@@ -130,7 +126,11 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 minWidth: 200,
                 maxWidth: 800,
                 resizable: true,
-                onRenderCell: (item: IBugBashItem) => <Label className={gridCellClassName}>{item.title}</Label>,
+                onRenderCell: (item: IBugBashItem) => {
+                    return <Label className={`${gridCellClassName} title-cell`} onClick={() => this.updateState({selectedBugBashItem: item})}>
+                                {item.title}
+                            </Label>
+                },
                 sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(item1.title, item2.title)
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
@@ -177,34 +177,8 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                 {
                     key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {                        
-                        StoresHub.bugBashItemCommentStore.clear();
                         await StoresHub.bugBashItemStore.refreshItems(this.props.id);
                         this.updateState({selectedBugBashItem: null});
-                    }
-                },
-                {
-                    key: "OpenQuery", name: "Open as query", title: "Open all workitems as a query", iconProps: {iconName: "OpenInNewWindow"}, 
-                    disabled: this.state.items.length === 0,
-                    onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        //let url = `${VSS.getWebContext().host.uri}/${VSS.getWebContext().project.id}/_workitems?_a=query&wiql=${encodeURIComponent(this._getWiql().query)}`;
-                        //window.open(url, "_blank");
-                    }
-                },
-                {
-                    key: "Clear", name: "Clear all items", title: "Clear all items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
-                    disabled: this.state.items.length === 0,
-                    onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                        try {
-                            await dialogService.openMessageDialog("Are you sure you want to clear all items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.", { useBowtieStyle: true });
-                        }
-                        catch (e) {
-                            // user selected "No"" in dialog
-                            return;
-                        }
-
-                        this.updateState({selectedBugBashItem: null});
-                        StoresHub.bugBashItemStore.clearAllItems(this.props.id);
                     }
                 }
             ];
@@ -224,15 +198,7 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
 
     @autobind
     private _getContextMenuItems(selectedItems: IBugBashItem[]): IContextualMenuItem[] {
-        return [
-            {
-                key: "OpenQuery", name: "Open as query", title: "Open selected workitems as a query", iconProps: {iconName: "OpenInNewWindow"}, 
-                disabled: selectedItems.length === 0,
-                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                    //let url = `${VSS.getWebContext().host.uri}/${VSS.getWebContext().project.id}/_workitems?_a=query&wiql=${encodeURIComponent(this._getWiql().query)}`;
-                    //window.open(url, "_blank");
-                }
-            },
+        return [            
             {
                 key: "Delete", name: "Delete", title: "Delete selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
                 disabled: selectedItems.length === 0,

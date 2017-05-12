@@ -30,13 +30,3 @@ export interface IBugBashItem {
     createdDate: Date;
     createdBy: string;
 }
-
-// work item comment document for 1 work item collection
-export interface IBugBashItemComment {
-    id: string;
-    bugBashItemId: string;
-    readonly __etag: number;
-    comment: string;
-    addedDate: Date;
-    addedBy: string;
-}

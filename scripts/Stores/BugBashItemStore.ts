@@ -33,11 +33,11 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
     }
 
     public isDataLoaded(bugBashId: string): boolean {
-        return Boolean(this._dataLoadedMap[bugBashId.toLowerCase()]);
+        return Boolean(this._dataLoadedMap[bugBashId]);
     }
 
     public async refreshItems(bugBashId: string) {
-        delete this._dataLoadedMap[bugBashId.toLowerCase()];
+        delete this._dataLoadedMap[bugBashId];
         this._removeItems(this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true)));
 
         const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
@@ -45,13 +45,18 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
             this._translateDates(model);
         }
         
-        this._dataLoadedMap[bugBashId.toLowerCase()] = true;
+        this._dataLoadedMap[bugBashId] = true;
         this._addItems(models);
     }
 
     public async refreshItem(item: IBugBashItem): Promise<IBugBashItem> {
         let refreshedItem = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(item.bugBashId), item.id, null, false);
-        this._addItems(refreshedItem);
+        if (refreshedItem) {
+            this._addItems(refreshedItem);
+        }
+        else {
+            this._removeItem(refreshedItem);
+        }
         return refreshedItem;
     }
 
@@ -85,10 +90,6 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
                 return null;
             }
         }));        
-    }
-
-    public clearAllItems(bugBashId: string) {
-        this.deleteItems(this.items.filter(i => Utils_String.equals(i.bugBashId, bugBashId, true)));
     }
 
     private _addItems(items: IBugBashItem | IBugBashItem[]): void {

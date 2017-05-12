@@ -1,9 +1,11 @@
-.item-view {
+    .item-view {
     .item-view-menu {
         margin-bottom: 20px;
     }
     
     .trumbowyg-box {
+        min-height: 250px;
+        max-height: 250px;
         width: auto;
         margin: 0;
     }
@@ -17,4 +19,23 @@
             background-color: #005a9e;
         }
     }
+
+    .item-comments {
+        margin-top: 10px;
+
+        .trumbowyg-box {
+            min-height: 70px;
+            max-height: 70px;
+
+            .trumbowyg-button-pane {
+                display: none;
+            }
+        }
+
+        #comment-editor {
+            padding: 5px;
+            min-height: 70px;
+            max-height: 70px;
+        }
+    } 
 }
