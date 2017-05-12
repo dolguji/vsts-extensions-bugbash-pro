@@ -20,7 +20,7 @@ import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/Identit
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 
 import { IBugBash, UrlActions, IBugBashItem } from "../Models";
-import { BugBashItemView } from "./BugBashItemView";
+import { BugBashItemEditor } from "./BugBashItemEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { BugBashItemStore } from "../Stores/BugBashItemStore";
 import { StoresHub } from "../Stores/StoresHub";
@@ -96,7 +96,7 @@ export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubVi
                         />
                         
                         <div className="item-viewer">
-                            <BugBashItemView 
+                            <BugBashItemEditor 
                                 id={this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : null} 
                                 bugBashId={this.props.id} 
                                 onClickNew={() => {

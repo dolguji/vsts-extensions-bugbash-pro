@@ -1,4 +1,4 @@
-import "../../css/BugBashItemView.scss";
+import "../../css/BugBashItemEditor.scss";
 
 import * as React from "react";
 import { autobind } from "OfficeFabric/Utilities";
@@ -17,7 +17,7 @@ import { IBugBashItem } from "../Models";
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditor } from "./RichEditor/RichEditor";
 
-export interface IBugBashItemViewProps extends IBaseComponentProps {
+export interface IBugBashItemEditorProps extends IBaseComponentProps {
     id?: string;
     bugBashId: string;
     onClickNew: () => void;
@@ -25,7 +25,7 @@ export interface IBugBashItemViewProps extends IBaseComponentProps {
     onSave: (item: IBugBashItem) => void;
 }
 
-export interface IBugBashItemViewState extends IBaseComponentState {
+export interface IBugBashItemEditorState extends IBaseComponentState {
     originalModel?: IBugBashItem;
     loadError?: string;
     model?: IBugBashItem;
@@ -33,7 +33,7 @@ export interface IBugBashItemViewState extends IBaseComponentState {
     disableToolbar?: boolean;
 }
 
-export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBashItemViewState> {
+export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
     public static getNewModel(bugBashId: string): IBugBashItem {
         return {
             id: "",
@@ -48,7 +48,7 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
     }
 
     protected initializeState() {
-        let model = this.props.id ? StoresHub.bugBashItemStore.getItem(this.props.id) : BugBashItemView.getNewModel(this.props.bugBashId);
+        let model = this.props.id ? StoresHub.bugBashItemStore.getItem(this.props.id) : BugBashItemEditor.getNewModel(this.props.bugBashId);
 
         this.state = {
             model: {...model},
@@ -56,9 +56,9 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
         };
     }
 
-    public componentWillReceiveProps(nextProps: Readonly<IBugBashItemViewProps>): void {
+    public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
         if (this.props.id !== nextProps.id) {
-            let model = nextProps.id ? StoresHub.bugBashItemStore.getItem(nextProps.id) : BugBashItemView.getNewModel(nextProps.bugBashId);
+            let model = nextProps.id ? StoresHub.bugBashItemStore.getItem(nextProps.id) : BugBashItemEditor.getNewModel(nextProps.bugBashId);
 
             this.updateState({
                 model: {...model},
@@ -78,9 +78,9 @@ export class BugBashItemView extends BaseComponent<IBugBashItemViewProps, IBugBa
         }
 
         return (
-            <div className="item-view">
+            <div className="item-editor">
                 <CommandBar 
-                    className="item-view-menu"
+                    className="item-editor-menu"
                     items={this._getToolbarItems()} 
                     farItems={this._getFarMenuItems()}
                 />
