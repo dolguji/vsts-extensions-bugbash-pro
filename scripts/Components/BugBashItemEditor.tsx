@@ -252,8 +252,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     }
 
                     try {
+                        let toBeRefreshedModel = {...this.state.model};
                         this.updateState({model: null, originalModel: null, newComment: null});
-                        newModel = await StoresHub.bugBashItemStore.refreshItem(this.state.model);
+                        newModel = await StoresHub.bugBashItemStore.refreshItem(toBeRefreshedModel);
                         if (newModel) {
                             this.updateState({model: {...newModel}, originalModel: {...newModel}, error: null, disableToolbar: false});
                         }

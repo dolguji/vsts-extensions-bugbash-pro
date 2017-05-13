@@ -23,8 +23,9 @@ export class RichEditor extends React.Component<IRichEditorProps, {}> {
     public componentDidMount() {
         this._richEditorContainer = $("#" + this.props.containerId);
         this._richEditorContainer.trumbowyg(this.props.editorOptions || {})
-        .on("tbwchange", () => this.props.onChange(this._richEditorContainer.trumbowyg("html")));
-
+        .on("tbwchange", () => this.props.onChange(this._richEditorContainer.trumbowyg("html")))
+        .on("tbwblur", () => this.props.onChange(this._richEditorContainer.trumbowyg("html")));
+        
         this._richEditorContainer.trumbowyg("html", this.props.data);
     }
 
