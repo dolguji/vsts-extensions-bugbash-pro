@@ -10,10 +10,12 @@ import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/Cont
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import Utils_String = require("VSS/Utils/String");
+import Utils_Date = require("VSS/Utils/Date");
 
-import { IBugBashItem } from "../Models";
+import { IBugBashItem, IComment } from "../Models";
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditor } from "./RichEditor/RichEditor";
 
@@ -135,9 +137,30 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         onChange={(newValue: string) => {                            
                             this.updateState({newComment: newValue});
                         }} />
+
+                    <div className="item-comments">
+                        {this._renderComments()}
+                    </div>
                 </div>
             </div>
         );
+    }
+
+    private _renderComments(): React.ReactNode {
+        let comments = this.state.model.comments.slice();
+        comments.sort((c1, c2) => -1 * Utils_Date.defaultComparer(c1.addedDate, c2.addedDate));
+
+        return comments.map((comment: IComment, index: number) => {
+            return (
+                <div className="item-comment" key={`${index}`}>
+                    <div className="comment-info">
+                        <IdentityView identityDistinctName={comment.addedBy} />
+                        <div className="comment-added-date">{Utils_Date.friendly(new Date(comment.addedDate as any))}</div>
+                    </div>
+                    <div className="comment-text" dangerouslySetInnerHTML={{ __html: comment.text }} />
+                </div>
+            );
+        });
     }
 
     private _isDirty(): boolean {        

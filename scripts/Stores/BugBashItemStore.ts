@@ -52,6 +52,7 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
     public async refreshItem(item: IBugBashItem): Promise<IBugBashItem> {
         let refreshedItem = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(item.bugBashId), item.id, null, false);
         if (refreshedItem) {
+            this._translateDates(refreshedItem);
             this._addItems(refreshedItem);
         }
         else {
@@ -156,6 +157,17 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
             }
             else {
                 item.createdDate = new Date(item.createdDate);
+            }
+        }
+
+        for (let i = 0; i < item.comments.length; i++) {
+            if (typeof item.comments[i].addedDate === "string") {
+                if ((item.comments[i].addedDate as any).trim() === "") {
+                    item.comments[i].addedDate = undefined;
+                }
+                else {
+                    item.comments[i].addedDate = new Date(item.comments[i].addedDate as any);
+                }
             }
         }
     }
