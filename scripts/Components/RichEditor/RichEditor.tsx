@@ -40,7 +40,7 @@ export class RichEditor extends React.Component<IRichEditorProps, {}> {
 
     public render() {
         return (
-            <div id={this.props.containerId} placeholder={this.props.placeholder || ""}>
+            <div id={this.props.containerId} className="rich-editor" placeholder={this.props.placeholder || ""}>
                 
             </div>
         );

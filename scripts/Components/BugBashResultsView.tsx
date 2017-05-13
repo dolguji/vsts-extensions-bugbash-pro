@@ -1,4 +1,4 @@
-import "../../css/ResultsView.scss";
+import "../../css/BugBashResultsView.scss";
 
 import * as React from "react";
 
@@ -25,18 +25,18 @@ import { BugBashStore } from "../Stores/BugBashStore";
 import { BugBashItemStore } from "../Stores/BugBashItemStore";
 import { StoresHub } from "../Stores/StoresHub";
 
-interface IViewHubViewState extends IBaseComponentState {
+interface IBugBashResultsViewState extends IBaseComponentState {
     bugBashItem?: IBugBash;
     items?: IBugBashItem[];
     selectedBugBashItem?: IBugBashItem;
     loading?: boolean;
 }
 
-interface IViewHubViewProps extends IBaseComponentProps {
+interface IBugBashResultsViewProps extends IBaseComponentProps {
     id: string;
 }
 
-export class ViewBugBashView extends BaseComponent<IViewHubViewProps, IViewHubViewState> {
+export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
         return [BugBashStore, BugBashItemStore];
     }

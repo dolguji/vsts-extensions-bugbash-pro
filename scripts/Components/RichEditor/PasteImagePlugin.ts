@@ -14,14 +14,15 @@ import { AttachmentReference } from "TFS/WorkItemTracking/Contracts";
                                 reader;
 
                             for (var i = items.length -1; i >= 0; i += 1) {
-                                if (items[i].type.match(/^image\//)) {
+                                if (items[i].type.indexOf("image") === 0) {
                                     reader = new FileReader();
                                     reader.onloadend = async (event) => {
-                                        // const attachment = await WitClient.getClient().createAttachment(event.target.result, "pastedimage.png");
-                                        // trumbowyg.execCmd('insertImage', attachment.url, undefined, true);
-                                        trumbowyg.execCmd('insertImage', event.target.result, undefined, true);
+                                        const fileName = `pastedimage_${Date.now().toString()}.png`;
+                                        const attachment = await WitClient.getClient().createAttachment(event.target.result, fileName);
+                                        trumbowyg.execCmd('insertImage', attachment.url, undefined, true);
                                     };
-                                    reader.readAsDataURL(items[i].getAsFile());
+                                    reader.readAsArrayBuffer(items[i].getAsFile());
+                                    break;
                                 }
                             }
                         } catch (c) {

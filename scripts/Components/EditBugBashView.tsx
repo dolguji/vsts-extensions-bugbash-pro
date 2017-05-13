@@ -13,16 +13,16 @@ import { BugBashEditor } from "./BugBashEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { StoresHub } from "../Stores/StoresHub";
 
-interface IEditHubViewState extends IBaseComponentState {
+interface IEditBugBashViewState extends IBaseComponentState {
     item: IBugBash;
     loading: boolean;
 }
 
-interface IEditHubViewProps extends IBaseComponentState {
+interface IEditBugBashViewProps extends IBaseComponentState {
     id: string;
 }
 
-export class EditBugBashView extends BaseComponent<IEditHubViewProps, IEditHubViewState> {
+export class EditBugBashView extends BaseComponent<IEditBugBashViewProps, IEditBugBashViewState> {
     protected initializeState() {
         this.state = {
             item: null,

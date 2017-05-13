@@ -31,6 +31,7 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
     model?: IBugBashItem;
     error?: string;
     disableToolbar?: boolean;
+    newComment?: string;
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
@@ -41,6 +42,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             title: "",
             __etag: 0,
             description: "",
+            comments: [],            
             workItemId: null,
             createdBy: "",
             createdDate: null
@@ -97,10 +99,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             this.updateState({model: newModel});
                         }} />
 
-                <div>
+                <div className="item-description-container">
                     <Label>Description</Label>
                     <RichEditor 
-                        containerId="rich-editor" 
+                        containerId="description-editor" 
                         data={model.description} 
                         editorOptions={{
                             btns: [
@@ -120,13 +122,28 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             this.updateState({model: newModel});
                         }} />
                 </div>
+
+                <div className="item-discussions-container">
+                    <Label>Discussions</Label>
+                    <RichEditor 
+                        containerId="comment-editor" 
+                        data={this.state.newComment || ""}
+                        placeholder="Enter a comment"
+                        editorOptions={{
+                            btns: []
+                        }}
+                        onChange={(newValue: string) => {                            
+                            this.updateState({newComment: newValue});
+                        }} />
+                </div>
             </div>
         );
     }
 
     private _isDirty(): boolean {        
         return !Utils_String.equals(this.state.originalModel.title, this.state.model.title)
-            || !Utils_String.equals(this.state.originalModel.description, this.state.model.description);
+            || !Utils_String.equals(this.state.originalModel.description, this.state.model.description)
+            || (this.state.newComment != null && this.state.newComment.trim() !== "");
     }
 
     private _isValid(): boolean {
@@ -158,11 +175,19 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 onClick: async () => {
                     this.updateState({disableToolbar: true, error: null});
                     let updatedModel: IBugBashItem;
+                    let saveModel = {...this.state.model};
+                    if (this.state.newComment != null && this.state.newComment.trim() !== "") {
+                        saveModel.comments.push({
+                            text: this.state.newComment,
+                            addedBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
+                            addedDate: new Date(Date.now())
+                        });
+                    }
 
-                    if (this.state.model.id) {
-                        try {
-                            updatedModel = await StoresHub.bugBashItemStore.updateItem(this.state.model);
-                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, error: null, disableToolbar: false});
+                    if (saveModel.id) {
+                        try {                            
+                            updatedModel = await StoresHub.bugBashItemStore.updateItem(saveModel);
+                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, newComment: null, error: null, disableToolbar: false});
                         }
                         catch (e) {
                             this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
@@ -171,8 +196,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     }
                     else {
                         try {
-                            updatedModel = await StoresHub.bugBashItemStore.createItem(this.state.model);
-                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, error: null, disableToolbar: false});
+                            updatedModel = await StoresHub.bugBashItemStore.createItem(saveModel);
+                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, newComment: null, error: null, disableToolbar: false});
                         }
                         catch (e) {
                             this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
@@ -204,7 +229,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     }
 
                     try {
-                        this.updateState({model: null, originalModel: null});
+                        this.updateState({model: null, originalModel: null, newComment: null});
                         newModel = await StoresHub.bugBashItemStore.refreshItem(this.state.model);
                         if (newModel) {
                             this.updateState({model: {...newModel}, originalModel: {...newModel}, error: null, disableToolbar: false});
@@ -236,7 +261,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         return;
                     }
 
-                    this.updateState({model: {...this.state.originalModel}, disableToolbar: false, error: null});
+                    this.updateState({model: {...this.state.originalModel}, newComment: null, disableToolbar: false, error: null});
                 }
             },
             {

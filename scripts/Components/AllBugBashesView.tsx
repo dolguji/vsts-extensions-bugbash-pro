@@ -21,7 +21,7 @@ import { UrlActions, IBugBash } from "../Models";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashStore } from "../Stores/BugBashStore";
 
-interface IAllHubViewState extends IBaseComponentState {
+interface IAllBugBashesViewState extends IBaseComponentState {
     loading?: boolean,
     allItems?: IBugBash[];
     pastItems?: IBugBash[];
@@ -29,7 +29,7 @@ interface IAllHubViewState extends IBaseComponentState {
     upcomingItems?: IBugBash[];
 }
 
-export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllHubViewState> {
+export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
         return [BugBashStore];
     }

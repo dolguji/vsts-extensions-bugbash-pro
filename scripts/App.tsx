@@ -64,9 +64,9 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
                         </LazyLoad>;
                     break;
                 case HubViewMode.View:
-                    view = <LazyLoad module="scripts/ViewBugBashView">
-                            {(ViewBugBashView) => (
-                                <ViewBugBashView.ViewBugBashView id={this.state.id} />
+                    view = <LazyLoad module="scripts/BugBashResultsView">
+                            {(BugBashResultsView) => (
+                                <BugBashResultsView.BugBashResultsView id={this.state.id} />
                             )}
                         </LazyLoad>;
                     break;

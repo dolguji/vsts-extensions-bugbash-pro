@@ -24,9 +24,16 @@ export interface IBugBashItem {
     id: string;
     bugBashId: string;
     readonly __etag: number;
-    title: string;    
+    title: string;
+    comments: IComment[];
     description?: string;
     workItemId?: number;
     createdDate: Date;
     createdBy: string;
+}
+
+export interface IComment {
+    text: string;
+    addedBy: string;
+    addedDate: Date;
 }
