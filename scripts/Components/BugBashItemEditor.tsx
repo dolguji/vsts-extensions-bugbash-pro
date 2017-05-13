@@ -47,7 +47,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             comments: [],            
             workItemId: null,
             createdBy: "",
-            createdDate: null
+            createdDate: null,
+            acceptedBy: "",
+            acceptedDate: null
         };
     }
 
@@ -75,7 +77,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         let model = this.state.model;
 
         if (this.state.loadError) {
-
+            return <MessageBar messageBarType={MessageBarType.error}>{this.state.loadError}</MessageBar>;
         }
         else if (!model) {
             return <Loading />;
@@ -200,11 +202,11 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     let updatedModel: IBugBashItem;
                     let saveModel = {...this.state.model};
                     if (this.state.newComment != null && this.state.newComment.trim() !== "") {
-                        saveModel.comments.push({
+                        saveModel.comments = saveModel.comments.concat([{
                             text: this.state.newComment,
                             addedBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
                             addedDate: new Date(Date.now())
-                        });
+                        }]);
                     }
 
                     if (saveModel.id) {

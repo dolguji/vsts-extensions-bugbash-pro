@@ -13,7 +13,7 @@
             display: inline;
             font-size: 13px;
 
-            &.title-cell {
+            &.title-cell, &.id-cell {
                 cursor: pointer;
 
                 &:hover {

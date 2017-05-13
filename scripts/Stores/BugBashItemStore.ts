@@ -56,7 +56,7 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
             this._addItems(refreshedItem);
         }
         else {
-            this._removeItem(refreshedItem);
+            this._removeItem(item);
         }
         return refreshedItem;
     }
@@ -157,6 +157,15 @@ export class BugBashItemStore extends BaseStore<IBugBashItem[], IBugBashItem, st
             }
             else {
                 item.createdDate = new Date(item.createdDate);
+            }
+        }
+
+        if (typeof item.acceptedDate === "string") {
+            if ((item.acceptedDate as string).trim() === "") {
+                item.acceptedDate = undefined;
+            }
+            else {
+                item.acceptedDate = new Date(item.acceptedDate);
             }
         }
 

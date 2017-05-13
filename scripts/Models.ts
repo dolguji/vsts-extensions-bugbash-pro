@@ -30,6 +30,8 @@ export interface IBugBashItem {
     workItemId?: number;
     createdDate: Date;
     createdBy: string;
+    acceptedDate: Date;
+    acceptedBy: string;
 }
 
 export interface IComment {
