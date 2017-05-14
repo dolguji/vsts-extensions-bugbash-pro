@@ -19,15 +19,14 @@ export interface IBugBash {
     acceptTemplate?: {team: string, templateId: string};
 }
 
-// bug bash item document for 1 bug bash collection
 export interface IBugBashItem {
     id: string;
     bugBashId: string;
     readonly __etag: number;
     title: string;
     comments: IComment[];
-    description?: string;
-    workItemId?: number;
+    workItemId: number;
+    description?: string;    
     createdDate: Date;
     createdBy: string;
     acceptedDate: Date;
@@ -38,4 +37,10 @@ export interface IComment {
     text: string;
     addedBy: string;
     addedDate: Date;
+}
+
+export interface IBugBashItemModel {
+    model: IBugBashItem;
+    originalModel: IBugBashItem;
+    newComment?: string;
 }

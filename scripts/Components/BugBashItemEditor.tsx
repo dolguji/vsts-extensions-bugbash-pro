@@ -15,141 +15,141 @@ import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/Identit
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 
-import { IBugBashItem, IComment } from "../Models";
+import { IBugBashItem, IBugBashItemModel, IComment } from "../Models";
+import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditor } from "./RichEditor/RichEditor";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
-    id?: string;
-    bugBashId: string;
+    itemModel: IBugBashItemModel;
     onClickNew: () => void;
     onDelete: (item: IBugBashItem) => void;
-    onSave: (item: IBugBashItem) => void;
+    onItemUpdate: (item: IBugBashItem) => void;
+    onChange: (data: {id: string, title: string, description: string, newComment: string}) => void;
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
-    originalModel?: IBugBashItem;
     loadError?: string;
-    model?: IBugBashItem;
+    itemModel?: IBugBashItemModel;
     error?: string;
     disableToolbar?: boolean;
-    newComment?: string;
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
-    public static getNewModel(bugBashId: string): IBugBashItem {
-        return {
-            id: "",
-            bugBashId: bugBashId,
-            title: "",
-            __etag: 0,
-            description: "",
-            comments: [],            
-            workItemId: null,
-            createdBy: "",
-            createdDate: null,
-            acceptedBy: "",
-            acceptedDate: null
-        };
-    }
-
     protected initializeState() {
-        let model = this.props.id ? StoresHub.bugBashItemStore.getItem(this.props.id) : BugBashItemEditor.getNewModel(this.props.bugBashId);
-
         this.state = {
-            model: {...model},
-            originalModel: {...model}
+            itemModel: {
+                model: BugBashItemManager.deepCopy(this.props.itemModel.model),
+                originalModel: BugBashItemManager.deepCopy(this.props.itemModel.originalModel),
+                newComment: this.props.itemModel.newComment
+            }
         };
     }
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
-        if (this.props.id !== nextProps.id) {
-            let model = nextProps.id ? StoresHub.bugBashItemStore.getItem(nextProps.id) : BugBashItemEditor.getNewModel(nextProps.bugBashId);
-
+        if (this.props.itemModel.model.id !== nextProps.itemModel.model.id) {
             this.updateState({
-                model: {...model},
-                originalModel: {...model}
+                itemModel: {
+                    model: BugBashItemManager.deepCopy(nextProps.itemModel.model),
+                    originalModel: BugBashItemManager.deepCopy(nextProps.itemModel.originalModel),
+                    newComment: nextProps.itemModel.newComment
+                }
             });
         }
     }
 
-    public render(): JSX.Element {
-        let model = this.state.model;
+    private _onChange(newModel: IBugBashItemModel) {
+        this.props.onChange({
+            id: newModel.model.id,
+            title: newModel.model.title,
+            description: newModel.model.description,
+            newComment: newModel.newComment
+        });
+    }
 
+    public render(): JSX.Element {
         if (this.state.loadError) {
             return <MessageBar messageBarType={MessageBarType.error}>{this.state.loadError}</MessageBar>;
         }
-        else if (!model) {
+        else if (!this.state.itemModel) {
             return <Loading />;
         }
+        else {
+            const item = this.state.itemModel;
 
-        return (
-            <div className="item-editor">
-                <CommandBar 
-                    className="item-editor-menu"
-                    items={this._getToolbarItems()} 
-                    farItems={this._getFarMenuItems()}
-                />
+            return (
+                <div className="item-editor">
+                    <CommandBar 
+                        className="item-editor-menu"
+                        items={this._getToolbarItems()} 
+                        farItems={this._getFarMenuItems()}
+                    />
 
-                { this.state.error && <MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar>}
+                    { this.state.error && <MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar>}
 
-                <TextField label="Title" 
-                        value={model.title}
-                        required={true} 
-                        onGetErrorMessage={this._getTitleError}
-                        onChanged={(newValue: string) => {
-                            let newModel = {...this.state.model};
-                            newModel.title = newValue;
-                            this.updateState({model: newModel});
-                        }} />
+                    <TextField label="Title" 
+                            value={item.model.title}
+                            required={true} 
+                            onGetErrorMessage={this._getTitleError}
+                            onChanged={(newValue: string) => {
+                                let newModel = {...this.state.itemModel};
+                                newModel.model.title = newValue;
+                                this.updateState({itemModel: newModel});
+                                this._onChange(newModel);
+                            }} />
 
-                <div className="item-description-container">
-                    <Label>Description</Label>
-                    <RichEditor 
-                        containerId="description-editor" 
-                        data={model.description} 
-                        editorOptions={{
-                            btns: [
-                                ['formatting'],
-                                ['bold', 'italic'], 
-                                ['link'],
-                                ['superscript', 'subscript'],
-                                ['insertImage'],
-                                'btnGrp-lists',
-                                ['removeformat'],
-                                ['fullscreen']
-                            ]
-                        }}
-                        onChange={(newValue: string) => {
-                            let newModel = {...this.state.model};
-                            newModel.description = newValue;
-                            this.updateState({model: newModel});
-                        }} />
-                </div>
+                    <div className="item-description-container">
+                        <Label>Description</Label>
+                        <RichEditor 
+                            containerId="description-editor" 
+                            data={item.model.description} 
+                            editorOptions={{
+                                btns: [
+                                    ['formatting'],
+                                    ['bold', 'italic'], 
+                                    ['link'],
+                                    ['superscript', 'subscript'],
+                                    ['insertImage'],
+                                    'btnGrp-lists',
+                                    ['removeformat'],
+                                    ['fullscreen']
+                                ]
+                            }}
+                            onChange={(newValue: string) => {
+                                let newModel = {...this.state.itemModel};
+                                newModel.model.description = newValue;
+                                this.updateState({itemModel: newModel});
+                                this._onChange(newModel);
+                            }} />
+                    </div>
 
-                <div className="item-discussions-container">
-                    <Label>Discussions</Label>
-                    <RichEditor 
-                        containerId="comment-editor" 
-                        data={this.state.newComment || ""}
-                        placeholder="Enter a comment"
-                        editorOptions={{
-                            btns: []
-                        }}
-                        onChange={(newValue: string) => {                            
-                            this.updateState({newComment: newValue});
-                        }} />
+                    <div className="item-discussions-container">
+                        <Label>Discussions</Label>
+                        <RichEditor 
+                            containerId="comment-editor" 
+                            data={item.newComment || ""}
+                            placeholder="Enter a comment"
+                            editorOptions={{
+                                btns: []
+                            }}
+                            onChange={(newValue: string) => {                            
+                                let newModel = {...this.state.itemModel};
+                                newModel.newComment = newValue;
+                                this.updateState({itemModel: newModel});
+                                this._onChange(newModel);
+                            }} />
 
-                    <div className="item-comments">
-                        {this._renderComments()}
+                        <div className="item-comments">
+                            {this._renderComments()}
+                        </div>
                     </div>
                 </div>
-            </div>
-        );
+            );
+        }        
     }
 
     private _renderComments(): React.ReactNode {
-        let comments = this.state.model.comments.slice();
+        let comments = this.state.itemModel.model.comments.slice();
         comments.sort((c1, c2) => -1 * Utils_Date.defaultComparer(c1.addedDate, c2.addedDate));
 
         return comments.map((comment: IComment, index: number) => {
@@ -165,18 +165,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         });
     }
 
-    private _isDirty(): boolean {        
-        return !Utils_String.equals(this.state.originalModel.title, this.state.model.title)
-            || !Utils_String.equals(this.state.originalModel.description, this.state.model.description)
-            || (this.state.newComment != null && this.state.newComment.trim() !== "");
-    }
-
-    private _isValid(): boolean {
-        return this.state.model.title.trim().length > 0 && this.state.model.title.length <= 256;
-    }
-
     private _isNew(): boolean {
-        return !this.state.model.id;
+        return !this.state.itemModel.model.id;
     }
 
     private _getFarMenuItems(): IContextualMenuItem[] {
@@ -196,41 +186,22 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             {
                 key: "save", name: "Save", 
                 title: "Save", iconProps: {iconName: "Save"}, 
-                disabled: this.state.disableToolbar || !this._isDirty() || !this._isValid(),
+                disabled: this.state.disableToolbar || !BugBashItemManager.isDirty(this.state.itemModel) || !BugBashItemManager.isValid(this.state.itemModel.model),
                 onClick: async () => {
                     this.updateState({disableToolbar: true, error: null});
                     let updatedModel: IBugBashItem;
-                    let saveModel = {...this.state.model};
-                    if (this.state.newComment != null && this.state.newComment.trim() !== "") {
-                        saveModel.comments = saveModel.comments.concat([{
-                            text: this.state.newComment,
-                            addedBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
-                            addedDate: new Date(Date.now())
-                        }]);
-                    }
 
-                    if (saveModel.id) {
-                        try {                            
-                            updatedModel = await StoresHub.bugBashItemStore.updateItem(saveModel);
-                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, newComment: null, error: null, disableToolbar: false});
-                        }
-                        catch (e) {
-                            this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
-                            return;
-                        }
+                    try {
+                        updatedModel = await BugBashItemManager.beginSave(this.state.itemModel.model, this.state.itemModel.newComment);
+                        this.updateState({error: null, disableToolbar: false,
+                            itemModel: BugBashItemManager.getItemModel(updatedModel)
+                        });
                     }
-                    else {
-                        try {
-                            updatedModel = await StoresHub.bugBashItemStore.createItem(saveModel);
-                            this.updateState({model: {...updatedModel}, originalModel: {...updatedModel}, newComment: null, error: null, disableToolbar: false});
-                        }
-                        catch (e) {
-                            this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
-                            return;
-                        }
-                    }
+                    catch (e) {
+                        this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
+                    }                   
 
-                    this.props.onSave(updatedModel);
+                    this.props.onItemUpdate(updatedModel);
                 }
             },
             {
@@ -241,7 +212,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     this.updateState({disableToolbar: true, error: null});
                     let newModel: IBugBashItem;
 
-                    if (this._isDirty()) {
+                    if (BugBashItemManager.isDirty(this.state.itemModel)) {
                         let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
                         try {
                             await dialogService.openMessageDialog("Refreshing the item will undo your unsaved changes. Are you sure you want to do that?", { useBowtieStyle: true });
@@ -253,27 +224,21 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         }
                     }
 
-                    try {
-                        let toBeRefreshedModel = {...this.state.model};
-                        this.updateState({model: null, originalModel: null, newComment: null});
-                        newModel = await StoresHub.bugBashItemStore.refreshItem(toBeRefreshedModel);
-                        if (newModel) {
-                            this.updateState({model: {...newModel}, originalModel: {...newModel}, error: null, disableToolbar: false});
-                        }
-                        else {
-                            this.updateState({model: null, originalModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
-                        }                        
+                    this.updateState({itemModel: null});
+                    newModel = await BugBashItemManager.beginGetItem(this.state.itemModel.model.id, this.state.itemModel.model.bugBashId);
+                    if (newModel) {
+                        this.updateState({itemModel: BugBashItemManager.getItemModel(newModel), error: null, disableToolbar: false});
+                        this.props.onItemUpdate(newModel);
                     }
-                    catch (e) {
-                        this.updateState({error: "We encountered some error while creating the bug bash. Please refresh the page and try again.", disableToolbar: false});
-                        return;
+                    else {
+                        this.updateState({itemModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
                     }
                 }
             },
             {
                 key: "undo", name: "Undo", 
                 title: "Undo changes", iconProps: {iconName: "Undo"}, 
-                disabled: this.state.disableToolbar || !this._isDirty(),
+                disabled: this.state.disableToolbar || !BugBashItemManager.isDirty(this.state.itemModel),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     this.updateState({disableToolbar: true});
 
@@ -287,7 +252,11 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         return;
                     }
 
-                    this.updateState({model: {...this.state.originalModel}, newComment: null, disableToolbar: false, error: null});
+                    let newItemModel = {...this.state.itemModel};
+                    newItemModel.model = BugBashItemManager.deepCopy(newItemModel.originalModel);
+                    newItemModel.newComment = "";
+                    this.updateState({itemModel: newItemModel, disableToolbar: false, error: null});
+                    this.props.onItemUpdate(newItemModel.model);
                 }
             },
             {
@@ -307,8 +276,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     }
 
                     this.updateState({disableToolbar: false, error: null});
-                    StoresHub.bugBashItemStore.deleteItems([this.state.model]);
-                    this.props.onDelete(this.state.model);
+                    BugBashItemManager.deleteItems([this.state.itemModel.model]);
+                    this.props.onDelete(this.state.itemModel.model);
                 }
             }
         ]

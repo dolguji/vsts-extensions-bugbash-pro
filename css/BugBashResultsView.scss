@@ -13,9 +13,29 @@
             display: inline;
             font-size: 13px;
 
-            &.title-cell, &.id-cell {
-                cursor: pointer;
+            &.is-dirty {
+                font-weight: bold;
 
+                .identity-view {
+                    .ms-Persona-primaryText {
+                        font-weight: bold;
+                    }
+                }
+            }
+
+            &.is-invalid {
+                color: red;
+
+                .identity-view {
+                    .ms-Persona-primaryText {
+                        color: red;
+                    }
+                }
+            }
+
+            &.title-cell {
+                cursor: pointer;                
+                
                 &:hover {
                     text-decoration: underline;
                     color: #0078d7;
