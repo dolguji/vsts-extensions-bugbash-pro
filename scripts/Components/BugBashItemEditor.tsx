@@ -15,6 +15,7 @@ import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/Identit
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 
+import * as Helpers from "../Helpers";
 import { IBugBashItem, IBugBashItemModel, IComment } from "../Models";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
@@ -184,7 +185,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     private _getToolbarItems(): IContextualMenuItem[] {
         return [
             {
-                key: "save", name: "Save", 
+                key: "save", name: "", 
                 title: "Save", iconProps: {iconName: "Save"}, 
                 disabled: this.state.disableToolbar || !BugBashItemManager.isDirty(this.state.itemModel) || !BugBashItemManager.isValid(this.state.itemModel.model),
                 onClick: async () => {
@@ -196,88 +197,82 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         this.updateState({error: null, disableToolbar: false,
                             itemModel: BugBashItemManager.getItemModel(updatedModel)
                         });
+                        this.props.onItemUpdate(updatedModel);
                     }
                     catch (e) {
                         this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
                     }                   
-
-                    this.props.onItemUpdate(updatedModel);
+                    
                 }
             },
             {
-                key: "refresh", name: "Refresh", 
+                key: "refresh", name: "", 
                 title: "Refresh", iconProps: {iconName: "Refresh"}, 
                 disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async () => {
                     this.updateState({disableToolbar: true, error: null});
                     let newModel: IBugBashItem;
 
-                    if (BugBashItemManager.isDirty(this.state.itemModel)) {
-                        let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                        try {
-                            await dialogService.openMessageDialog("Refreshing the item will undo your unsaved changes. Are you sure you want to do that?", { useBowtieStyle: true });
-                        }
-                        catch (e) {
-                            // user selected "No"" in dialog
-                            this.updateState({disableToolbar: false});
-                            return;
-                        }
-                    }
+                    const confirm = await Helpers.confirmAction(BugBashItemManager.isDirty(this.state.itemModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+                    if (confirm) {
+                        const id = this.state.itemModel.model.id;
+                        const bugBashId = this.state.itemModel.model.bugBashId;
 
-                    this.updateState({itemModel: null});
-                    newModel = await BugBashItemManager.beginGetItem(this.state.itemModel.model.id, this.state.itemModel.model.bugBashId);
-                    if (newModel) {
-                        this.updateState({itemModel: BugBashItemManager.getItemModel(newModel), error: null, disableToolbar: false});
-                        this.props.onItemUpdate(newModel);
+                        this.updateState({itemModel: null});
+                        newModel = await BugBashItemManager.beginGetItem(id, bugBashId);
+                        if (newModel) {
+                            this.updateState({itemModel: BugBashItemManager.getItemModel(newModel), error: null, disableToolbar: false});
+                            this.props.onItemUpdate(newModel);
+                        }
+                        else {
+                            this.updateState({itemModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
+                        }
                     }
                     else {
-                        this.updateState({itemModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
-                    }
+                        this.updateState({disableToolbar: false});                    
+                    }                
                 }
             },
             {
-                key: "undo", name: "Undo", 
+                key: "undo", name: "", 
                 title: "Undo changes", iconProps: {iconName: "Undo"}, 
                 disabled: this.state.disableToolbar || !BugBashItemManager.isDirty(this.state.itemModel),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     this.updateState({disableToolbar: true});
 
-                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                    try {
-                        await dialogService.openMessageDialog("Are you sure you want to undo your changes to this item?", { useBowtieStyle: true });
+                    const confirm = await Helpers.confirmAction(true, "Are you sure you want to undo your changes to this item?");
+                    if (confirm) {
+                        let newItemModel = {...this.state.itemModel};
+                        newItemModel.model = BugBashItemManager.deepCopy(newItemModel.originalModel);
+                        newItemModel.newComment = "";
+                        this.updateState({itemModel: newItemModel, disableToolbar: false, error: null});
+                        this.props.onItemUpdate(newItemModel.model);
                     }
-                    catch (e) {
-                        // user selected "No"" in dialog
+                    else {
                         this.updateState({disableToolbar: false});
-                        return;
                     }
-
-                    let newItemModel = {...this.state.itemModel};
-                    newItemModel.model = BugBashItemManager.deepCopy(newItemModel.originalModel);
-                    newItemModel.newComment = "";
-                    this.updateState({itemModel: newItemModel, disableToolbar: false, error: null});
-                    this.props.onItemUpdate(newItemModel.model);
                 }
             },
             {
-                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, 
+                key: "delete", name: "", title: "Delete", iconProps: {iconName: "Delete"}, 
                 disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async () => {
                     this.updateState({disableToolbar: true});
 
-                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                    try {
-                        await dialogService.openMessageDialog("Are you sure you want to delete this item?", { useBowtieStyle: true });
+                    const confirm = await Helpers.confirmAction(true, "Are you sure you want to delete this item?");
+                    if (confirm) {
+                        this.updateState({disableToolbar: false, error: null});
+                        try {
+                            BugBashItemManager.deleteItems([this.state.itemModel.model]);
+                        }
+                        catch (e) {
+                            
+                        }
+                        this.props.onDelete(this.state.itemModel.model);
                     }
-                    catch (e) {
+                    else {
                         this.updateState({disableToolbar: false});
-                        // user selected "No"" in dialog
-                        return;
                     }
-
-                    this.updateState({disableToolbar: false, error: null});
-                    BugBashItemManager.deleteItems([this.state.itemModel.model]);
-                    this.props.onDelete(this.state.itemModel.model);
                 }
             }
         ]

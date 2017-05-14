@@ -41,22 +41,22 @@
                     color: #0078d7;
                 }
             }
-        }
 
-        .identity-view {
-            font-size: 13px;
-            height: 16px;
-            line-height: 16px;
-            margin-right: 0;
-
-            .ms-Persona-details {
-                padding: 0 0 0 5px;
-            }
-
-            .ms-Persona-primaryText {
+            .identity-view {
                 font-size: 13px;
+                height: 16px;
+                line-height: 16px;
+                margin-right: 0;
+
+                .ms-Persona-details {
+                    padding: 0 0 0 5px;
+                }
+
+                .ms-Persona-primaryText {
+                    font-size: 13px;
+                }
             }
-        }
+        }        
     }
 
     .item-viewer {

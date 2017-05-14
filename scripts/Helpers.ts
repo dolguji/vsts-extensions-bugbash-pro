@@ -5,6 +5,23 @@ import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import * as WitBatchClient from "TFS/WorkItemTracking/BatchRestClient";
 
+export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
+    if (condition) {
+        let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
+        try {
+            await dialogService.openMessageDialog(msg, { useBowtieStyle: true });
+            return true;
+        }
+        catch (e) {
+            // user selected "No"" in dialog
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 export async function saveWorkItems(fieldValuesMap: IDictionaryNumberTo<IDictionaryStringTo<string>>): Promise<WorkItem[]> {
     let batchDocument: [number, JsonPatchDocument][] = [];
 

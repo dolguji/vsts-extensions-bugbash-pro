@@ -26,6 +26,7 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
 
+import * as Helpers from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBash, UrlActions } from "../Models";
 import { RichEditor } from "./RichEditor/RichEditor";
@@ -240,17 +241,13 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     this.updateState({disableToolbar: true});
 
-                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                    try {
-                        await dialogService.openMessageDialog("Are you sure you want to undo your changes to this instance?", { useBowtieStyle: true });
+                    const confirm = await Helpers.confirmAction(true, "Are you sure you want to undo your changes to this instance?");
+                    if (confirm) {
+                        this.updateState({model: {...this.state.originalModel}, disableToolbar: false, error: null});
                     }
-                    catch (e) {
-                        // user selected "No"" in dialog
+                    else {
                         this.updateState({disableToolbar: false});
-                        return;
                     }
-
-                    this.updateState({model: {...this.state.originalModel}, disableToolbar: false, error: null});
                 }
             },
             {
@@ -259,24 +256,20 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     this.updateState({disableToolbar: true});
 
                     if (!this._isNew()) {
-                        let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                        try {
-                            await dialogService.openMessageDialog("Are you sure you want to delete this instance?", { useBowtieStyle: true });
+                        const confirm = await Helpers.confirmAction(true, "Are you sure you want to delete this instance?");
+                        if (confirm) {
+                            try {
+                                await StoresHub.bugBashStore.deleteItem(model);
+                                let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                            }
+                            catch (e) {
+                                this.updateState({error: "We encountered some error while deleting the bug bash. Please refresh the page and try again.", disableToolbar: false});
+                            }
                         }
-                        catch (e) {
-                            // user selected "No"" in dialog
+                        else {
                             this.updateState({disableToolbar: false});
-                            return;
-                        }
-                        
-                        try {
-                            await StoresHub.bugBashStore.deleteItem(model);
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
-                        }
-                        catch (e) {
-                            this.updateState({error: "We encountered some error while deleting the bug bash. Please refresh the page and try again.", disableToolbar: false});
-                        }                    
+                        }             
                     }
                 }
             },
@@ -284,19 +277,12 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 key: "results", name: "Show results", title: "Show results", iconProps: {iconName: "ShowResults"}, disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     if (!this._isNew()) {
-                        if (this._isDirty()) {
-                            let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                            try {
-                                await dialogService.openMessageDialog("Are you sure you want to go back to results view? This action will reset your unsaved changes.", { useBowtieStyle: true });
-                            }
-                            catch (e) {
-                                // user selected "No"" in dialog
-                                return;
-                            }
+                        const confirm = await Helpers.confirmAction(this._isDirty(), "Are you sure you want to go back to results view? This action will reset your unsaved changes.");
+                        if (confirm) {
+                            this.updateState({model: {...this.state.originalModel}, error: null});
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: model.id});
                         }
-                        this.updateState({model: {...this.state.originalModel}, error: null});
-                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                        navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: model.id});
                     }
                 }
             },

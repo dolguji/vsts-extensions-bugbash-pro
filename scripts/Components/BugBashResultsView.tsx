@@ -24,9 +24,9 @@ import { openWorkItemDialog } from "VSTS_Extension/Components/Grids/WorkItemGrid
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 
-import { IBugBash, UrlActions } from "../Models";
+import { IBugBash, UrlActions, IBugBashItem, IBugBashItemModel } from "../Models";
+import * as Helpers from "../Helpers";
 import { BugBashItemManager } from "../BugBashItemManager";
-import { IBugBashItem, IBugBashItemModel } from "../Models";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { StoresHub } from "../Stores/StoresHub";
@@ -78,7 +78,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     protected async initialize() {        
-        const found = await StoresHub.bugBashStore.ensureItem(this.props.id);        
+        const found = await StoresHub.bugBashStore.ensureItem(this.props.id);
 
         if (!found) {
             this.updateState({
@@ -106,7 +106,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             for (const workItem of workItems) {
                 if (workItem) {
                     map[workItem.id] = workItem;
-                }                
+                }
             }
             this.updateState({workItemsMap: map, items: items.map(item => this._getItemModel(item))});
         }
@@ -172,10 +172,20 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                             newItems.push(newModel);
                                         }
                                         this.updateState({items: newItems, selectedItem: newModel});
-                                    }                                    
+                                    }
                                 }}
                                 onDelete={(item: IBugBashItem) => {
-                                    this.updateState({selectedItem: null});
+                                    if (item.id) {
+                                        let newItems = this.state.items.slice();
+                                        let index = Utils_Array.findIndex(newItems, i => i.model.id === item.id);
+                                        if (index !== -1) {
+                                            newItems.splice(index, 1);
+                                            this.updateState({items: newItems, selectedItem: null});
+                                        }
+                                        else {
+                                            this.updateState({selectedItem: null});
+                                        }
+                                    }
                                 }} 
                                 onChange={(data: {id: string, title: string, description: string, newComment: string}) => {
                                     if (data.id) {
@@ -187,7 +197,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                             newItems[index].newComment = data.newComment;
                                             this.updateState({items: newItems, selectedItem: newItems[index]});
                                         }
-                                    }                                    
+                                    }
                                 }} />
                         </div>
                     </div>
@@ -302,7 +312,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             {BugBashItemManager.isAccepted(item.model) ? item.model.workItemId : (BugBashItemManager.isDirty(item) ? "*" : "")}
                         </Label>;
             },
-            sortFunction: (item1: IBugBashItemModel, item2: IBugBashItemModel, sortOrder: SortOrder) => {                
+            sortFunction: (item1: IBugBashItemModel, item2: IBugBashItemModel, sortOrder: SortOrder) => {
                 const v1 = item1.model.workItemId;
                 const v2 = item2.model.workItemId;
                 let compareValue = (v1 > v2) ? 1 : -1;
@@ -362,9 +372,9 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 }
             }
-        ];        
+        ];
 
-        let columns: GridColumn[] = [            
+        let columns: GridColumn[] = [
             {
                 key: "title",
                 name: "Title",
@@ -413,7 +423,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     let compareValue = Utils_Date.defaultComparer(item1.model.createdDate, item2.model.createdDate);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 }
-            }            
+            }
         ];
 
         if (this.state.filterMode === FilterMode.All) {
@@ -428,14 +438,20 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 {
                     key: "edit", name: "Edit", title: "Edit", iconProps: {iconName: "Edit"},
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                        navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, {id: this.props.id});
+                        const confirm = await Helpers.confirmAction(this._isAnyItemDirty(), "You have some unsaved items in the list. Navigating to a different page will remove all the unsaved data. Are you sure you want to do it?");
+                        if (confirm) {
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, {id: this.props.id});
+                        }
                     }
                 },
                 {
                     key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        await this._refreshData();                        
+                        const confirm = await Helpers.confirmAction(this._isAnyItemDirty(), "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
+                        if (confirm) {
+                            this._refreshData();
+                        }
                     }
                 }
             ];
@@ -446,8 +462,11 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 {
                     key: "Home", name: "Home", title: "Return to home view", iconProps: {iconName: "Home"}, 
                     onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                        navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                        const confirm = await Helpers.confirmAction(this._isAnyItemDirty(), "You have some unsaved items in the list. Navigating to a different page will remove all the unsaved data. Are you sure you want to do it?");
+                        if (confirm) {
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                        }
                     }
                 }
             ] as IContextualMenuItem[];
@@ -488,23 +507,30 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 key: "Delete", name: "Delete", title: "Delete selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
                 disabled: selectedItems.length === 0,
                 onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                    let dialogService: IHostDialogService = await VSS.getService(VSS.ServiceIds.Dialog) as IHostDialogService;
-                    try {
-                        await dialogService.openMessageDialog("Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.", { useBowtieStyle: true });
+                    const confirm = await Helpers.confirmAction(true, "Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.");
+                    if (confirm) {
+                        if (this.state.selectedItem && Utils_Array.findIndex(selectedItems, item => item.model.id === this.state.selectedItem.model.id) !== -1) {
+                            this.updateState({selectedItem: null});
+                        }
+                        
+                        await BugBashItemManager.deleteItems(selectedItems.map(i => i.model));
+                        let newItems = this.state.items.slice();
+                        newItems = Utils_Array.subtract(newItems, selectedItems, (i1, i2) => i1.model.id === i2.model.id ? 0 : 1);
+                        
+                        this.updateState({items: newItems});
                     }
-                    catch (e) {
-                        // user selected "No"" in dialog
-                        return;
-                    }
-
-                    if (this.state.selectedItem && Utils_Array.findIndex(selectedItems, item => item.model.id === this.state.selectedItem.model.id) !== -1) {
-                        this.updateState({selectedItem: null});
-                    }
-                    
-                    await BugBashItemManager.deleteItems(selectedItems.map(i => i.model));
-                    this.updateState({items: [], workItemsMap: {}});
                 }
             }
         ];
+    }
+
+    private _isAnyItemDirty(): boolean {
+        for (let item of this.state.items) {
+            if (BugBashItemManager.isDirty(item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
