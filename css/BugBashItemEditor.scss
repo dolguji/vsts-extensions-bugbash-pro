@@ -1,6 +1,12 @@
 .item-editor {
     .item-editor-menu {
         margin-bottom: 10px;
+
+        .auto-accept-menuitem {
+            i {
+                color: #107c10;
+            }
+        }
     }
     
     .trumbowyg-box {       
@@ -34,45 +40,6 @@
 
             .trumbowyg-button-pane {
                 display: none;
-            }
-
-            #comment-editor {
-                min-height: 70px;
-                max-height: 70px;
-            }
-        }
-
-        .item-comments {
-            margin-top: 10px;
-
-            .item-comment {
-                margin-bottom: 10px;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 5px;
-
-                .comment-info {
-                    display: flex;
-
-                    .identity-view {
-                        flex: 1;
-
-                        .ms-Persona-primaryText {
-                            font-weight: bold;
-                        }
-                    }
-
-                    .comment-added-date {
-                        font-size: 85%;
-                        font-style: italic;
-                        color: #666666;
-                        margin-right: 10px;
-                    }
-                }
-
-                .comment-text {
-                    margin-top: 5px;
-                    word-wrap: break-word;
-                }
             }
         }
     }

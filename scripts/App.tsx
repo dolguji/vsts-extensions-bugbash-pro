@@ -10,7 +10,7 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 
-import { UrlActions } from "./Models";
+import { UrlActions } from "./Constants";
 
 export enum HubViewMode {
     All,

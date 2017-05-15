@@ -8,7 +8,7 @@ import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
 import Utils_String = require("VSS/Utils/String");
 
-import { IBugBash } from "../Models";
+import { IBugBash } from "../Interfaces";
 import { BugBashEditor } from "./BugBashEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { StoresHub } from "../Stores/StoresHub";

@@ -4,7 +4,7 @@ import Utils_Array = require("VSS/Utils/Array");
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
-import { IBugBash } from "../Models";
+import { IBugBash } from "../Interfaces";
 
 export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     protected getItemByKey(id: string): IBugBash {

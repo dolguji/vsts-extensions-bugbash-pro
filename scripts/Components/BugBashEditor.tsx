@@ -28,7 +28,8 @@ import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
 
 import * as Helpers from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
-import { IBugBash, UrlActions } from "../Models";
+import { UrlActions } from "../Constants";
+import { IBugBash } from "../Interfaces";
 import { RichEditor } from "./RichEditor/RichEditor";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
@@ -298,7 +299,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         );
     }
 
-    @autobind
     private _getTemplateDropdownOptions(selectedValue: string): IDropdownOption[] {
         let emptyTemplateItem = [
             {   

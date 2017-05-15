@@ -1,9 +1,9 @@
-import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
 import {JsonPatchDocument, JsonPatchOperation, Operation} from "VSS/WebApi/Contracts";
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-import * as WitBatchClient from "TFS/WorkItemTracking/BatchRestClient";
+import Utils_String = require("VSS/Utils/String");
+
+import { IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {
@@ -21,40 +21,6 @@ export async function confirmAction(condition: boolean, msg: string): Promise<bo
     return true;
 }
 
-
-export async function saveWorkItems(fieldValuesMap: IDictionaryNumberTo<IDictionaryStringTo<string>>): Promise<WorkItem[]> {
-    let batchDocument: [number, JsonPatchDocument][] = [];
-
-    for (const id in fieldValuesMap) {
-        let patchDocument: JsonPatchDocument & JsonPatchOperation[] = [];
-        for (let fieldRefName in fieldValuesMap[id]) {
-            patchDocument.push({
-                op: Operation.Add,
-                path: `/fields/${fieldRefName}`,
-                value: fieldValuesMap[id][fieldRefName]
-            } as JsonPatchOperation);
-        }
-
-        batchDocument.push([parseInt(id), patchDocument]);
-    }
-
-    let response = await WitBatchClient.getClient().updateWorkItemsBatch(batchDocument);
-    return response.value.map((v: WitBatchClient.JsonHttpResponse) => JSON.parse(v.body) as WorkItem);
-}
-
-export async function saveWorkItem(id: number, fieldValues: IDictionaryStringTo<string>): Promise<WorkItem> {
-    let patchDocument: JsonPatchDocument & JsonPatchOperation[] = [];
-    for (let fieldRefName in fieldValues) {
-        patchDocument.push({
-            op: Operation.Add,
-            path: `/fields/${fieldRefName}`,
-            value: fieldValues[fieldRefName]
-        } as JsonPatchOperation);
-    }
-
-    return await WitClient.getClient().updateWorkItem(patchDocument, id);
-}
-
 export async function createWorkItem(workItemType: string, fieldValues: IDictionaryStringTo<string>): Promise<WorkItem> {
     let patchDocument: JsonPatchDocument & JsonPatchOperation[] = [];
     for (let fieldRefName in fieldValues) {
@@ -68,14 +34,65 @@ export async function createWorkItem(workItemType: string, fieldValues: IDiction
     return await WitClient.getClient().createWorkItem(patchDocument, VSS.getWebContext().project.id, workItemType);
 }
 
-export function isInteger(value: string): boolean {
-    return /^\d+$/.test(value);
-}
-
-export function parseTags(tags: string): string[] {
-    if (tags && tags.trim()) {
-        let tagsArr = (tags || "").split(";");
-        return tagsArr.map((t: string) => t.trim());
+export class BugBashItemHelpers {
+    public static getNewItemViewModel(bugBashId: string): IBugBashItemViewModel {        
+        return {
+            model: this.getNewItem(bugBashId),
+            originalModel: this.getNewItem(bugBashId)
+        }
     }
-    return [];
+
+    public static getNewItem(bugBashId: string): IBugBashItem {
+        return {
+            id: "",
+            bugBashId: bugBashId,
+            __etag: 0,
+            title: "",
+            description: "",
+            workItemId: 0,
+            createdDate: null,
+            createdBy: "",
+            acceptedDate: null,
+            acceptedBy: ""
+        };
+    }
+
+    public static deepCopy(model: IBugBashItem): IBugBashItem {
+        return {
+            id: model.id,
+            bugBashId: model.bugBashId,
+            __etag: model.__etag,
+            title: model.title,
+            description: model.description,
+            workItemId: model.workItemId,
+            createdDate: model.createdDate,
+            createdBy: model.createdBy,
+            acceptedDate: model.acceptedDate,
+            acceptedBy: model.acceptedBy
+        }    
+    }
+
+    public static getItemViewModel(model: IBugBashItem): IBugBashItemViewModel {
+        return {
+            model: this.deepCopy(model),
+            originalModel: this.deepCopy(model)
+        }
+    }
+
+    public static isNew(model: IBugBashItem): boolean {
+        return !model.id;
+    }
+
+    public static isDirty(viewModel: IBugBashItemViewModel): boolean {        
+        return !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
+            || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description);
+    }
+
+    public static isValid(model: IBugBashItem): boolean {
+        return model.title.trim().length > 0 && model.title.trim().length <= 256;
+    }
+
+    public static isAccepted(model: IBugBashItem): boolean {
+        return model.workItemId != null && model.workItemId > 0;
+    }
 }

@@ -17,7 +17,8 @@ import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
 
-import { UrlActions, IBugBash } from "../Models";
+import { UrlActions } from "../Constants";
+import { IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashStore } from "../Stores/BugBashStore";
 
@@ -111,7 +112,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         }
     }    
 
-    @autobind
     private _getMenuItems(): IContextualMenuItem[] {
          return [
             {
@@ -145,7 +145,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         );
     }
 
-    @autobind
     private async _onRowClick(item: IBugBash) {
         let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
         navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: item.id});

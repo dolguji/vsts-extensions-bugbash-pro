@@ -1,9 +1,4 @@
-export module UrlActions {
-    export var ACTION_NEW = "new";
-    export var ACTION_ALL = "all";
-    export var ACTION_VIEW = "view";
-    export var ACTION_EDIT = "edit";
-}
+import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
 export interface IBugBash {
     id: string;
@@ -24,7 +19,6 @@ export interface IBugBashItem {
     bugBashId: string;
     readonly __etag: number;
     title: string;
-    comments: IComment[];
     workItemId: number;
     description?: string;    
     createdDate: Date;
@@ -33,14 +27,12 @@ export interface IBugBashItem {
     acceptedBy: string;
 }
 
-export interface IComment {
-    text: string;
-    addedBy: string;
-    addedDate: Date;
-}
-
-export interface IBugBashItemModel {
+export interface IBugBashItemViewModel {
     model: IBugBashItem;
     originalModel: IBugBashItem;
-    newComment?: string;
+}
+
+export interface IAcceptedItemViewModel {
+    model: IBugBashItem;
+    workItem: WorkItem;
 }

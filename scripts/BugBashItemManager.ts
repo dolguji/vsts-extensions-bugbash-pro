@@ -1,7 +1,13 @@
-import { IBugBashItem, IBugBashItemModel } from "./Models";
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+
 import Utils_Array = require("VSS/Utils/Array");
 import Utils_String = require("VSS/Utils/String");
+import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
+import * as WitClient from "TFS/WorkItemTracking/RestClient";
+
+import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "./Interfaces";
+import { createWorkItem, BugBashItemHelpers } from "./Helpers";
+import { StoresHub } from "./Stores/StoresHub";
 
 function getBugBashCollectionKey(bugBashId: string): string {
     return `BugBashCollection_${bugBashId}`;
@@ -25,68 +31,9 @@ function translateDates(model: IBugBashItem) {
             model.acceptedDate = new Date(model.acceptedDate);
         }
     }
-
-    for (let i = 0; i < model.comments.length; i++) {
-        if (typeof model.comments[i].addedDate === "string") {
-            if ((model.comments[i].addedDate as any).trim() === "") {
-                model.comments[i].addedDate = undefined;
-            }
-            else {
-                model.comments[i].addedDate = new Date(model.comments[i].addedDate as any);
-            }
-        }
-    }
 }
 
 export class BugBashItemManager {
-    public static getNewItemModel(bugBashId: string): IBugBashItemModel {        
-        return {
-            model: this.getNewItem(bugBashId),
-            originalModel: this.getNewItem(bugBashId),
-            newComment: ""
-        }
-    }
-
-    public static getNewItem(bugBashId: string): IBugBashItem {
-        return {
-            id: "",
-            bugBashId: bugBashId,
-            __etag: 0,
-            title: "",
-            comments: [],
-            description: "",
-            workItemId: 0,
-            createdDate: null,
-            createdBy: "",
-            acceptedDate: null,
-            acceptedBy: ""
-        };
-    }
-
-    public static deepCopy(model: IBugBashItem): IBugBashItem {
-        return {
-            id: model.id,
-            bugBashId: model.bugBashId,
-            __etag: model.__etag,
-            title: model.title,
-            comments: model.comments.slice(),
-            description: model.description,
-            workItemId: model.workItemId,
-            createdDate: model.createdDate,
-            createdBy: model.createdBy,
-            acceptedDate: model.acceptedDate,
-            acceptedBy: model.acceptedBy
-        }    
-    }
-
-    public static getItemModel(model: IBugBashItem): IBugBashItemModel {
-        return {
-            model: this.deepCopy(model),
-            originalModel: this.deepCopy(model),
-            newComment: ""
-        }
-    }
-
     public static async beginGetItems(bugBashId: string): Promise<IBugBashItem[]> {
         const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
         for(let model of models) {
@@ -104,10 +51,10 @@ export class BugBashItemManager {
         return null;
     }    
 
-    public static async deleteItems(items: IBugBashItem[]): Promise<void> {
-        await Promise.all(items.map(async (item) => {
+    public static async deleteItems(models: IBugBashItem[]): Promise<void> {
+        await Promise.all(models.map(async (model) => {
             try {
-                return await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(item.bugBashId), item.id, false);
+                return await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(model.bugBashId), model.id, false);
             }
             catch (e) {
                 return null;
@@ -115,41 +62,14 @@ export class BugBashItemManager {
         }));
     }
 
-    public static isNew(model: IBugBashItem): boolean {
-        return !model.id;
-    }
-
-    public static isDirty(itemModel: IBugBashItemModel): boolean {        
-        return !Utils_String.equals(itemModel.model.title, itemModel.originalModel.title)
-            || !Utils_String.equals(itemModel.model.description, itemModel.originalModel.description)
-            || itemModel.newComment !== "";
-    }
-
-    public static isValid(model: IBugBashItem): boolean {
-        return model.title.trim().length > 0 && model.title.trim().length <= 256;
-    }
-
-    public static isAccepted(model: IBugBashItem): boolean {
-        return model.workItemId != null && model.workItemId > 0;
-    }
-
-    public static async beginSave(model: IBugBashItem, newComment?: string): Promise<IBugBashItem> {
-        const isNew = this.isNew(model);
-        let cloneModel = this.deepCopy(model);
+    public static async beginSave(model: IBugBashItem): Promise<IBugBashItem> {
+        const isNew = BugBashItemHelpers.isNew(model);
+        let cloneModel = BugBashItemHelpers.deepCopy(model);
         let updatedModel: IBugBashItem;
 
         cloneModel.id = model.id || `${model.bugBashId}_${Date.now().toString()}`;
         cloneModel.createdBy = model.createdBy || `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
         cloneModel.createdDate = model.createdDate || new Date(Date.now());
-        cloneModel.comments = model.comments || [];
-
-        if (newComment && newComment.trim() !== "") {
-            cloneModel.comments = cloneModel.comments.concat([{
-                text: newComment,
-                addedBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
-                addedDate: new Date(Date.now())
-            }]);
-        }
 
         if (isNew) {
             updatedModel = await ExtensionDataManager.createDocument(getBugBashCollectionKey(cloneModel.bugBashId), cloneModel, false);
@@ -161,5 +81,64 @@ export class BugBashItemManager {
         translateDates(updatedModel);
 
         return updatedModel;
+    }
+
+    public static async acceptItem(model: IBugBashItem): Promise<IAcceptedItemViewModel> {
+        let updatedItem: IBugBashItem;
+        let savedWorkItem: WorkItem;
+
+        try {
+            // first do a empty save to check if its the latest version of the item            
+            updatedItem = await this.beginSave(model);
+        }
+        catch (e) {
+            throw "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
+        }
+
+        // get accept template
+        const bugBash = StoresHub.bugBashStore.getItem(model.bugBashId);
+        const templateExists = await StoresHub.workItemTemplateItemStore.ensureTemplateItem(bugBash.acceptTemplate.templateId, bugBash.acceptTemplate.team);
+        if (templateExists) {
+            const template = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
+            let fieldValues = {...template.fields};
+            fieldValues["System.Title"] = model.title;
+            fieldValues[bugBash.itemDescriptionField] = model.description;
+            if (fieldValues["System.Tags-Add"]) {
+                fieldValues["System.Tags"] = fieldValues["System.Tags-Add"];
+            }            
+
+            delete fieldValues["System.Tags-Add"];
+            delete fieldValues["System.Tags-Remove"];
+
+            try {
+                // create work item
+                savedWorkItem = await createWorkItem(bugBash.workItemType, fieldValues);
+            }
+            catch (e) {
+                return {
+                    model: updatedItem,
+                    workItem: null
+                };
+            }
+            
+            let workItem = await WitClient.getClient().getWorkItem(savedWorkItem.id, ["System.Id", "System.Title", "System.WorkItemType", "System.State", "System.AssignedTo", "System.AreaPath", bugBash.itemDescriptionField]);
+
+            // associate work item with bug bash item
+            updatedItem.workItemId = savedWorkItem.id;
+            updatedItem.acceptedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+            updatedItem.acceptedDate = new Date(Date.now());
+            updatedItem = await this.beginSave(updatedItem);
+
+            return {
+                model: updatedItem,
+                workItem: workItem
+            };
+        }
+        else {
+            return {
+                model: updatedItem,
+                workItem: null
+            }
+        }
     }
 }
