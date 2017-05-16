@@ -38,7 +38,8 @@ interface IBugBashResultsViewState extends IBaseComponentState {
     bugBashItem?: IBugBash;
     viewModels?: IBugBashItemViewModel[];
     selectedViewModel?: IBugBashItemViewModel;
-    workItemsMap?: IDictionaryNumberTo<WorkItem>;    
+    workItemsMap?: IDictionaryNumberTo<WorkItem>;
+    selectedPivot?: string;
 }
 
 interface IBugBashResultsViewProps extends IBaseComponentProps {
@@ -148,23 +149,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             StoresHub.workItemFieldStore.getItem("System.AssignedTo"),
             StoresHub.workItemFieldStore.getItem("System.AreaPath")
         ];
-        
-        if (!this.state.bugBashItem.autoAccept) {
-            return (
-                <div className="pivot-container">
-                    <Pivot>
-                        <PivotItem linkText="Pending Items">
-                            <Grid
-                                className="bugbash-item-grid"
-                                items={pendingItems}
-                                columns={this._getPendingGridColumns()}
-                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                                contextMenuProps={{menuItems: this._getContextMenuItems}}
-                                onItemInvoked={this._onPendingItemInvoked}
-                            />
-                        </PivotItem>
-                        <PivotItem linkText="AcceptedItems">
-                            <WorkItemGrid
+
+        const workItemGrid = <WorkItemGrid
                                 className="bugbash-item-grid"
                                 workItems={workItems}
                                 fields={fields}
@@ -174,26 +160,31 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                     this.updateState({workItemsMap: map});
                                 }}
                                 commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                            />;
+        
+        if (!this.state.bugBashItem.autoAccept) {
+            return (
+                <div className="pivot-container">
+                    <Pivot initialSelectedKey={this.state.selectedPivot || "Pending"} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>
+                        <PivotItem linkText="Pending Items" itemKey="Pending">
+                            <Grid
+                                className="bugbash-item-grid"
+                                items={pendingItems}
+                                columns={this._getPendingGridColumns()}
+                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                                 contextMenuProps={{menuItems: this._getContextMenuItems}}
+                                onItemInvoked={this._onPendingItemInvoked}
                             />
+                        </PivotItem>
+                        <PivotItem linkText="AcceptedItems" itemKey="Accepted">
+                            {workItemGrid}
                         </PivotItem>
                     </Pivot>
                 </div>
             );
         }
         else {
-            return <WorkItemGrid
-                        className="bugbash-item-grid"
-                        workItems={workItems}
-                        fields={fields}
-                        onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
-                            let map = {...this.state.workItemsMap};
-                            map[updatedWorkItem.id] = updatedWorkItem;
-                            this.updateState({workItemsMap: map});
-                        }}
-                        commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                        contextMenuProps={{menuItems: this._getContextMenuItems}}
-                    />;
+            return workItemGrid;
         }        
     }
 
