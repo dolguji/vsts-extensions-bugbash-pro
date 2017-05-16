@@ -49,6 +49,7 @@ export class BugBashItemHelpers {
             __etag: 0,
             title: "",
             description: "",
+            areaPath: "",
             workItemId: 0,
             createdDate: null,
             createdBy: ""
@@ -61,6 +62,7 @@ export class BugBashItemHelpers {
             bugBashId: model.bugBashId,
             __etag: model.__etag,
             title: model.title,
+            areaPath: "",
             description: model.description,
             workItemId: model.workItemId,
             createdDate: model.createdDate,

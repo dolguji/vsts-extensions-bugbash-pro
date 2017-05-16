@@ -5,9 +5,11 @@ import { WorkItemTemplateStore } from "VSTS_Extension/Stores/WorkItemTemplateSto
 import { WorkItemTemplateItemStore } from "VSTS_Extension/Stores/WorkItemTemplateItemStore";
 
 import { BugBashStore } from "../Stores/BugBashStore";
+import { WorkItemAreaPathStore } from "../Stores/WorkItemAreaPathStore";
 
 export module StoresHub {
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
+    export var workItemAreaPathStore: WorkItemAreaPathStore = StoreFactory.getInstance<WorkItemAreaPathStore>(WorkItemAreaPathStore);
     export var workItemFieldStore: WorkItemFieldStore = StoreFactory.getInstance<WorkItemFieldStore>(WorkItemFieldStore);
     export var workItemTypeStore: WorkItemTypeStore = StoreFactory.getInstance<WorkItemTypeStore>(WorkItemTypeStore);
     export var workItemTemplateStore: WorkItemTemplateStore = StoreFactory.getInstance<WorkItemTemplateStore>(WorkItemTemplateStore);
