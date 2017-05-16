@@ -22,15 +22,6 @@ function translateDates(model: IBugBashItem) {
             model.createdDate = new Date(model.createdDate);
         }
     }
-
-    if (typeof model.acceptedDate === "string") {
-        if ((model.acceptedDate as string).trim() === "") {
-            model.acceptedDate = undefined;
-        }
-        else {
-            model.acceptedDate = new Date(model.acceptedDate);
-        }
-    }
 }
 
 export class BugBashItemManager {
@@ -125,8 +116,6 @@ export class BugBashItemManager {
 
             // associate work item with bug bash item
             updatedItem.workItemId = savedWorkItem.id;
-            updatedItem.acceptedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-            updatedItem.acceptedDate = new Date(Date.now());
             updatedItem = await this.beginSave(updatedItem);
 
             return {

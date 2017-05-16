@@ -13,7 +13,7 @@ export interface IRichEditorProps {
 }
 
 export class RichEditor extends React.Component<IRichEditorProps, {}> {
-    private _richEditorContainer: JQuery;
+    private _richEditorContainer: any;
 
     constructor(props: IRichEditorProps, context) {
         super();

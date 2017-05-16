@@ -23,8 +23,6 @@ export interface IBugBashItem {
     description?: string;    
     createdDate: Date;
     createdBy: string;
-    acceptedDate: Date;
-    acceptedBy: string;
 }
 
 export interface IBugBashItemViewModel {

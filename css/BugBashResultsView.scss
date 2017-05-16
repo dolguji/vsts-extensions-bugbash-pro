@@ -2,10 +2,24 @@
     display: flex;
     height: 100%;
 
-    .bugbash-item-grid {        
+    .item-editor-container {
+        margin-left: 20px;
+        padding-right: 10px;
+        width: 25%;        
+    }   
+
+    .pivot-container {
         width: 75%;
-        border-right: 1px solid #ccc;
+
+        .bugbash-item-grid {
+            width: 100%;
+            padding-top: 10px;
+        }      
+    }
+
+    .bugbash-item-grid {
         padding-right: 0;
+        width: 75%;
 
         .item-grid-cell {
             padding: 0;
@@ -58,10 +72,4 @@
             }
         }        
     }
-
-    .item-viewer {
-        margin-left: 20px;
-        padding-right: 10px;
-        width: 25%;        
-    }    
 }

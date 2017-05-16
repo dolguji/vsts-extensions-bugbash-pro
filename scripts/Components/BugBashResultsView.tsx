@@ -13,6 +13,7 @@ import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
+import { Pivot, PivotItem } from "OfficeFabric/Pivot";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
@@ -32,29 +33,11 @@ import { BugBashItemEditor } from "./BugBashItemEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { StoresHub } from "../Stores/StoresHub";
 
-enum FilterMode {
-    All,
-    AcceptedItems,
-    PendingItems
-}
-
-function getTextFromFilterMode(filterMode: FilterMode) {
-    switch (filterMode){
-        case FilterMode.All:
-            return "All";
-        case FilterMode.AcceptedItems:
-            return "Accepted items";
-        default:
-            return "Pending items";
-    }
-}
 
 interface IBugBashResultsViewState extends IBaseComponentState {
     bugBashItem?: IBugBash;
     viewModels?: IBugBashItemViewModel[];
     selectedViewModel?: IBugBashItemViewModel;
-    filterMode?: FilterMode;
-    hideFilterSelect?: boolean;
     workItemsMap?: IDictionaryNumberTo<WorkItem>;    
 }
 
@@ -72,8 +55,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             bugBashItem: null,
             viewModels: null,
             selectedViewModel: null,
-            filterMode: FilterMode.All,
-            hideFilterSelect: false,
             workItemsMap: null
         };
     }
@@ -120,16 +101,14 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         const bugBashItem = StoresHub.bugBashStore.getItem(this.props.id);
 
         this.updateState({
-            bugBashItem: bugBashItem,
-            hideFilterSelect: (bugBashItem && bugBashItem.autoAccept) ? true : false,
-            filterMode: (bugBashItem && bugBashItem.autoAccept) ? FilterMode.AcceptedItems : this.state.filterMode
+            bugBashItem: bugBashItem
         });
     }
 
     private _isDataLoading(): boolean {
         return !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
     }
-
+    
     public render(): JSX.Element {
         if (this._isDataLoading()) {
             return <Loading />;
@@ -143,76 +122,9 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             }
             else {
                 return (
-                    <div className="results-view">                        
+                    <div className="results-view">
                         {this._renderGrid()}
-                        
-                        <div className="item-viewer">
-                            <BugBashItemEditor 
-                                viewModel={this.state.selectedViewModel || BugBashItemHelpers.getNewItemViewModel(this.props.id)}
-                                onItemAccept={(model: IBugBashItem, workItem: WorkItem) => {
-                                    let newViewModels = this.state.viewModels.slice();
-                                    let newViewModel = BugBashItemHelpers.getItemViewModel(model);
-                                    let newWorkItemsMap = {...this.state.workItemsMap};
-
-                                    let index = Utils_Array.findIndex(newViewModels, v => v.model.id === model.id);
-                                    if (index !== -1) {
-                                        newViewModels[index] = newViewModel;
-                                    }
-                                    else {
-                                        newViewModels.push(newViewModel);
-                                    }
-
-                                    if (workItem) {
-                                        newWorkItemsMap[workItem.id] = workItem;
-                                        this.updateState({viewModels: newViewModels, selectedViewModel: null, workItemsMap: newWorkItemsMap});
-                                    }
-                                    else {
-                                        this.updateState({viewModels: newViewModels, selectedViewModel: newViewModel});
-                                    }
-                                }}
-                                onClickNew={() => {
-                                    this.updateState({selectedViewModel: null});
-                                }}
-                                onItemUpdate={(model: IBugBashItem) => {
-                                    if (model.id) {
-                                        let newViewModels = this.state.viewModels.slice();
-                                        let newVideModel = BugBashItemHelpers.getItemViewModel(model);
-
-                                        let index = Utils_Array.findIndex(newViewModels, v => v.model.id === model.id);
-                                        if (index !== -1) {
-                                            newViewModels[index] = newVideModel;
-                                        }
-                                        else {
-                                            newViewModels.push(newVideModel);
-                                        }
-                                        this.updateState({viewModels: newViewModels, selectedViewModel: newVideModel});
-                                    }
-                                }}
-                                onDelete={(model: IBugBashItem) => {
-                                    if (model.id) {
-                                        let newViewModels = this.state.viewModels.slice();
-                                        let index = Utils_Array.findIndex(newViewModels, v => v.model.id === model.id);
-                                        if (index !== -1) {
-                                            newViewModels.splice(index, 1);
-                                            this.updateState({viewModels: newViewModels, selectedViewModel: null});
-                                        }
-                                        else {
-                                            this.updateState({selectedViewModel: null});
-                                        }
-                                    }
-                                }} 
-                                onChange={(changedData: {id: string, title: string, description: string}) => {
-                                    if (changedData.id) {
-                                        let newViewModels = this.state.viewModels.slice();
-                                        let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedData.id);
-                                        if (index !== -1) {
-                                            newViewModels[index].model.title = changedData.title;
-                                            newViewModels[index].model.description = changedData.description;
-                                            this.updateState({viewModels: newViewModels, selectedViewModel: newViewModels[index]});
-                                        }
-                                    }
-                                }} />
-                        </div>
+                        {this._renderItemEditor()}
                     </div>
                 );
             }            
@@ -221,33 +133,55 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
 
     private _renderGrid(): JSX.Element {
         const allViewModels = this.state.viewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model) || this.state.workItemsMap[viewModel.model.workItemId] != null);
-
-        if (this.state.filterMode === FilterMode.PendingItems) {
-            const pendingItems = allViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model));
-            return <Grid
-                        className="bugbash-item-grid"
-                        items={pendingItems}
-                        columns={this._getGridColumns()}
-                        commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                        contextMenuProps={{menuItems: this._getContextMenuItems}}
-                        onItemInvoked={this._onItemInvoked}
-                    />;
+        const pendingItems = allViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model));
+        const workItemIds = allViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.model)).map(viewModel => viewModel.model.workItemId);
+        let workItems: WorkItem[] = [];
+        for (let id of workItemIds) {
+            workItems.push(this.state.workItemsMap[id]);
         }
-        else if (this.state.filterMode === FilterMode.AcceptedItems) {
-            const workItemIds = allViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.model)).map(viewModel => viewModel.model.workItemId);
-            let workItems: WorkItem[] = [];
-            for (let id of workItemIds) {
-                workItems.push(this.state.workItemsMap[id]);
-            }
 
-            const fields = [
-                StoresHub.workItemFieldStore.getItem("System.Id"),
-                StoresHub.workItemFieldStore.getItem("System.Title"),
-                StoresHub.workItemFieldStore.getItem("System.WorkItemType"),
-                StoresHub.workItemFieldStore.getItem("System.State"),
-                StoresHub.workItemFieldStore.getItem("System.AssignedTo"),
-                StoresHub.workItemFieldStore.getItem("System.AreaPath")
-            ]
+        const fields = [
+            StoresHub.workItemFieldStore.getItem("System.Id"),
+            StoresHub.workItemFieldStore.getItem("System.Title"),
+            StoresHub.workItemFieldStore.getItem("System.WorkItemType"),
+            StoresHub.workItemFieldStore.getItem("System.State"),
+            StoresHub.workItemFieldStore.getItem("System.AssignedTo"),
+            StoresHub.workItemFieldStore.getItem("System.AreaPath")
+        ];
+        
+        if (!this.state.bugBashItem.autoAccept) {
+            return (
+                <div className="pivot-container">
+                    <Pivot>
+                        <PivotItem linkText="Pending Items">
+                            <Grid
+                                className="bugbash-item-grid"
+                                items={pendingItems}
+                                columns={this._getPendingGridColumns()}
+                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                                contextMenuProps={{menuItems: this._getContextMenuItems}}
+                                onItemInvoked={this._onPendingItemInvoked}
+                            />
+                        </PivotItem>
+                        <PivotItem linkText="AcceptedItems">
+                            <WorkItemGrid
+                                className="bugbash-item-grid"
+                                workItems={workItems}
+                                fields={fields}
+                                onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
+                                    let map = {...this.state.workItemsMap};
+                                    map[updatedWorkItem.id] = updatedWorkItem;
+                                    this.updateState({workItemsMap: map});
+                                }}
+                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                                contextMenuProps={{menuItems: this._getContextMenuItems}}
+                            />
+                        </PivotItem>
+                    </Pivot>
+                </div>
+            );
+        }
+        else {
             return <WorkItemGrid
                         className="bugbash-item-grid"
                         workItems={workItems}
@@ -260,47 +194,88 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                         commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                         contextMenuProps={{menuItems: this._getContextMenuItems}}
                     />;
-        }
-        else {
-            return <Grid
-                        className="bugbash-item-grid"
-                        items={allViewModels}
-                        columns={this._getGridColumns()}
-                        commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                        contextMenuProps={{menuItems: this._getContextMenuItems}}
-                        onItemInvoked={this._onItemInvoked}
-                    />;
-        }
+        }        
+    }
+
+    private _renderItemEditor(): JSX.Element {
+        return (
+            <div className="item-editor-container">
+                <BugBashItemEditor 
+                    viewModel={this.state.selectedViewModel || BugBashItemHelpers.getNewItemViewModel(this.props.id)}
+                    onItemAccept={(model: IBugBashItem, workItem: WorkItem) => {
+                        let newViewModels = this.state.viewModels.slice();
+                        let newViewModel = BugBashItemHelpers.getItemViewModel(model);
+                        let newWorkItemsMap = {...this.state.workItemsMap};
+
+                        let index = Utils_Array.findIndex(newViewModels, v => v.model.id === model.id);
+                        if (index !== -1) {
+                            newViewModels[index] = newViewModel;
+                        }
+                        else {
+                            newViewModels.push(newViewModel);
+                        }
+
+                        if (workItem) {
+                            newWorkItemsMap[workItem.id] = workItem;
+                            this.updateState({viewModels: newViewModels, selectedViewModel: null, workItemsMap: newWorkItemsMap});
+                        }
+                        else {
+                            this.updateState({viewModels: newViewModels, selectedViewModel: newViewModel});
+                        }
+                    }}
+                    onClickNew={() => {
+                        this.updateState({selectedViewModel: null});
+                    }}
+                    onItemUpdate={(model: IBugBashItem) => {
+                        if (model.id) {
+                            let newViewModels = this.state.viewModels.slice();
+                            let newVideModel = BugBashItemHelpers.getItemViewModel(model);
+
+                            let index = Utils_Array.findIndex(newViewModels, v => v.model.id === model.id);
+                            if (index !== -1) {
+                                newViewModels[index] = newVideModel;
+                            }
+                            else {
+                                newViewModels.push(newVideModel);
+                            }
+                            this.updateState({viewModels: newViewModels, selectedViewModel: newVideModel});
+                        }
+                    }}
+                    onDelete={(model: IBugBashItem) => {
+                        if (model.id) {
+                            let newViewModels = this.state.viewModels.slice();
+                            let index = Utils_Array.findIndex(newViewModels, v => v.model.id === model.id);
+                            if (index !== -1) {
+                                newViewModels.splice(index, 1);
+                                this.updateState({viewModels: newViewModels, selectedViewModel: null});
+                            }
+                            else {
+                                this.updateState({selectedViewModel: null});
+                            }
+                        }
+                    }} 
+                    onChange={(changedData: {id: string, title: string, description: string}) => {
+                        if (changedData.id) {
+                            let newViewModels = this.state.viewModels.slice();
+                            let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedData.id);
+                            if (index !== -1) {
+                                newViewModels[index].model.title = changedData.title;
+                                newViewModels[index].model.description = changedData.description;
+                                this.updateState({viewModels: newViewModels, selectedViewModel: newViewModels[index]});
+                            }
+                        }
+                    }} />
+            </div>
+        );
     }
 
     @autobind
-    private async _onItemInvoked(viewModel: IBugBashItemViewModel) {
-        if (BugBashItemHelpers.isAccepted(viewModel.model)) {
-            this.updateState({selectedViewModel: null});
-            let workItem = this.state.workItemsMap[viewModel.model.workItemId];
-            const updatedWorkItem: WorkItem = await openWorkItemDialog(null, workItem);
-            if (updatedWorkItem && updatedWorkItem.rev > workItem.rev) {
-                let map = {...this.state.workItemsMap};
-                map[updatedWorkItem.id] = updatedWorkItem;
-                this.updateState({workItemsMap: map});
-            }
-        }
-        else {
-            this.updateState({selectedViewModel: viewModel});
-        }
-    }
-
-    private _getItemTitle(viewModel: IBugBashItemViewModel): string {
-        let title = viewModel.model.title;
-        if (BugBashItemHelpers.isAccepted(viewModel.model) && this.state.workItemsMap[viewModel.model.workItemId] && this.state.workItemsMap[viewModel.model.workItemId].fields["System.Title"]) {
-            title = this.state.workItemsMap[viewModel.model.workItemId].fields["System.Title"];
-        }
-
-        return title || "";
+    private async _onPendingItemInvoked(viewModel: IBugBashItemViewModel) {
+        this.updateState({selectedViewModel: viewModel});
     }
 
     @autobind
-    private _getGridColumns(): GridColumn[] {
+    private _getPendingGridColumns(): GridColumn[] {
         const gridCellClassName = "item-grid-cell";
         const getCellClassName = (viewModel: IBugBashItemViewModel) => {
             let className = gridCellClassName;
@@ -312,80 +287,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             }
 
             return className;
-        }
-        
-        const idColumn: GridColumn = {
-            key: "witid",
-            name: "Work item id",
-            minWidth: 80,
-            maxWidth: 80,
-            resizable: false,
-            onRenderCell: (viewModel: IBugBashItemViewModel) => {
-                return <Label className={`${getCellClassName(viewModel)} id-cell`}>
-                            {BugBashItemHelpers.isAccepted(viewModel.model) ? viewModel.model.workItemId : (BugBashItemHelpers.isDirty(viewModel) ? "*" : "")}
-                        </Label>;
-            },
-            sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                const v1 = viewModel1.model.workItemId;
-                const v2 = viewModel2.model.workItemId;
-                let compareValue = (v1 > v2) ? 1 : -1;
-                return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-            },
-            filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => {
-                if (BugBashItemHelpers.isAccepted(viewModel.model)) {
-                    return Utils_String.caseInsensitiveContains(viewModel.model.workItemId.toString(), filterText);
-                }
-                return false;
-            }
-        } as GridColumn;
-
-        const acceptedColumns: GridColumn[] = [
-            {
-                key: "acceptedby",
-                name: "Accepted By",
-                minWidth: 100,
-                maxWidth: 250,
-                resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {
-                    return <div className={getCellClassName(viewModel)}><IdentityView identityDistinctName={viewModel.model.acceptedBy} /></div>;
-                },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.acceptedBy, viewModel2.model.acceptedBy);
-                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.acceptedBy, filterText)
-            },
-            {
-                key: "accepteddate",
-                name: "Accepted Date",
-                minWidth: 80,
-                maxWidth: 150,
-                resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {
-                    const acceptedDate = viewModel.model.acceptedDate;
-                    return <Label className={getCellClassName(viewModel)}>{acceptedDate ? Utils_Date.friendly(acceptedDate) : ""}</Label>;
-                },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    const v1 = viewModel1.model.acceptedDate;
-                    const v2 = viewModel2.model.acceptedDate;
-                    let compareValue: number;
-                    if (v1 == null && v2 == null) {
-                        compareValue = 0;
-                    }
-                    else if (v1 == null && v2 != null) {
-                        compareValue = -1;
-                    }
-                    else if (v1 != null && v2 == null) {
-                        compareValue = 1;
-                    }
-                    else {
-                        compareValue = Utils_Date.defaultComparer(v1, v2);
-                    }
-                    
-                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                }
-            }
-        ];
+        }                
 
         let columns: GridColumn[] = [
             {
@@ -398,17 +300,17 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     return <Label 
                                 className={`${getCellClassName(viewModel)} title-cell`} 
                                 onClick={(e) => {
-                                    this._onItemInvoked(viewModel);
+                                    this._onPendingItemInvoked(viewModel);
                                 }
                             }>
-                                {this._getItemTitle(viewModel)}
+                                {viewModel.model.title}
                             </Label>
                 },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(this._getItemTitle(viewModel1), this._getItemTitle(viewModel2));
+                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.title, viewModel2.model.title);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 },
-                filterFunction: (item: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(this._getItemTitle(item), filterText)
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.title, filterText)
             },
             {
                 key: "createdby",
@@ -439,10 +341,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             }
         ];
 
-        if (this.state.filterMode === FilterMode.All) {
-            columns = [idColumn].concat(columns).concat(acceptedColumns);
-        }
-        
         return columns;
     }
 
@@ -483,32 +381,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     }
                 }
             ] as IContextualMenuItem[];
-
-        const filterMenuItem = {
-            key: "GridMode", name: `Showing: ${getTextFromFilterMode(this.state.filterMode)}`, title: "Select item filter", iconProps: {iconName: "Filter"},
-            subMenuProps: {
-                items: [
-                    {key: "All", name: "Show all items"}, {key: "Pending", name: "Show only pending items"}, {key: "Accepted", name: "Show only accepted items"}
-                ],
-                onItemClick: (ev?: any, menuItem?: IContextualMenuItem) => {
-                    switch (menuItem.key){
-                        case "All":
-                            this.updateState({filterMode: FilterMode.All});
-                            break;
-                        case "Pending":
-                            this.updateState({filterMode: FilterMode.PendingItems});
-                            break;
-                        default:
-                            this.updateState({filterMode: FilterMode.AcceptedItems});
-                            break;
-                    }
-                }
-            }
-        } as IContextualMenuItem;
-
-        if (!this.state.hideFilterSelect) {
-            menuItems = [filterMenuItem].concat(menuItems);
-        }
 
         return menuItems;
     }

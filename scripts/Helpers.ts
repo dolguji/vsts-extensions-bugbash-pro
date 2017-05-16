@@ -51,9 +51,7 @@ export class BugBashItemHelpers {
             description: "",
             workItemId: 0,
             createdDate: null,
-            createdBy: "",
-            acceptedDate: null,
-            acceptedBy: ""
+            createdBy: ""
         };
     }
 
@@ -66,9 +64,7 @@ export class BugBashItemHelpers {
             description: model.description,
             workItemId: model.workItemId,
             createdDate: model.createdDate,
-            createdBy: model.createdBy,
-            acceptedDate: model.acceptedDate,
-            acceptedBy: model.acceptedBy
+            createdBy: model.createdBy
         }    
     }
 
