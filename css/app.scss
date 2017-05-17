@@ -20,8 +20,6 @@
     max-height: 180px;
 }
 
-.context-menu {
-    button[disabled], button[disabled]:hover, button[disabled]:focus {
-        border: initial !important;
-    }
+button[disabled], button[disabled]:hover, button[disabled]:focus {
+    border: none !important;
 }

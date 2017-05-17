@@ -77,7 +77,7 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         }
 
         return (
-            <Fabric className="fabric-container">
+            <Fabric className="fabric-container bowtie-fabric">
                 {view}
             </Fabric>
         );

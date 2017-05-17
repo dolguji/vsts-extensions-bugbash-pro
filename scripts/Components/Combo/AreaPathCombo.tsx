@@ -1,4 +1,72 @@
-private _getTreeNodes(node: WorkItemClassificationNode, uiNode: TreeNode, level: number): TreeNode {
+/// <reference types="react" />
+
+import * as React from "react";
+
+import { ComboBox } from "./ComboBox";
+import { StoresHub } from "../../Stores/StoresHub";
+import { WorkItemAreaPathStore } from "../../Stores/WorkItemAreaPathStore";
+
+import {TreeNode} from "VSS/Controls/TreeView";
+import { WorkItemClassificationNode } from "TFS/WorkItemTracking/Contracts";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
+import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+
+export interface IAreaPathComboProps extends IBaseComponentProps {
+    value?: string;
+    onChange: (newValue: string) => void;
+}
+
+export interface IAreaPathComboState extends IBaseComponentState {
+    treeNodes?: TreeNode;
+}
+
+export class AreaPathCombo extends BaseComponent<IAreaPathComboProps, IAreaPathComboState> {
+    protected getDefaultClassName(): string {
+        return "areapathcombo";
+    }
+
+    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
+        return [WorkItemAreaPathStore];
+    }
+
+    protected initialize(): void {
+        StoresHub.workItemAreaPathStore.ensureAreaPathNode();
+    }
+
+    protected onStoreChanged() {
+        const rootNode = StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id);
+
+        if (rootNode) {
+            this.updateState({
+                treeNodes: this._getTreeNode(rootNode, null, 1)
+            });
+        }        
+    }
+
+    protected initializeState() {
+        this.state = {};
+    }
+
+    public render(): JSX.Element {
+        if (this.state.treeNodes) {
+            return <ComboBox 
+                value={this.props.value} 
+                onChange={this.props.onChange}
+                options={{
+                    type: "treeSearch",
+                    mode: "drop",
+                    initialLevel: 2,
+                    sepChar: "\\",
+                    source: [this.state.treeNodes],
+                    enabled: true,
+                    allowEdit: true
+                }} />;
+        }
+
+        return null;
+    }
+
+    private _getTreeNode(node: WorkItemClassificationNode, uiNode: TreeNode, level: number): TreeNode {
         let nodes = node.children;
         let newUINode: TreeNode;
         let nodeName = node.name;
@@ -15,20 +83,9 @@ private _getTreeNodes(node: WorkItemClassificationNode, uiNode: TreeNode, level:
         uiNode.expanded = level < 2;
         if (nodes) {
             for (let node of nodes) {
-                this._getTreeNodes(node, uiNode, level + 1);
+                this._getTreeNode(node, uiNode, level + 1);
             }
         }
         return uiNode;
     }
-
-    private _getNodePaths(node: WorkItemClassificationNode, parentNodeName?: string): string[] {
-        let nodeName = parentNodeName ? `${parentNodeName}\\${node.name}`: node.name;
-        let returnData: string[] = [nodeName];
-        if (node.children) {
-            for (let child of node.children) {
-                returnData = returnData.concat(this._getNodePaths(child, nodeName));
-            }
-        }
-
-        return returnData;        
-    }
+}

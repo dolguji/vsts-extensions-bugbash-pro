@@ -21,6 +21,7 @@ import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "../
 import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditor } from "./RichEditor/RichEditor";
+import { AreaPathCombo } from "./Combo/AreaPathCombo";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     viewModel: IBugBashItemViewModel;
@@ -28,7 +29,7 @@ export interface IBugBashItemEditorProps extends IBaseComponentProps {
     onDelete: (item: IBugBashItem) => void;
     onItemUpdate: (item: IBugBashItem) => void;
     onItemAccept: (item: IBugBashItem, workItem: WorkItem) => void;
-    onChange: (changedData: {id: string, title: string, description: string}) => void;
+    onChange: (changedData: {id: string, title: string, description: string, areaPath: string}) => void;
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
@@ -63,7 +64,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         this.props.onChange({
             id: newViewModel.model.id,
             title: newViewModel.model.title,
-            description: newViewModel.model.description
+            description: newViewModel.model.description,
+            areaPath: newViewModel.model.areaPath
         });
     }
 
@@ -97,6 +99,16 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                 this.updateState({viewModel: newModel});
                                 this._onChange(newModel);
                             }} />
+
+                    <div className="item-areapath-container">
+                        <Label required={true}>Area Path</Label>
+                        <AreaPathCombo value={item.model.areaPath} onChange={(newValue: string) => {
+                            let newModel = {...this.state.viewModel};
+                            newModel.model.areaPath = newValue;
+                            this.updateState({viewModel: newModel});
+                            this._onChange(newModel);
+                        }} />
+                    </div>
 
                     <div className="item-description-container">
                         <Label>Description</Label>

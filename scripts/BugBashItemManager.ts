@@ -93,7 +93,9 @@ export class BugBashItemManager {
             const template = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
             let fieldValues = {...template.fields};
             fieldValues["System.Title"] = model.title;
+            fieldValues["System.AreaPath"] = model.areaPath;
             fieldValues[bugBash.itemDescriptionField] = model.description;
+
             if (fieldValues["System.Tags-Add"]) {
                 fieldValues["System.Tags"] = fieldValues["System.Tags-Add"];
             }            

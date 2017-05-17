@@ -23,23 +23,12 @@
     }
 
     .item-description-container {
+        margin-top: 10px;
+
         .trumbowyg-box {
             #description-editor {
                 min-height: 350px;
                 max-height: 350px;
-            }
-        }
-    }
-
-    .item-discussions-container {
-        margin-top: 10px;
-
-        .trumbowyg-box {
-            min-height: 70px;
-            max-height: 70px;
-
-            .trumbowyg-button-pane {
-                display: none;
             }
         }
     }

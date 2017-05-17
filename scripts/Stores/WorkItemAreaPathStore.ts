@@ -12,7 +12,7 @@ export class WorkItemAreaPathStore extends BaseStore<IDictionaryStringTo<WorkIte
     }
 
     protected getItemByKey(projectId: string): WorkItemClassificationNode {  
-        return this.items[projectId.toLowerCase()];
+        return this.items[(projectId || VSS.getWebContext().project.id).toLowerCase()];
     }
 
     protected async initializeItems(): Promise<void> {
@@ -22,19 +22,21 @@ export class WorkItemAreaPathStore extends BaseStore<IDictionaryStringTo<WorkIte
     public async ensureAreaPathNode(projectId?: string): Promise<boolean> {
         if (!this.itemExists(projectId)) {
             try {
-                let node = await WitClient.getClient().getClassificationNode(VSS.getWebContext().project.id || projectId, TreeStructureGroup.Areas, null, 5);
+                let node = await WitClient.getClient().getClassificationNode(projectId || VSS.getWebContext().project.id, TreeStructureGroup.Areas, null, 5);
                 if (node) {
-                    this._onAdd(node, VSS.getWebContext().project.id || projectId);
+                    this._onAdd(node, projectId || VSS.getWebContext().project.id);
                     return true;
+                }
+                else {
+                    return false;
                 }
             }
             catch (e) {
                 return false;
             }
-
-            return false;
         }
         else {
+            this.emitChanged();
             return true;
         }
     }
@@ -52,7 +54,7 @@ export class WorkItemAreaPathStore extends BaseStore<IDictionaryStringTo<WorkIte
             this.items = {};
         }
 
-        this.items[projectId] = item;
+        this.items[projectId.toLowerCase()] = item;
 
         this.emitChanged();
     }

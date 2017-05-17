@@ -159,6 +159,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                     map[updatedWorkItem.id] = updatedWorkItem;
                                     this.updateState({workItemsMap: map});
                                 }}
+                                contextMenuProps={{menuItems: this._getContextMenuItems}}
                                 commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                             />;
         
@@ -245,13 +246,14 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             }
                         }
                     }} 
-                    onChange={(changedData: {id: string, title: string, description: string}) => {
+                    onChange={(changedData: {id: string, title: string, description: string, areaPath: string}) => {
                         if (changedData.id) {
                             let newViewModels = this.state.viewModels.slice();
                             let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedData.id);
                             if (index !== -1) {
                                 newViewModels[index].model.title = changedData.title;
                                 newViewModels[index].model.description = changedData.description;
+                                newViewModels[index].model.areaPath = changedData.areaPath;
                                 this.updateState({viewModels: newViewModels, selectedViewModel: newViewModels[index]});
                             }
                         }
@@ -295,13 +297,30 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                 }
                             }>
                                 {viewModel.model.title}
-                            </Label>
+                            </Label>;
                 },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.title, viewModel2.model.title);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 },
                 filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.title, filterText)
+            },
+            {
+                key: "area",
+                name: "Area Path",
+                minWidth: 200,
+                maxWidth: 300,
+                resizable: true,
+                onRenderCell: (viewModel: IBugBashItemViewModel) => {                    
+                    return <Label className={`${getCellClassName(viewModel)}`}>
+                                {viewModel.model.areaPath}
+                            </Label>;
+                },
+                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.areaPath, viewModel2.model.areaPath);
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.areaPath, filterText)
             },
             {
                 key: "createdby",
@@ -380,7 +399,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     private _getContextMenuItems(selectedViewModels: IBugBashItemViewModel[]): IContextualMenuItem[] {
         return [            
             {
-                key: "Delete", name: "Delete", title: "Delete selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
+                key: "Remove", name: "Remove", title: "Remove selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
                 disabled: selectedViewModels.length === 0,
                 onClick: async () => {
                     const confirm = await confirmAction(true, "Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.");

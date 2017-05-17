@@ -62,7 +62,7 @@ export class BugBashItemHelpers {
             bugBashId: model.bugBashId,
             __etag: model.__etag,
             title: model.title,
-            areaPath: "",
+            areaPath: model.areaPath,
             description: model.description,
             workItemId: model.workItemId,
             createdDate: model.createdDate,
@@ -83,11 +83,12 @@ export class BugBashItemHelpers {
 
     public static isDirty(viewModel: IBugBashItemViewModel): boolean {        
         return !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
+            || !Utils_String.equals(viewModel.model.areaPath, viewModel.originalModel.areaPath)
             || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description);
     }
 
     public static isValid(model: IBugBashItem): boolean {
-        return model.title.trim().length > 0 && model.title.trim().length <= 256;
+        return model.title.trim().length > 0 && model.title.trim().length <= 256 && model.areaPath.trim().length > 0;
     }
 
     public static isAccepted(model: IBugBashItem): boolean {
