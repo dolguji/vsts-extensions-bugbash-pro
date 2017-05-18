@@ -89,6 +89,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
                     { this.state.error && <MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar>}
 
+                    { this._isNew() && <Label className="item-editor-header">New Item</Label> }
+                    
                     <TextField label="Title" 
                             value={item.model.title}
                             required={true} 

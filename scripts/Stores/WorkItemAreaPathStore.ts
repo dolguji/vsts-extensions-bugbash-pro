@@ -6,9 +6,12 @@ import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 
 export class WorkItemAreaPathStore extends BaseStore<IDictionaryStringTo<WorkItemClassificationNode>, WorkItemClassificationNode, string> {
+    private _allowedAreaPaths: IDictionaryStringTo<string[]>;
+
     constructor() {
         super();
-        this.items = {};    
+        this.items = {};
+        this._allowedAreaPaths = {};
     }
 
     protected getItemByKey(projectId: string): WorkItemClassificationNode {  
@@ -17,6 +20,10 @@ export class WorkItemAreaPathStore extends BaseStore<IDictionaryStringTo<WorkIte
 
     protected async initializeItems(): Promise<void> {
         
+    }
+
+    public getAreaPaths(projectId?: string): string[] {
+        return this._allowedAreaPaths[(projectId || VSS.getWebContext().project.id).toLowerCase()];
     }
 
     public async ensureAreaPathNode(projectId?: string): Promise<boolean> {
@@ -53,9 +60,25 @@ export class WorkItemAreaPathStore extends BaseStore<IDictionaryStringTo<WorkIte
         if (!this.items) {
             this.items = {};
         }
+        if (!this._allowedAreaPaths) {
+            this._allowedAreaPaths = {};
+        }
 
         this.items[projectId.toLowerCase()] = item;
+        this._allowedAreaPaths[projectId.toLowerCase()] = this._getNodePaths(item);
 
         this.emitChanged();
+    }
+
+    private _getNodePaths(node: WorkItemClassificationNode, parentNodeName?: string): string[] {
+        let nodeName = parentNodeName ? `${parentNodeName}\\${node.name}`: node.name;
+        let returnData: string[] = [nodeName];
+        if (node.children) {
+            for (let child of node.children) {
+                returnData = returnData.concat(this._getNodePaths(child, nodeName));
+            }
+        }
+
+        return returnData;        
     }
 }

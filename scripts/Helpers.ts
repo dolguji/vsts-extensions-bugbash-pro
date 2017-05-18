@@ -2,7 +2,9 @@ import {JsonPatchDocument, JsonPatchOperation, Operation} from "VSS/WebApi/Contr
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
+import Utils_Array = require("VSS/Utils/Array");
 
+import { StoresHub } from "./Stores/StoresHub";
 import { IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
@@ -49,7 +51,7 @@ export class BugBashItemHelpers {
             __etag: 0,
             title: "",
             description: "",
-            areaPath: "",
+            areaPath: StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id) ? StoresHub.workItemAreaPathStore.getAreaPaths()[0] : "",
             workItemId: 0,
             createdDate: null,
             createdBy: ""
@@ -88,7 +90,13 @@ export class BugBashItemHelpers {
     }
 
     public static isValid(model: IBugBashItem): boolean {
-        return model.title.trim().length > 0 && model.title.trim().length <= 256 && model.areaPath.trim().length > 0;
+        let dataValid = model.title.trim().length > 0 && model.title.trim().length <= 256 && model.areaPath.trim().length > 0;
+        if (dataValid && StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id)) {
+            const allowedAreaPaths = StoresHub.workItemAreaPathStore.getAreaPaths();
+            dataValid = dataValid && Utils_Array.contains(allowedAreaPaths, model.areaPath.trim(), Utils_String.ignoreCaseComparer);
+        }
+
+        return dataValid;
     }
 
     public static isAccepted(model: IBugBashItem): boolean {

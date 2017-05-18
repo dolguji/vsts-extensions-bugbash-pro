@@ -24,6 +24,7 @@ import { WorkItemGrid } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkI
 import { openWorkItemDialog } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGridHelpers";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
+import { ColumnPosition, IExtraWorkItemGridColumn } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid.Props";
 
 import { UrlActions } from "../Constants";
 import { IBugBash, IBugBashItem, IBugBashItemViewModel } from "../Interfaces";
@@ -31,6 +32,7 @@ import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
+import { WorkItemAreaPathStore } from "../Stores/WorkItemAreaPathStore";
 import { StoresHub } from "../Stores/StoresHub";
 
 
@@ -48,7 +50,7 @@ interface IBugBashResultsViewProps extends IBaseComponentProps {
 
 export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashStore, WorkItemFieldStore];
+        return [BugBashStore, WorkItemFieldStore, WorkItemAreaPathStore];
     }
 
     protected initializeState() {
@@ -60,7 +62,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         };
     }
 
-    protected async initialize() {        
+    protected async initialize() {
+        StoresHub.workItemAreaPathStore.ensureAreaPathNode();
         const found = await StoresHub.bugBashStore.ensureItem(this.props.id);
 
         if (!found) {
@@ -107,7 +110,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     private _isDataLoading(): boolean {
-        return !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
+        return !StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id) || !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
     }
     
     public render(): JSX.Element {
@@ -128,7 +131,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                         {this._renderItemEditor()}
                     </div>
                 );
-            }            
+            }
         }
     }
 
@@ -154,12 +157,13 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                 className="bugbash-item-grid"
                                 workItems={workItems}
                                 fields={fields}
+                                extraColumns={this._getExtraWorkItemGridColumns()}
                                 onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
                                     let map = {...this.state.workItemsMap};
                                     map[updatedWorkItem.id] = updatedWorkItem;
                                     this.updateState({workItemsMap: map});
                                 }}
-                                contextMenuProps={{menuItems: this._getContextMenuItems}}
+                                contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
                                 commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                             />;
         
@@ -167,7 +171,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             return (
                 <div className="pivot-container">
                     <Pivot initialSelectedKey={this.state.selectedPivot || "Pending"} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>
-                        <PivotItem linkText="Pending Items" itemKey="Pending">
+                        <PivotItem linkText={`Pending Items (${pendingItems.length})`} itemKey="Pending">
                             <Grid
                                 className="bugbash-item-grid"
                                 items={pendingItems}
@@ -177,7 +181,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                 onItemInvoked={this._onPendingItemInvoked}
                             />
                         </PivotItem>
-                        <PivotItem linkText="AcceptedItems" itemKey="Accepted">
+                        <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted">
                             {workItemGrid}
                         </PivotItem>
                     </Pivot>
@@ -260,6 +264,36 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     }} />
             </div>
         );
+    }
+
+    private _getExtraWorkItemGridColumns(): IExtraWorkItemGridColumn[] {
+        let workItemIdToItemMap: IDictionaryNumberTo<IBugBashItem> = {};
+        for (const viewModel of this.state.viewModels) {
+            if (BugBashItemHelpers.isAccepted(viewModel.model)) {
+                workItemIdToItemMap[viewModel.model.workItemId] = viewModel.model;
+            }
+        }
+
+        return [
+            {
+                position: ColumnPosition.FarRight,
+                column: {
+                    key: "createdby",
+                    name: "Item created by",
+                    minWidth: 100,
+                    maxWidth: 250,
+                    resizable: true,
+                    onRenderCell: (workItem: WorkItem) => {
+                        return <IdentityView identityDistinctName={workItemIdToItemMap[workItem.id].createdBy} />;
+                    },
+                    sortFunction: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {                        
+                        let compareValue = Utils_String.ignoreCaseComparer(workItemIdToItemMap[workItem1.id].createdBy, workItemIdToItemMap[workItem2.id].createdBy);
+                        return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                    },
+                    filterFunction: (workItem: WorkItem, filterText: string) => Utils_String.caseInsensitiveContains(workItemIdToItemMap[workItem.id].createdBy, filterText)
+                }
+            }
+        ];
     }
 
     @autobind
@@ -408,15 +442,40 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             this.updateState({selectedViewModel: null});
                         }
                         
-                        await BugBashItemManager.deleteItems(selectedViewModels.map(v => v.model));
-                        let newItems = this.state.viewModels.slice();
-                        newItems = Utils_Array.subtract(newItems, selectedViewModels, (v1, v2) => v1.model.id === v2.model.id ? 0 : 1);
-                        
-                        this.updateState({viewModels: newItems});
+                        this._removeItems(selectedViewModels);
                     }
                 }
             }
         ];
+    }
+
+    @autobind
+    private _getWorkItemContextMenuItems(selectedWorkItems: WorkItem[]): IContextualMenuItem[] {
+        return [            
+            {
+                key: "Remove", name: "Remove", title: "Remove selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
+                disabled: selectedWorkItems.length === 0,
+                onClick: async () => {
+                    const confirm = await confirmAction(true, "Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.");
+                    if (confirm) {
+                        let workItemIds = selectedWorkItems.map(w => w.id);
+
+                        // find all bug  bash items pointing to these work item ids
+                        let selectedViewModels = this.state.viewModels.filter(vm => BugBashItemHelpers.isAccepted(vm.model) && workItemIds.indexOf(vm.model.workItemId) > -1);
+
+                        this._removeItems(selectedViewModels);
+                    }
+                }
+            }
+        ];
+    }
+
+    private async _removeItems(selectedViewModels: IBugBashItemViewModel[]) {
+        await BugBashItemManager.deleteItems(selectedViewModels.map(v => v.model));
+        let newItems = this.state.viewModels.slice();
+        newItems = Utils_Array.subtract(newItems, selectedViewModels, (v1, v2) => v1.model.id === v2.model.id ? 0 : 1);
+        
+        this.updateState({viewModels: newItems});
     }
 
     private _isAnyViewModelDirty(viewModels?: IBugBashItemViewModel[]): boolean {
