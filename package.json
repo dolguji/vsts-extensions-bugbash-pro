@@ -40,6 +40,7 @@
       "es6-promise": "^4.1.0",
       "office-ui-fabric-react": "^2.29.0",
       "vsts-extension-react-widgets": "0.0.14",
-      "trumbowyg": "2.5.1"
+      "trumbowyg": "2.5.1",
+      "recharts": "0.22.4"
   }
 }

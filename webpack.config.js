@@ -10,7 +10,8 @@ module.exports = {
         AllBugBashesView: "./scripts/Components/AllBugBashesView.tsx",
         NewBugBashView: "./scripts/Components/NewBugBashView.tsx",
         EditBugBashView: "./scripts/Components/EditBugBashView.tsx",
-        BugBashResultsView: "./scripts/Components/BugBashResultsView.tsx"
+        BugBashResultsView: "./scripts/Components/BugBashResultsView.tsx",
+        BugBashResultsAnalytics: "./scripts/Components/BugBashResultsAnalytics.tsx"
     },
     output: {
         filename: "scripts/[name].js",
