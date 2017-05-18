@@ -50,7 +50,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
-        if (this.props.viewModel.model.id !== nextProps.viewModel.model.id) {
+        if (this.state.viewModel.model.id !== nextProps.viewModel.model.id) {
             this.updateState({
                 viewModel: {
                     model: BugBashItemHelpers.deepCopy(nextProps.viewModel.model),
@@ -157,6 +157,37 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         ]
     }
 
+    private async _saveItem() {
+        this.updateState({disableToolbar: true, error: null});
+        let updatedModel: IBugBashItem;
+
+        try {
+            updatedModel = await BugBashItemManager.beginSave(this.state.viewModel.model);
+            this.updateState({error: null, disableToolbar: false,
+                viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
+            });
+            this.props.onItemUpdate(updatedModel);
+        }
+        catch (e) {
+            this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
+        } 
+    }
+
+    private async _acceptItem() {
+        this.updateState({disableToolbar: true});
+
+        let result: IAcceptedItemViewModel;
+        try {
+            result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
+            this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
+
+            this.props.onItemAccept(result.model, result.workItem);
+        }
+        catch (e) {
+            this.updateState({disableToolbar: false, error: e.message || e});
+        }
+    }
+
     private _getToolbarItems(): IContextualMenuItem[] {
         let menuItems: IContextualMenuItem[] = [
             {
@@ -164,20 +195,13 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 title: "Save", iconProps: {iconName: "Save"}, 
                 disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.viewModel) || !BugBashItemHelpers.isValid(this.state.viewModel.model),
                 onClick: async () => {
-                    this.updateState({disableToolbar: true, error: null});
-                    let updatedModel: IBugBashItem;
-
-                    try {
-                        updatedModel = await BugBashItemManager.beginSave(this.state.viewModel.model);
-                        this.updateState({error: null, disableToolbar: false,
-                            viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
-                        });
-                        this.props.onItemUpdate(updatedModel);
+                    let bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
+                    if (this._isNew() && bugBash.autoAccept) {
+                        this._acceptItem();
                     }
-                    catch (e) {
-                        this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
-                    }                   
-                    
+                    else {
+                        this._saveItem();
+                    }                    
                 }
             },
             {
@@ -257,19 +281,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             menuItems.push({
                 key: "Accept", name: "Accept item", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, 
                 disabled: this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.viewModel) || this._isNew(),
-                onClick: async () => {
-                    this.updateState({disableToolbar: true});
-
-                    let result: IAcceptedItemViewModel;
-                    try {
-                        result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
-                        this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
-
-                        this.props.onItemAccept(result.model, result.workItem);
-                    }
-                    catch (e) {
-                        this.updateState({disableToolbar: false, error: e.message || e});
-                    }                        
+                onClick: () => {
+                    this._acceptItem();
                 }
             });
         }
