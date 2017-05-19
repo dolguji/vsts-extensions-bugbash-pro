@@ -51,7 +51,7 @@ export class BugBashItemHelpers {
             __etag: 0,
             title: "",
             description: "",
-            areaPath: StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id) ? StoresHub.workItemAreaPathStore.getAreaPaths()[0] : "",
+            areaPath: StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id) ? StoresHub.areaPathStore.getAreaPaths()[0] : "",
             workItemId: 0,
             createdDate: null,
             createdBy: ""
@@ -91,8 +91,8 @@ export class BugBashItemHelpers {
 
     public static isValid(model: IBugBashItem): boolean {
         let dataValid = model.title.trim().length > 0 && model.title.trim().length <= 256 && model.areaPath.trim().length > 0;
-        if (dataValid && StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id)) {
-            const allowedAreaPaths = StoresHub.workItemAreaPathStore.getAreaPaths();
+        if (dataValid && StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id)) {
+            const allowedAreaPaths = StoresHub.areaPathStore.getAreaPaths();
             dataValid = dataValid && Utils_Array.contains(allowedAreaPaths, model.areaPath.trim(), Utils_String.ignoreCaseComparer);
         }
 

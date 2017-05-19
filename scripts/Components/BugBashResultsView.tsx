@@ -14,9 +14,11 @@ import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
 import { Pivot, PivotItem } from "OfficeFabric/Pivot";
+import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { AreaPathStore } from "VSTS_Extension/Stores/AreaPathStore";
 import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
@@ -33,7 +35,6 @@ import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
-import { WorkItemAreaPathStore } from "../Stores/WorkItemAreaPathStore";
 import { StoresHub } from "../Stores/StoresHub";
 
 
@@ -51,7 +52,7 @@ interface IBugBashResultsViewProps extends IBaseComponentProps {
 
 export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashStore, WorkItemFieldStore, WorkItemAreaPathStore];
+        return [BugBashStore, WorkItemFieldStore, AreaPathStore];
     }
 
     protected initializeState() {
@@ -64,7 +65,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     protected async initialize() {
-        StoresHub.workItemAreaPathStore.ensureAreaPathNode();
+        StoresHub.areaPathStore.ensureAreaPathNode();
         const found = await StoresHub.bugBashStore.ensureItem(this.props.id);
 
         if (!found) {
@@ -85,10 +86,9 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
 
         let items = await BugBashItemManager.beginGetItems(this.props.id);
         const workItemIds = items.filter(item => BugBashItemHelpers.isAccepted(item)).map(item => item.workItemId);
-        const descriptionField = StoresHub.bugBashStore.getItem(this.props.id).itemDescriptionField;
 
         if (workItemIds.length > 0) {
-            let workItems = await WitClient.getClient().getWorkItems(workItemIds, ["System.Id", "System.Title", "System.WorkItemType", "System.State", "System.AssignedTo", "System.AreaPath", descriptionField]);
+            let workItems = await WitClient.getClient().getWorkItems(workItemIds, ["System.Id", "System.Title", "System.WorkItemType", "System.State", "System.AssignedTo", "System.AreaPath"]);
             let map: IDictionaryNumberTo<WorkItem> = {};
             for (const workItem of workItems) {
                 if (workItem) {
@@ -111,7 +111,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     private _isDataLoading(): boolean {
-        return !StoresHub.workItemAreaPathStore.getItem(VSS.getWebContext().project.id) || !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
+        return !StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id) || !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
     }
     
     public render(): JSX.Element {
@@ -148,9 +148,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         const fields = [
             StoresHub.workItemFieldStore.getItem("System.Id"),
             StoresHub.workItemFieldStore.getItem("System.Title"),
-            StoresHub.workItemFieldStore.getItem("System.WorkItemType"),
             StoresHub.workItemFieldStore.getItem("System.State"),
-            StoresHub.workItemFieldStore.getItem("System.AssignedTo"),
             StoresHub.workItemFieldStore.getItem("System.AreaPath")
         ];
         
@@ -182,7 +180,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             }}
                             contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
                             commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                        />;
+                        />
                     </PivotItem>
                     <PivotItem linkText="Analytics" itemKey="Analytics">
                         <LazyLoad module="scripts/BugBashResultsAnalytics">
@@ -194,7 +192,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 </Pivot>
             </div>
         );
-  
     }
 
     private _renderItemEditor(): JSX.Element {
@@ -328,14 +325,23 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 maxWidth: 800,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {                    
-                    return <Label 
+                    return (
+                        <TooltipHost 
+                            content={viewModel.model.title}
+                            delay={TooltipDelay.medium}
+                            overflowMode={TooltipOverflowMode.Parent}
+                            directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                            <Label 
                                 className={`${getCellClassName(viewModel)} title-cell`} 
                                 onClick={(e) => {
-                                    this._onPendingItemInvoked(viewModel);
-                                }
-                            }>
+                                        this._onPendingItemInvoked(viewModel);
+                                    }
+                                } >
                                 {viewModel.model.title}
-                            </Label>;
+                            </Label>
+                        </TooltipHost>
+                    )
                 },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.title, viewModel2.model.title);
@@ -349,10 +355,19 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 minWidth: 200,
                 maxWidth: 300,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {                    
-                    return <Label className={`${getCellClassName(viewModel)}`}>
+                onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                    return (
+                        <TooltipHost 
+                            content={viewModel.model.areaPath}
+                            delay={TooltipDelay.medium}
+                            overflowMode={TooltipOverflowMode.Parent}
+                            directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                            <Label className={`${getCellClassName(viewModel)}`}>
                                 {viewModel.model.areaPath}
-                            </Label>;
+                            </Label>
+                        </TooltipHost>
+                    )
                 },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.areaPath, viewModel2.model.areaPath);
@@ -363,11 +378,21 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             {
                 key: "createdby",
                 name: "Created By",
-                minWidth: 100,
-                maxWidth: 250,
+                minWidth: 200,
+                maxWidth: 300,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {
-                    return <div className={getCellClassName(viewModel)}><IdentityView identityDistinctName={viewModel.model.createdBy} /></div>;   
+                    return (
+                        <TooltipHost 
+                            content={viewModel.model.createdBy}
+                            delay={TooltipDelay.medium}
+                            directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                            <div className={getCellClassName(viewModel)}>
+                                <IdentityView identityDistinctName={viewModel.model.createdBy} />
+                            </div>
+                        </TooltipHost>
+                    )
                 },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.createdBy, viewModel2.model.createdBy);
@@ -378,10 +403,23 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             {
                 key: "createddate",
                 name: "Created Date",
-                minWidth: 80,
-                maxWidth: 150,
+                minWidth: 200,
+                maxWidth: 300,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => <Label className={getCellClassName(viewModel)}>{Utils_Date.friendly(viewModel.model.createdDate)}</Label>,
+                onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                    return (
+                        <TooltipHost 
+                            content={Utils_Date.format(viewModel.model.createdDate, "M/d/yyyy h:mm tt")}
+                            delay={TooltipDelay.medium}
+                            overflowMode={TooltipOverflowMode.Parent}
+                            directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                            <Label className={`${getCellClassName(viewModel)}`}>
+                                {Utils_Date.friendly(viewModel.model.createdDate)}
+                            </Label>
+                        </TooltipHost>
+                    )
+                },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_Date.defaultComparer(viewModel1.model.createdDate, viewModel2.model.createdDate);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;

@@ -6,7 +6,12 @@ import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/Identit
 
 import { Label } from "OfficeFabric/Label";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
-import { BarChart, XAxis, YAxis, Bar, Text, Tooltip, ResponsiveContainer } from "recharts";
+import { Bar } from "recharts/lib/cartesian/Bar";
+import { XAxis } from "recharts/lib/cartesian/XAxis";
+import { YAxis } from "recharts/lib/cartesian/YAxis";
+import { Text } from "recharts/lib/component/Text";
+import { Tooltip } from "recharts/lib/component/Tooltip";
+import { BarChart } from "recharts/lib/chart/BarChart";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 

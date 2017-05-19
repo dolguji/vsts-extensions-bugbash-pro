@@ -114,15 +114,13 @@ export class BugBashItemManager {
                 };
             }
             
-            let workItem = await WitClient.getClient().getWorkItem(savedWorkItem.id, ["System.Id", "System.Title", "System.WorkItemType", "System.State", "System.AssignedTo", "System.AreaPath", bugBash.itemDescriptionField]);
-
             // associate work item with bug bash item
             updatedItem.workItemId = savedWorkItem.id;
             updatedItem = await this.beginSave(updatedItem);
 
             return {
                 model: updatedItem,
-                workItem: workItem
+                workItem: savedWorkItem
             };
         }
         else {

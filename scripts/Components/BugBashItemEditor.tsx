@@ -10,6 +10,8 @@ import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/Cont
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { AreaPathCombo } from "VSTS_Extension/Components/Common/Combo/AreaPathCombo";
+import { RichEditor } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
@@ -20,8 +22,6 @@ import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
-import { RichEditor } from "./RichEditor/RichEditor";
-import { AreaPathCombo } from "./Combo/AreaPathCombo";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     viewModel: IBugBashItemViewModel;
