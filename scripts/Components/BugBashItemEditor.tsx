@@ -118,6 +118,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             containerId="description-editor" 
                             data={item.model.description} 
                             editorOptions={{
+                                svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
                                 btns: [
                                     ['formatting'],
                                     ['bold', 'italic'], 

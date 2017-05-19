@@ -144,7 +144,23 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             onGetErrorMessage={this._getTitleError} />
 
                         <Label>Description</Label>
-                        <RichEditor containerId="rich-editor" data={model.description} onChange={(newValue: string) => this._updateDescription(newValue)} />
+                        <RichEditor 
+                            containerId="bugbash-description-editor" 
+                            data={model.description} 
+                            editorOptions={{
+                                svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                                btns: [
+                                    ['formatting'],
+                                    ['bold', 'italic'], 
+                                    ['link'],
+                                    ['superscript', 'subscript'],
+                                    ['insertImage'],
+                                    'btnGrp-lists',
+                                    ['removeformat'],
+                                    ['fullscreen']
+                                ]
+                            }}
+                            onChange={(newValue: string) => this._updateDescription(newValue)} />
                     </div>
                     <div className="second-section">
                         <div className="checkbox-container">                            
