@@ -78,7 +78,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         }
         else {
             if (this.state.allItems.length == 0) {
-                return <MessageBar messageBarType={MessageBarType.info}>No instance of bug bash exists in the context of current team.</MessageBar>;
+                return <MessageBar messageBarType={MessageBarType.info}>No instance of bug bash exists in the context of current project.</MessageBar>;
             }
             else {
                 return (                    

@@ -152,10 +152,40 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             StoresHub.workItemFieldStore.getItem("System.AreaPath")
         ];
         
-        return (
-            <div className="pivot-container">
-                <Pivot initialSelectedKey={this.state.selectedPivot || (this.state.bugBashItem.autoAccept ? "Accepted" : "Pending")} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>
-                    { !this.state.bugBashItem.autoAccept && 
+        if (this.state.bugBashItem.autoAccept) {
+            return (
+                <div className="pivot-container">
+                    <Pivot initialSelectedKey={this.state.selectedPivot || "Accepted"} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>                        
+                        <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted">
+                            <WorkItemGrid
+                                className="bugbash-item-grid"
+                                workItems={workItems}
+                                fields={fields}
+                                extraColumns={this._getExtraWorkItemGridColumns()}
+                                onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
+                                    let map = {...this.state.workItemsMap};
+                                    map[updatedWorkItem.id] = updatedWorkItem;
+                                    this.updateState({workItemsMap: map});
+                                }}
+                                contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
+                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                            />
+                        </PivotItem>
+                        <PivotItem linkText="Analytics" itemKey="Analytics">
+                            <LazyLoad module="scripts/BugBashResultsAnalytics">
+                                {(BugBashResultsAnalytics) => (
+                                    <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
+                                )}
+                            </LazyLoad>
+                        </PivotItem>
+                    </Pivot>
+                </div>
+            );
+        }
+        else {
+            return (
+                <div className="pivot-container">
+                    <Pivot initialSelectedKey={this.state.selectedPivot || "Pending"} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>
                         <PivotItem linkText={`Pending Items (${pendingItems.length})`} itemKey="Pending">
                             <Grid
                                 className="bugbash-item-grid"
@@ -166,32 +196,32 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                 onItemInvoked={this._onPendingItemInvoked}
                             />
                         </PivotItem>
-                    }
-                    <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted">
-                        <WorkItemGrid
-                            className="bugbash-item-grid"
-                            workItems={workItems}
-                            fields={fields}
-                            extraColumns={this._getExtraWorkItemGridColumns()}
-                            onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
-                                let map = {...this.state.workItemsMap};
-                                map[updatedWorkItem.id] = updatedWorkItem;
-                                this.updateState({workItemsMap: map});
-                            }}
-                            contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
-                            commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                        />
-                    </PivotItem>
-                    <PivotItem linkText="Analytics" itemKey="Analytics">
-                        <LazyLoad module="scripts/BugBashResultsAnalytics">
-                            {(BugBashResultsAnalytics) => (
-                                <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
-                            )}
-                        </LazyLoad>
-                    </PivotItem>
-                </Pivot>
-            </div>
-        );
+                        <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted">
+                            <WorkItemGrid
+                                className="bugbash-item-grid"
+                                workItems={workItems}
+                                fields={fields}
+                                extraColumns={this._getExtraWorkItemGridColumns()}
+                                onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
+                                    let map = {...this.state.workItemsMap};
+                                    map[updatedWorkItem.id] = updatedWorkItem;
+                                    this.updateState({workItemsMap: map});
+                                }}
+                                contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
+                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                            />
+                        </PivotItem>
+                        <PivotItem linkText="Analytics" itemKey="Analytics">
+                            <LazyLoad module="scripts/BugBashResultsAnalytics">
+                                {(BugBashResultsAnalytics) => (
+                                    <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
+                                )}
+                            </LazyLoad>
+                        </PivotItem>
+                    </Pivot>
+                </div>
+            );
+        }        
     }
 
     private _renderItemEditor(): JSX.Element {
