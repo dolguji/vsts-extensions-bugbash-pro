@@ -1,11 +1,8 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
-import Utils_Array = require("VSS/Utils/Array");
-import Utils_String = require("VSS/Utils/String");
-import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
+import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
-import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "./Interfaces";
+import { IBugBashItem, IAcceptedItemViewModel } from "./Interfaces";
 import { createWorkItem, BugBashItemHelpers } from "./Helpers";
 import { StoresHub } from "./Stores/StoresHub";
 

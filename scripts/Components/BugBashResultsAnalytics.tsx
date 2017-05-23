@@ -2,15 +2,14 @@ import "../../css/BugBashResultsAnalytics.scss";
 
 import * as React from "react";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import { Label } from "OfficeFabric/Label";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
-import {Bar, BarChart, XAxis, YAxis, Text, Tooltip} from "recharts";
+import { Bar, BarChart, XAxis, YAxis, Text, Tooltip } from "recharts";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
-import { IBugBash, IBugBashItem } from "../Interfaces";
+import { IBugBashItem } from "../Interfaces";
 import { BugBashItemHelpers } from "../Helpers";
 
 interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {

@@ -42,4 +42,12 @@ Once saved, click on "Show Results" to go to the results view of this bug bash i
 
 ![Group](img/results.png)
 
+In the results page, you can see 3 tabs at the top -
+1. **Pending items** - It shows all the items which are not yet accepted. By accepted, I mean that no VSTS work items have been created for these items. When you create any new item (if the Auto accept is turned off in the bug bash instance), it just creates a bug bash item without creating any work item for it. Only when you accept it, it will create an actual VSTS work item based on the work item template selected during the bug bash creation. Each item can be edited in this list by double clicking the row or clicking the title.
+2. **Accepted items** - It shows all the items which have been accepted. Since accepted items are in fact real VSTS work items, to edit them, you need to open the work item. This list shows a work item grid and to open a work item you can double click the row or click the title. Accepting an item is an irreversible step. You can choose to unlink an accepted work item from this bug bash instance by clicking on "Remove" menu item from each row's context menu.
+3. **Analytics** - This tab shows 2 charts for the bug bash instance. The first is number of items created per user and 2nd is number of items created per area path. These charts include both pending and accepted items.
+
+To create or edit any pending item, you can use the item editor at the right side of the results page. Note that if the "New" button in this editor is disabled, that means this editor will create a new item. If the new item is enabled, that means that this editor is showing an already existing item. 
+When a new item is created, it will store the title, description and area path into the item's data. When the item is accepted, the title and area path from the item would be used to fill the title and area path of accepted work item. And the description would be filled in the description field selected during bug bash creation.
+
 *P.S* - Each item row in the results view also has a context menu. So users can right click on a row (or on multiple selected rows) to open the context menu.

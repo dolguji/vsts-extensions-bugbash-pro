@@ -6,7 +6,7 @@ import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
-import { WorkItem, WorkItemField } from "TFS/WorkItemTracking/Contracts";
+import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
@@ -23,7 +23,6 @@ import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
 import { WorkItemGrid } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid";
-import { openWorkItemDialog } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGridHelpers";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 import { ColumnPosition, IExtraWorkItemGridColumn } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid.Props";

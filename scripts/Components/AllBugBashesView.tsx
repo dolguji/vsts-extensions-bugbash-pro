@@ -66,6 +66,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     public render(): JSX.Element {
         return (
             <div className="all-view">
+                <MessageBar messageBarType={MessageBarType.warning}>This extension is in its early stages and might be buggy. If you want to use it, please contact Mohit Bagra (redmond\mbagra) for details.</MessageBar>
                 <CommandBar className="all-view-menu-toolbar" items={this._getMenuItems()} />
                 {this._getContents()}
             </div>

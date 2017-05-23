@@ -12,11 +12,8 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { AreaPathCombo } from "VSTS_Extension/Components/Common/Combo/AreaPathCombo";
 import { RichEditor } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
-import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-import Utils_String = require("VSS/Utils/String");
-import Utils_Date = require("VSS/Utils/Date");
 
 import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
@@ -75,6 +72,11 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }
         else if (!this.state.viewModel) {
             return <Loading />;
+        }
+        else if (BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
+            return <MessageBar messageBarType={MessageBarType.info}>
+                    This item has been accepted. You can view or edit this item's work item from the "Accepted items" tab. Please refresh the list to clear this message.
+                </MessageBar>;
         }
         else {
             const item = this.state.viewModel;
@@ -197,7 +199,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.viewModel) || !BugBashItemHelpers.isValid(this.state.viewModel.model),
                 onClick: async () => {
                     let bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
-                    if (this._isNew() && bugBash.autoAccept) {
+                    if (this._isNew() && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
                         this._acceptItem();
                     }
                     else {
