@@ -13,11 +13,6 @@
         }
     }
     
-    .trumbowyg-box {       
-        width: auto;
-        margin: 0;
-    }
-
     .rich-editor {
         padding: 5px;
 
@@ -30,6 +25,17 @@
         margin-top: 10px;
 
         .trumbowyg-box {
+            margin: 0;
+            
+            &.trumbowyg-fullscreen {
+                border: 1px solid #DDD !important;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+            }
+
             #description-editor {
                 min-height: 350px;
                 max-height: 350px;

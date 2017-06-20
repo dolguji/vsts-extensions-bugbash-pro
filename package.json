@@ -38,8 +38,8 @@
         "requirejs": "^2.3.3",
         "vss-web-extension-sdk": "^2.117.0",
         "es6-promise": "^4.1.0",
-        "office-ui-fabric-react": "^4.8.3",
-        "vsts-extension-react-widgets": "0.0.17",
+        "office-ui-fabric-react": "^4.9.0",
+        "vsts-extension-react-widgets": "0.0.19",
         "trumbowyg": "2.6.0",
         "recharts": "0.22.4"
     }
