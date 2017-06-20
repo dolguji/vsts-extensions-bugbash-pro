@@ -127,8 +127,13 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             else {
                 return (
                     <div className="results-view">
-                        {this._renderPivots()}
-                        {this._renderItemEditor()}
+                        <div className="left-content">
+                            <div className="bugbash-title overflow-ellipsis">{StoresHub.bugBashStore.getItem(this.props.id).title}</div>
+                            {this._renderPivots()}
+                        </div>
+                        <div className="right-content">
+                            {this._renderItemEditor()}
+                        </div>                    
                     </div>
                 );
             }

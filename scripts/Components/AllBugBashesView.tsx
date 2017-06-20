@@ -16,6 +16,7 @@ import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
+import Context = require("VSS/Context");
 
 import { UrlActions } from "../Constants";
 import { IBugBash } from "../Interfaces";
@@ -66,7 +67,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     public render(): JSX.Element {
         return (
             <div className="all-view">
-                <MessageBar messageBarType={MessageBarType.warning}>This extension is in its early stages and might be buggy. If you want to use it, please contact Mohit Bagra (redmond\mbagra) for details.</MessageBar>
                 <CommandBar className="all-view-menu-toolbar" items={this._getMenuItems()} />
                 {this._getContents()}
             </div>
@@ -108,7 +108,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                             </div>
                         </div>
                     </div>
-                );                
+                );
             }
         }
     }    
@@ -137,7 +137,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     private _onRenderCell(item: IBugBash, index?: number): React.ReactNode {
         return (
             <div className="instance-row">
-                <div className="instance-title" onClick={() => this._onRowClick(item)}>{ item.title }</div>
+                <div className="instance-title" onClick={(e: React.MouseEvent<HTMLElement>) => this._onRowClick(e, item)}>{ item.title }</div>
                 <div className="instance-info">
                     <div className="instance-info-cell-container"><div className="instance-info-cell">Start:</div><div className="instance-info-cell-info">{item.startTime ? Utils_Date.format(item.startTime, "dddd, MMMM dd, yyyy") : "N/A"}</div></div>
                     <div className="instance-info-cell-container"><div className="instance-info-cell">End:</div><div className="instance-info-cell-info">{item.endTime ? Utils_Date.format(item.endTime, "dddd, MMMM dd, yyyy") : "N/A"}</div></div>
@@ -146,9 +146,20 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         );
     }
 
-    private async _onRowClick(item: IBugBash) {
+    private async _onRowClick(e: React.MouseEvent<HTMLElement>, item: IBugBash) {
+        let ctrlKey = e.ctrlKey;
         let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-        navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: item.id});
+
+        if (ctrlKey) {
+            const pageContext = Context.getPageContext();
+            const navigation = pageContext.navigation;
+            const webContext = VSS.getWebContext();
+            const url = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_VIEW}&id=${item.id}`;
+            navigationService.openNewWindow(url, null);
+        }
+        else {            
+            navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: item.id});
+        }        
     }
 
     private _getPastBugBashes(list: IBugBash[], currentTime: Date): IBugBash[] {

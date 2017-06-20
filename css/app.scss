@@ -23,3 +23,10 @@
 button[disabled], button[disabled]:hover, button[disabled]:focus {
     border: none !important;
 }
+
+.overflow-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-wrap: normal;
+}
