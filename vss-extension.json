@@ -10,7 +10,8 @@
     },
     "scopes": [
     	"vso.work",
-        "vso.work_write"
+        "vso.work_write",
+        "vso.profile"
 	 ],
     "targets": [
         {

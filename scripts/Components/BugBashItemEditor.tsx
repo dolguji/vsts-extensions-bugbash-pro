@@ -6,6 +6,7 @@ import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { CommandBar } from "OfficeFabric/CommandBar";
+import { ComboBox, IComboBoxProps } from "OfficeFabric/ComboBox";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
@@ -82,7 +83,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             const item = this.state.viewModel;
 
             return (
-                <div className="item-editor">
+                <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
                     <CommandBar 
                         className="item-editor-menu"
                         items={this._getToolbarItems()} 
@@ -90,8 +91,6 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     />
 
                     { this.state.error && <MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar>}
-
-                    { this._isNew() && <Label className="item-editor-header">New Item</Label> }
                     
                     <TextField label="Title" 
                             value={item.model.title}
@@ -112,6 +111,18 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             this.updateState({viewModel: newModel});
                             this._onChange(newModel);
                         }} />
+                        {/*<ComboBox autoComplete={true} allowFreeform={true} options={
+                            [{
+                                key: "Mohit",
+                                text: "Mohit"
+                            }, {
+                                key: "Moh Bagra",
+                                text: "Moh Bagra"
+                            }, {
+                                key: "Bhawna",
+                                text: "Bhawna"
+                            }]
+                        } />*/}
                     </div>
 
                     <div className="item-description-container">
@@ -144,6 +155,14 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }        
     }
 
+    @autobind
+    private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
+        if (e.ctrlKey && e.key === "s") {
+            e.preventDefault();
+            this._saveItem();
+        }
+    }
+
     private _isNew(): boolean {
         return !this.state.viewModel.model.id;
     }
@@ -161,19 +180,27 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     private async _saveItem() {
-        this.updateState({disableToolbar: true, error: null});
-        let updatedModel: IBugBashItem;
+        if (!this.state.disableToolbar && BugBashItemHelpers.isDirty(this.state.viewModel) && BugBashItemHelpers.isValid(this.state.viewModel.model)) {
+            const bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
+            if (this._isNew() && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
+                this._acceptItem();
+            }
+            else {
+                this.updateState({disableToolbar: true, error: null});
+                let updatedModel: IBugBashItem;
 
-        try {
-            updatedModel = await BugBashItemManager.beginSave(this.state.viewModel.model);
-            this.updateState({error: null, disableToolbar: false,
-                viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
-            });
-            this.props.onItemUpdate(updatedModel);
-        }
-        catch (e) {
-            this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
-        } 
+                try {
+                    updatedModel = await BugBashItemManager.beginSave(this.state.viewModel.model);
+                    this.updateState({error: null, disableToolbar: false,
+                        viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
+                    });
+                    this.props.onItemUpdate(updatedModel);
+                }
+                catch (e) {
+                    this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
+                } 
+            }
+        }          
     }
 
     private async _acceptItem() {
@@ -198,13 +225,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 title: "Save", iconProps: {iconName: "Save"}, 
                 disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.viewModel) || !BugBashItemHelpers.isValid(this.state.viewModel.model),
                 onClick: async () => {
-                    let bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
-                    if (this._isNew() && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
-                        this._acceptItem();
-                    }
-                    else {
-                        this._saveItem();
-                    }                    
+                    this._saveItem();
                 }
             },
             {

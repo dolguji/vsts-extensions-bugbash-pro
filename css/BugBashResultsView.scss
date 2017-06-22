@@ -1,82 +1,99 @@
 .results-view {
     display: flex;
+    flex-direction: column;
     height: 100%;
-
-    .left-content {
-        width: 75%;
-
-        .bugbash-title {
-            margin-bottom: 10px;
-            font-size: 20px;
-            font-weight: 500;
-        }
-
-        .pivot-container {            
-            .bugbash-item-grid {
-                width: 100%;
-                padding-top: 10px;
-                padding-right: 0;
-
-                .item-grid-cell {
-                    padding: 0;
-                    margin: 0;
-                    display: inline;
-                    font-size: 13px;
-
-                    &.is-dirty {
-                        font-weight: bold;
-
-                        .identity-view {
-                            .ms-Persona-primaryText {
-                                font-weight: bold;
-                            }
-                        }
-                    }
-
-                    &.is-invalid {
-                        color: red;
-
-                        .identity-view {
-                            .ms-Persona-primaryText {
-                                color: red;
-                            }
-                        }
-                    }
-
-                    &.title-cell {
-                        cursor: pointer;                
-                        
-                        &:hover {
-                            text-decoration: underline;
-                            color: #0078d7;
-                        }
-                    }
-
-                    .identity-view {
-                        font-size: 13px;
-                        height: 16px;
-                        line-height: 16px;
-                        margin-right: 0;
-
-                        .ms-Persona-details {
-                            padding: 0 0 0 5px;
-                        }
-
-                        .ms-Persona-primaryText {
-                            font-size: 13px;
-                        }
-                    }
-                }                 
-            }      
-        }
+    overflow: hidden;
+    
+    .bugbash-title {
+        margin-bottom: 5px;
+        font-size: 20px;
+        font-weight: 500;
     }
 
-    .right-content {
-        width: 25%;
+    .results-container {
+        display: flex;
+        flex: 1;
 
-        .item-editor-container {
-            margin-left: 20px;
-            padding-right: 10px;             
-        }  
+        .left-content {
+            width: 75%;       
+
+            .pivot-container {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+
+                .bugbash-item-grid {
+                    flex: 1;
+                    padding-top: 10px;
+
+                    .item-grid-cell {
+                        padding: 0;
+                        margin: 0;
+                        display: inline;
+                        font-size: 13px;
+
+                        &.is-dirty {
+                            font-weight: bold;
+
+                            .identity-view {
+                                .ms-Persona-primaryText {
+                                    font-weight: bold;
+                                }
+                            }
+                        }
+
+                        &.is-invalid {
+                            color: red;
+
+                            .identity-view {
+                                .ms-Persona-primaryText {
+                                    color: red;
+                                }
+                            }
+                        }
+
+                        &.title-cell {
+                            cursor: pointer;                
+                            
+                            &:hover {
+                                text-decoration: underline;
+                                color: #0078d7;
+                            }
+                        }
+
+                        .identity-view {
+                            font-size: 13px;
+                            height: 16px;
+                            line-height: 16px;
+                            margin-right: 0;
+
+                            .ms-Persona-details {
+                                padding: 0 0 0 5px;
+                            }
+
+                            .ms-Persona-primaryText {
+                                font-size: 13px;
+                            }
+                        }
+                    }                 
+                }      
+            }
+        }
+
+        .right-content {
+            width: 25%;
+            border-left: 1px solid #ccc;
+
+            .item-editor-container {
+                margin-left: 20px;
+                padding-right: 10px;
+
+                .item-editor-container-header {
+                    font-size: 14px;
+                    font-weight: 600;
+                    line-height: 40px;
+                }
+            }  
+        }
     }
 }

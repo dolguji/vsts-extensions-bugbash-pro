@@ -42,11 +42,18 @@ interface IBugBashResultsViewState extends IBaseComponentState {
     viewModels?: IBugBashItemViewModel[];
     selectedViewModel?: IBugBashItemViewModel;
     workItemsMap?: IDictionaryNumberTo<WorkItem>;
-    selectedPivot?: string;
+    selectedPivot?: SelectedPivot;
 }
 
 interface IBugBashResultsViewProps extends IBaseComponentProps {
     id: string;
+}
+
+enum SelectedPivot {
+    Pending,
+    Accepted,
+    Rejected,
+    Analytics
 }
 
 export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
@@ -59,7 +66,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             bugBashItem: null,
             viewModels: null,
             selectedViewModel: null,
-            workItemsMap: null
+            workItemsMap: null,
+            selectedPivot: SelectedPivot.Pending
         };
     }
 
@@ -105,12 +113,43 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         const bugBashItem = StoresHub.bugBashStore.getItem(this.props.id);
 
         this.updateState({
-            bugBashItem: bugBashItem
+            bugBashItem: bugBashItem,
+            selectedPivot: bugBashItem.autoAccept ? SelectedPivot.Accepted : SelectedPivot.Pending
         });
     }
 
     private _isDataLoading(): boolean {
         return !StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id) || !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
+    }
+
+    private _getSelectedPivotKey(): string {
+        switch (this.state.selectedPivot) {
+            case SelectedPivot.Pending:
+                return "Pending";
+            case SelectedPivot.Accepted:
+                return "Accepted";
+            case SelectedPivot.Rejected:
+                return "Rejected";
+            default:
+                return "Analytics";
+        }
+    }
+
+    private _updateSelectedPivot(pivotKey: string) {
+        switch (pivotKey) {
+            case "Pending":
+                this.updateState({selectedPivot: SelectedPivot.Pending});
+                break;
+            case "Accepted":
+                this.updateState({selectedPivot: SelectedPivot.Accepted});
+                break;
+            case "Rejected":
+                this.updateState({selectedPivot: SelectedPivot.Rejected});
+                break;
+            default:
+                this.updateState({selectedPivot: SelectedPivot.Analytics});
+                break;
+        }
     }
     
     public render(): JSX.Element {
@@ -127,13 +166,15 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             else {
                 return (
                     <div className="results-view">
-                        <div className="left-content">
-                            <div className="bugbash-title overflow-ellipsis">{StoresHub.bugBashStore.getItem(this.props.id).title}</div>
-                            {this._renderPivots()}
+                        <Label className="bugbash-title overflow-ellipsis">{StoresHub.bugBashStore.getItem(this.props.id).title}</Label>
+                        <div className="results-container">
+                            <div className="left-content">
+                                {this._renderPivots()}
+                            </div>
+                            <div className="right-content">
+                                {this._renderItemEditor()}
+                            </div>    
                         </div>
-                        <div className="right-content">
-                            {this._renderItemEditor()}
-                        </div>                    
                     </div>
                 );
             }
@@ -143,7 +184,9 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     private _renderPivots(): JSX.Element {
         const allViewModels = this.state.viewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model) || this.state.workItemsMap[viewModel.model.workItemId] != null);
         const pendingItems = allViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model));
+        const rejectedItems = pendingItems;
         const workItemIds = allViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.model)).map(viewModel => viewModel.model.workItemId);
+
         let workItems: WorkItem[] = [];
         for (let id of workItemIds) {
             workItems.push(this.state.workItemsMap[id]);
@@ -156,81 +199,81 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             StoresHub.workItemFieldStore.getItem("System.AreaPath")
         ];
         
+        let pivots: JSX.Element;
+        let pivotContent: JSX.Element;
+
         if (this.state.bugBashItem.autoAccept) {
-            return (
-                <div className="pivot-container">
-                    <Pivot initialSelectedKey={this.state.selectedPivot || "Accepted"} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>                        
-                        <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted">
-                            <WorkItemGrid
-                                className="bugbash-item-grid"
-                                workItems={workItems}
-                                fields={fields}
-                                extraColumns={this._getExtraWorkItemGridColumns()}
-                                onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
-                                    let map = {...this.state.workItemsMap};
-                                    map[updatedWorkItem.id] = updatedWorkItem;
-                                    this.updateState({workItemsMap: map});
-                                }}
-                                contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
-                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                            />
-                        </PivotItem>
-                        <PivotItem linkText="Analytics" itemKey="Analytics">
-                            <LazyLoad module="scripts/BugBashResultsAnalytics">
-                                {(BugBashResultsAnalytics) => (
-                                    <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
-                                )}
-                            </LazyLoad>
-                        </PivotItem>
-                    </Pivot>
-                </div>
-            );
+            pivots = <Pivot initialSelectedKey={this._getSelectedPivotKey()} onLinkClick={(item: PivotItem) => this._updateSelectedPivot(item.props.itemKey)}>
+                <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted" />
+                <PivotItem linkText="Analytics" itemKey="Analytics" />
+            </Pivot>;
         }
         else {
-            return (
-                <div className="pivot-container">
-                    <Pivot initialSelectedKey={this.state.selectedPivot || "Pending"} onLinkClick={(item: PivotItem) => this.updateState({selectedPivot: item.props.itemKey})}>
-                        <PivotItem linkText={`Pending Items (${pendingItems.length})`} itemKey="Pending">
-                            <Grid
-                                className="bugbash-item-grid"
-                                items={pendingItems}
-                                columns={this._getPendingGridColumns()}
-                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                                contextMenuProps={{menuItems: this._getContextMenuItems}}
-                                onItemInvoked={this._onPendingItemInvoked}
-                            />
-                        </PivotItem>
-                        <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted">
-                            <WorkItemGrid
-                                className="bugbash-item-grid"
-                                workItems={workItems}
-                                fields={fields}
-                                extraColumns={this._getExtraWorkItemGridColumns()}
-                                onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
-                                    let map = {...this.state.workItemsMap};
-                                    map[updatedWorkItem.id] = updatedWorkItem;
-                                    this.updateState({workItemsMap: map});
-                                }}
-                                contextMenuProps={{menuItems: this._getWorkItemContextMenuItems}}
-                                commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                            />
-                        </PivotItem>
-                        <PivotItem linkText="Analytics" itemKey="Analytics">
-                            <LazyLoad module="scripts/BugBashResultsAnalytics">
-                                {(BugBashResultsAnalytics) => (
-                                    <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
-                                )}
-                            </LazyLoad>
-                        </PivotItem>
-                    </Pivot>
-                </div>
-            );
-        }        
+            pivots = <Pivot initialSelectedKey={this._getSelectedPivotKey()} onLinkClick={(item: PivotItem) => this._updateSelectedPivot(item.props.itemKey)}>
+                <PivotItem linkText={`Pending Items (${pendingItems.length})`} itemKey="Pending" />
+                <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted" />
+                <PivotItem linkText={`Rejected Items (${rejectedItems.length})`} itemKey="Rejected" />
+                <PivotItem linkText="Analytics" itemKey="Analytics" />
+            </Pivot>;
+        }
+        
+        switch (this.state.selectedPivot) {
+            case SelectedPivot.Pending:
+                pivotContent = <Grid
+                    className="bugbash-item-grid"
+                    items={pendingItems}
+                    columns={this._getPendingGridColumns()}
+                    commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                    contextMenuProps={{menuItems: this._getContextMenuItems}}
+                    onItemInvoked={this._onPendingItemInvoked}
+                />;
+                break;
+            case SelectedPivot.Accepted:
+                pivotContent = <WorkItemGrid
+                    className="bugbash-item-grid"
+                    workItems={workItems}
+                    fields={fields}
+                    noResultsText="No Accepted items"
+                    extraColumns={this._getExtraWorkItemGridColumns()}
+                    onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
+                        let map = {...this.state.workItemsMap};
+                        map[updatedWorkItem.id] = updatedWorkItem;
+                        this.updateState({workItemsMap: map});
+                    }}
+                    commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                />;
+                break;
+            case SelectedPivot.Rejected:
+                pivotContent = <Grid
+                    className="bugbash-item-grid"
+                    items={pendingItems}
+                    columns={this._getPendingGridColumns()}
+                    commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
+                    contextMenuProps={{menuItems: this._getContextMenuItems}}
+                    onItemInvoked={this._onPendingItemInvoked}
+                />;
+                break;
+            default:
+                pivotContent = <LazyLoad module="scripts/BugBashResultsAnalytics">
+                    {(BugBashResultsAnalytics) => (
+                        <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
+                    )}
+                </LazyLoad>;
+                break;
+        }
+
+        return (
+            <div className="pivot-container">
+                {pivots}
+                {pivotContent}
+            </div>
+        );
     }
 
     private _renderItemEditor(): JSX.Element {
         return (
             <div className="item-editor-container">
+                <Label className="item-editor-container-header overflow-ellipsis">{this.state.selectedViewModel ? "Edit Item" : "Add Item"}</Label>
                 <BugBashItemEditor 
                     viewModel={this.state.selectedViewModel || BugBashItemHelpers.getNewItemViewModel(this.props.id)}
                     onItemAccept={(model: IBugBashItem, workItem: WorkItem) => {
@@ -358,7 +401,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 minWidth: 200,
                 maxWidth: 800,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {                    
+                onRenderCell: (viewModel: IBugBashItemViewModel) => {                 
                     return (
                         <TooltipHost 
                             content={viewModel.model.title}
@@ -372,7 +415,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                                         this._onPendingItemInvoked(viewModel);
                                     }
                                 } >
-                                {viewModel.model.title}
+                                {`${BugBashItemHelpers.isDirty(viewModel) ? "* " : ""}${viewModel.model.title}`}
                             </Label>
                         </TooltipHost>
                     )
@@ -507,9 +550,13 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
 
     @autobind
     private _getContextMenuItems(selectedViewModels: IBugBashItemViewModel[]): IContextualMenuItem[] {
+        if (selectedViewModels.length > 1) {
+            return null;
+        }
+
         return [            
             {
-                key: "Remove", name: "Remove", title: "Remove selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
+                key: "Accept", name: "Accept", title: "Remove selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
                 disabled: selectedViewModels.length === 0,
                 onClick: async () => {
                     const confirm = await confirmAction(true, "Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.");
@@ -518,27 +565,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             this.updateState({selectedViewModel: null});
                         }
                         
-                        this._removeItems(selectedViewModels);
-                    }
-                }
-            }
-        ];
-    }
-
-    @autobind
-    private _getWorkItemContextMenuItems(selectedWorkItems: WorkItem[]): IContextualMenuItem[] {
-        return [            
-            {
-                key: "Remove", name: "Remove", title: "Remove selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
-                disabled: selectedWorkItems.length === 0,
-                onClick: async () => {
-                    const confirm = await confirmAction(true, "Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.");
-                    if (confirm) {
-                        let workItemIds = selectedWorkItems.map(w => w.id);
-
-                        // find all bug  bash items pointing to these work item ids
-                        let selectedViewModels = this.state.viewModels.filter(vm => BugBashItemHelpers.isAccepted(vm.model) && workItemIds.indexOf(vm.model.workItemId) > -1);
-
                         this._removeItems(selectedViewModels);
                     }
                 }
