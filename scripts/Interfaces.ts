@@ -20,7 +20,9 @@ export interface IBugBashItem {
     readonly __etag: number;
     title: string;
     workItemId: number;
-    areaPath: string;
+    rejected?: boolean;
+    rejectReason?: string;
+    teamId: string;
     description?: string;    
     createdDate: Date;
     createdBy: string;

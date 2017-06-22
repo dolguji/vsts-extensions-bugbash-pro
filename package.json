@@ -35,12 +35,12 @@
         "tfx-cli": "^0.4.9"
     },
     "dependencies": {
-        "requirejs": "^2.3.3",
-        "vss-web-extension-sdk": "^2.117.0",
-        "es6-promise": "^4.1.0",
-        "office-ui-fabric-react": "^4.9.0",
-        "vsts-extension-react-widgets": "0.0.21",
-        "trumbowyg": "2.6.0",
+        "requirejs": "2.3.3",
+        "vss-web-extension-sdk": "2.117.0",
+        "es6-promise": "4.1.0",
+        "office-ui-fabric-react": "4.0.0",
+        "vsts-extension-react-widgets": "0.0.22",
+        "trumbowyg": "2.5.1",
         "recharts": "0.22.4"
     }
 }

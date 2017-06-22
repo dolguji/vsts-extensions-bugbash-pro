@@ -11,6 +11,7 @@ import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
 import { IBugBashItem } from "../Interfaces";
 import { BugBashItemHelpers } from "../Helpers";
+import { StoresHub } from "../Stores/StoresHub";
 
 interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {
     bugBashId: string;
@@ -40,31 +41,29 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
             return <MessageBar messageBarType={MessageBarType.info}>No items created yet.</MessageBar>;
         }
 
-        let areaCounts: IDictionaryStringTo<number> = {};
+        let teamCounts: IDictionaryStringTo<number> = {};
         let createdByCounts: IDictionaryStringTo<number> = {};
-        let areaData = [];
+        let teamData = [];
         let createdByData = [];
 
         for (const model of this.props.itemModels) {
-            let areaPath = (BugBashItemHelpers.isAccepted(model) && this.props.workItemsMap[model.workItemId])
-                ? this.props.workItemsMap[model.workItemId].fields["System.AreaPath"]
-                : model.areaPath;
+            let teamId = model.teamId;
 
             let createdBy = model.createdBy;
 
-            if (areaCounts[areaPath] == null) {
-                areaCounts[areaPath] = 0;
+            if (teamCounts[teamId] == null) {
+                teamCounts[teamId] = 0;
             }
             if (createdByCounts[createdBy] == null) {
                 createdByCounts[createdBy] = 0;
             }
 
-            areaCounts[areaPath] = areaCounts[areaPath] + 1;
+            teamCounts[teamId] = teamCounts[teamId] + 1;
             createdByCounts[createdBy] = createdByCounts[createdBy] + 1;
         }
 
-        for (const areaName in areaCounts) {
-            areaData.push({ name: this._processAreaName(areaName), value: areaCounts[areaName]});
+        for (const teamId in teamCounts) {
+            teamData.push({ name: this._processTeamName(teamId), value: teamCounts[teamId]});
         }
         for (const createdBy in createdByCounts) {
             createdByData.push({ name: this._processIdentityName(createdBy), value: createdByCounts[createdBy]});
@@ -72,8 +71,8 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
 
         return <div className="bugbash-analytics">
                 <div className="chart-view">
-                    <Label className="header">Area Path</Label>
-                    <BarChart layout={"vertical"} width={600} height={600} data={areaData} barSize={10}
+                    <Label className="header">Team</Label>
+                    <BarChart layout={"vertical"} width={600} height={600} data={teamData} barSize={10}
                         margin={{top: 5, right: 30, left: 20, bottom: 5}}>
                         <XAxis type="number" allowDecimals={false} />
                         <YAxis type="category" dataKey="name" tick={<CustomizedAxisTick />} allowDecimals={false} />
@@ -94,9 +93,9 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
             </div>
     }
 
-    private _processAreaName(area: string): string {
-        const i = area.indexOf("\\");
-        return i > 0 ? area.substr(i + 1) : area;
+    private _processTeamName(teamId: string): string {
+        const team = StoresHub.teamStore.getItem(teamId);
+        return team ? team.name : teamId;
     }
 
     private _processIdentityName(name: string): string {

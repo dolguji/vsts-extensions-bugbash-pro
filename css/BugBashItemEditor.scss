@@ -1,6 +1,6 @@
 .item-editor {
     outline: none;
-    
+
     .item-editor-header {
         font-weight: bold;
     }
@@ -8,18 +8,22 @@
     .item-editor-menu {
         margin-bottom: 10px;
 
-        .auto-accept-menuitem {
+        .auto-accept-menuitem, .acceptItemButton {
             i {
                 color: #107c10;
+            }
+        }        
+
+        .rejectItemButton {
+            i {
+                color: #e81123;
             }
         }
     }
     
-    .rich-editor {
-        padding: 5px;
-
-        p {
-            margin: 0;
+    .item-team-container {
+        .input-error {
+            margin-top: 5px;
         }
     }
 

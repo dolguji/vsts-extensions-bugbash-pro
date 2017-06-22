@@ -4,9 +4,9 @@ import Utils_Array = require("VSS/Utils/Array");
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { TeamFieldValues } from "TFS/Work/Contracts";
 import { TeamContext } from "TFS/Core/Contracts";
-import * as WorkClient from "TFS/Core/WorkClient";
+import * as WorkClient from "TFS/Work/RestClient";
 
-export class TeamStore extends BaseStore<IDictionaryStringTo<TeamFieldValues>, TeamFieldValues, string> {
+export class TeamFieldStore extends BaseStore<IDictionaryStringTo<TeamFieldValues>, TeamFieldValues, string> {
     constructor() {
         super();
         this.items = {};    

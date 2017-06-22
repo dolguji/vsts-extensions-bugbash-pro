@@ -22,8 +22,9 @@
         // Load main entry point for extension
         VSS.require(["scripts/App", "VSS/Utils/Date", "VSS/Utils/String", "VSS/Utils/Array",
         "TFS/WorkItemTracking/Contracts", "TFS/WorkItemTracking/RestClient", "TFS/WorkItemTracking/Services",
-        "VSS/WebApi/Contracts", "VSS/SDK/Services/Navigation", "VSS/Flux/Store",
-        "VSS/Controls/Combos", "VSS/Controls/TreeView"], function (App) {            
+        "VSS/WebApi/Contracts", "VSS/SDK/Services/Navigation", "VSS/Flux/Store", "VSS/Controls/Combos",
+        "TFS/Work/Contracts", "TFS/Work/RestClient",
+        "TFS/Core/Contracts", "TFS/Core/RestClient"], function (App) {
             App.init();
             VSS.notifyLoadSucceeded();
         });

@@ -14,7 +14,7 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     protected async initializeItems(): Promise<void> {
         let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
         for(let bugBash of bugBashes) {
-            this._translateDates(bugBash);
+            this._translateDates(bugBash);            
         }
 
         this.items = bugBashes;

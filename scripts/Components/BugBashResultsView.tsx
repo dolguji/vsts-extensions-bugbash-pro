@@ -15,10 +15,10 @@ import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/Cont
 import { autobind } from "OfficeFabric/Utilities";
 import { Pivot, PivotItem } from "OfficeFabric/Pivot";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
+import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
-import { AreaPathStore } from "VSTS_Extension/Stores/AreaPathStore";
 import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
@@ -34,6 +34,7 @@ import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { BugBashStore } from "../Stores/BugBashStore";
+import { TeamStore } from "../Stores/TeamStore";
 import { StoresHub } from "../Stores/StoresHub";
 
 
@@ -58,7 +59,7 @@ enum SelectedPivot {
 
 export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashStore, WorkItemFieldStore, AreaPathStore];
+        return [BugBashStore, WorkItemFieldStore, TeamStore];
     }
 
     protected initializeState() {
@@ -71,8 +72,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         };
     }
 
-    protected async initialize() {
-        StoresHub.areaPathStore.ensureAreaPathNode();
+    protected async initialize() {            
         const found = await StoresHub.bugBashStore.ensureItem(this.props.id);
 
         if (!found) {
@@ -83,6 +83,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             });
         }
         else {
+            StoresHub.teamStore.initialize();
             StoresHub.workItemFieldStore.initialize();
             this._refreshData();
         }
@@ -119,7 +120,11 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     private _isDataLoading(): boolean {
-        return !StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id) || !StoresHub.bugBashStore.isLoaded() || this.state.workItemsMap == null || !StoresHub.workItemFieldStore.isLoaded() || this.state.viewModels == null;
+        return !StoresHub.bugBashStore.isLoaded() 
+            || this.state.workItemsMap == null 
+            || !StoresHub.workItemFieldStore.isLoaded() 
+            || !StoresHub.teamStore.isLoaded()
+            || this.state.viewModels == null;
     }
 
     private _getSelectedPivotKey(): string {
@@ -184,12 +189,14 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     private _renderPivots(): JSX.Element {
         const allViewModels = this.state.viewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model) || this.state.workItemsMap[viewModel.model.workItemId] != null);
         const pendingItems = allViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model));
-        const rejectedItems = pendingItems;
+        const rejectedItems = allViewModels.filter(viewModel => viewModel.model.rejected);
         const workItemIds = allViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.model)).map(viewModel => viewModel.model.workItemId);
 
         let workItems: WorkItem[] = [];
         for (let id of workItemIds) {
-            workItems.push(this.state.workItemsMap[id]);
+            if (this.state.workItemsMap[id]) {
+                workItems.push(this.state.workItemsMap[id]);
+            }
         }
 
         const fields = [
@@ -222,16 +229,17 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 pivotContent = <Grid
                     className="bugbash-item-grid"
                     items={pendingItems}
-                    columns={this._getPendingGridColumns()}
+                    selectionMode={SelectionMode.single}
+                    columns={this._getBugBashItemGridColumns()}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                     contextMenuProps={{menuItems: this._getContextMenuItems}}
-                    onItemInvoked={this._onPendingItemInvoked}
+                    onItemInvoked={this._onBugBashItemInvoked}
                 />;
                 break;
             case SelectedPivot.Accepted:
                 pivotContent = <WorkItemGrid
                     className="bugbash-item-grid"
-                    workItems={workItems}
+                    workItems={workItems}                    
                     fields={fields}
                     noResultsText="No Accepted items"
                     extraColumns={this._getExtraWorkItemGridColumns()}
@@ -246,11 +254,12 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             case SelectedPivot.Rejected:
                 pivotContent = <Grid
                     className="bugbash-item-grid"
-                    items={pendingItems}
-                    columns={this._getPendingGridColumns()}
+                    items={rejectedItems}
+                    selectionMode={SelectionMode.single}
+                    columns={this._getBugBashItemGridColumns()}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                     contextMenuProps={{menuItems: this._getContextMenuItems}}
-                    onItemInvoked={this._onPendingItemInvoked}
+                    onItemInvoked={this._onBugBashItemInvoked}
                 />;
                 break;
             default:
@@ -328,14 +337,14 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             }
                         }
                     }} 
-                    onChange={(changedData: {id: string, title: string, description: string, areaPath: string}) => {
+                    onChange={(changedData: {id: string, title: string, description: string, teamId: string}) => {
                         if (changedData.id) {
                             let newViewModels = this.state.viewModels.slice();
                             let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedData.id);
                             if (index !== -1) {
                                 newViewModels[index].model.title = changedData.title;
                                 newViewModels[index].model.description = changedData.description;
-                                newViewModels[index].model.areaPath = changedData.areaPath;
+                                newViewModels[index].model.teamId = changedData.teamId;
                                 this.updateState({viewModels: newViewModels, selectedViewModel: newViewModels[index]});
                             }
                         }
@@ -375,12 +384,12 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     @autobind
-    private async _onPendingItemInvoked(viewModel: IBugBashItemViewModel) {
+    private async _onBugBashItemInvoked(viewModel: IBugBashItemViewModel) {
         this.updateState({selectedViewModel: viewModel});
     }
 
     @autobind
-    private _getPendingGridColumns(): GridColumn[] {
+    private _getBugBashItemGridColumns(): GridColumn[] {
         const gridCellClassName = "item-grid-cell";
         const getCellClassName = (viewModel: IBugBashItemViewModel) => {
             let className = gridCellClassName;
@@ -412,7 +421,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             <Label 
                                 className={`${getCellClassName(viewModel)} title-cell`} 
                                 onClick={(e) => {
-                                        this._onPendingItemInvoked(viewModel);
+                                        this._onBugBashItemInvoked(viewModel);
                                     }
                                 } >
                                 {`${BugBashItemHelpers.isDirty(viewModel) ? "* " : ""}${viewModel.model.title}`}
@@ -427,30 +436,39 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.title, filterText)
             },
             {
-                key: "area",
-                name: "Area Path",
+                key: "team",
+                name: "Team",
                 minWidth: 200,
                 maxWidth: 300,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                    const team = StoresHub.teamStore.getItem(viewModel.model.teamId);
                     return (
                         <TooltipHost 
-                            content={viewModel.model.areaPath}
+                            content={team ? team.name : viewModel.model.teamId}
                             delay={TooltipDelay.medium}
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
                             <Label className={`${getCellClassName(viewModel)}`}>
-                                {viewModel.model.areaPath}
+                                {team ? team.name : viewModel.model.teamId}
                             </Label>
                         </TooltipHost>
                     )
                 },
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.areaPath, viewModel2.model.areaPath);
+                    const team1 = StoresHub.teamStore.getItem(viewModel1.model.teamId);
+                    const team2 = StoresHub.teamStore.getItem(viewModel2.model.teamId);
+                    const team1Name = team1 ? team1.name : viewModel1.model.teamId;
+                    const team2Name = team2 ? team2.name : viewModel2.model.teamId;
+
+                    let compareValue = Utils_String.ignoreCaseComparer(team1Name, team2Name);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.areaPath, filterText)
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) =>  {
+                    const team = StoresHub.teamStore.getItem(viewModel.model.teamId);
+                    return Utils_String.caseInsensitiveContains(team ? team.name : viewModel.model.teamId, filterText);
+                }
             },
             {
                 key: "createdby",

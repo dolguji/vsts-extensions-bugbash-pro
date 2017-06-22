@@ -26,6 +26,7 @@ export class BugBashItemManager {
         const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
         for(let model of models) {
             translateDates(model);
+            model.teamId = model.teamId || VSS.getWebContext().team.id;
         }
         return models;
     }
@@ -34,6 +35,7 @@ export class BugBashItemManager {
         let model = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), itemId, null, false);
         if (model) {
             translateDates(model);
+            model.teamId = model.teamId || VSS.getWebContext().team.id;
             return model;
         }
         return null;
@@ -86,12 +88,18 @@ export class BugBashItemManager {
         // get accept template
         const bugBash = StoresHub.bugBashStore.getItem(model.bugBashId);
         const templateExists = await StoresHub.workItemTemplateItemStore.ensureTemplateItem(bugBash.acceptTemplate.templateId, bugBash.acceptTemplate.team);
+        const teamFieldValueExists = await StoresHub.teamFieldStore.ensureItem(model.teamId);
+
         if (templateExists) {
             const template = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
             let fieldValues = {...template.fields};
-            fieldValues["System.Title"] = model.title;
-            fieldValues["System.AreaPath"] = model.areaPath;
+            fieldValues["System.Title"] = model.title;            
             fieldValues[bugBash.itemDescriptionField] = model.description;
+
+            if (teamFieldValueExists) {
+                const teamFieldValue = StoresHub.teamFieldStore.getItem(model.teamId);
+                fieldValues[teamFieldValue.field.referenceName] = teamFieldValue.defaultValue;
+            }
 
             if (fieldValues["System.Tags-Add"]) {
                 fieldValues["System.Tags"] = fieldValues["System.Tags-Add"];

@@ -6,16 +6,18 @@ import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { CommandBar } from "OfficeFabric/CommandBar";
-import { ComboBox, IComboBoxProps } from "OfficeFabric/ComboBox";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { AreaPathCombo } from "VSTS_Extension/Components/Common/Combo/AreaPathCombo";
+import { InputError } from "VSTS_Extension/Components/Common/InputError";
+import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
 import { RichEditor } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
 
+import Utils_String = require("VSS/Utils/String");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
+import "../PasteImagePlugin";
 import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
 import { BugBashItemManager } from "../BugBashItemManager";
@@ -27,7 +29,7 @@ export interface IBugBashItemEditorProps extends IBaseComponentProps {
     onDelete: (item: IBugBashItem) => void;
     onItemUpdate: (item: IBugBashItem) => void;
     onItemAccept: (item: IBugBashItem, workItem: WorkItem) => void;
-    onChange: (changedData: {id: string, title: string, description: string, areaPath: string}) => void;
+    onChange: (changedData: {id: string, title: string, description: string, teamId: string}) => void;
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
@@ -63,7 +65,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             id: newViewModel.model.id,
             title: newViewModel.model.title,
             description: newViewModel.model.description,
-            areaPath: newViewModel.model.areaPath
+            teamId: newViewModel.model.teamId
         });
     }
 
@@ -81,6 +83,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }
         else {
             const item = this.state.viewModel;
+            const allTeams = StoresHub.teamStore.getAll();
+            const team = StoresHub.teamStore.getItem(item.model.teamId);
 
             return (
                 <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
@@ -103,26 +107,26 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                 this._onChange(newModel);
                             }} />
 
-                    <div className="item-areapath-container">
-                        <Label required={true}>Area Path</Label>
-                        <AreaPathCombo value={item.model.areaPath} onChange={(newValue: string) => {
-                            let newModel = {...this.state.viewModel};
-                            newModel.model.areaPath = newValue;
-                            this.updateState({viewModel: newModel});
-                            this._onChange(newModel);
-                        }} />
-                        {/*<ComboBox autoComplete={true} allowFreeform={true} options={
-                            [{
-                                key: "Mohit",
-                                text: "Mohit"
-                            }, {
-                                key: "Moh Bagra",
-                                text: "Moh Bagra"
-                            }, {
-                                key: "Bhawna",
-                                text: "Bhawna"
-                            }]
-                        } />*/}
+                    <div className="item-team-container">
+                        <Label required={true}>Team</Label>
+
+                        <ComboBox                             
+                            value={team ? team.name : item.model.teamId} 
+                            options={{
+                                type: "list",
+                                mode: "drop",
+                                allowEdit: true,
+                                source: allTeams.map(t => t.name)
+                            }} 
+                            onChange={(newTeamName: string) => {
+                                let newModel = {...this.state.viewModel};
+                                const newTeam = StoresHub.teamStore.getItem(newTeamName);
+                                newModel.model.teamId = newTeam ? newTeam.id : newTeamName;
+                                this.updateState({viewModel: newModel});
+                                this._onChange(newModel);
+                            }}/>
+
+                        { team == null && <InputError error={`${item.model.teamId} team does not exist.`} />}
                     </div>
 
                     <div className="item-description-container">
@@ -274,41 +278,26 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         this.updateState({disableToolbar: false});
                     }
                 }
-            },
-            {
-                key: "delete", name: "", title: "Delete", iconProps: {iconName: "Delete"}, 
-                disabled: this.state.disableToolbar || this._isNew(),
-                onClick: async () => {
-                    this.updateState({disableToolbar: true});
-
-                    const confirm = await confirmAction(true, "Are you sure you want to delete this item?");
-                    if (confirm) {
-                        this.updateState({disableToolbar: false, error: null});
-                        try {
-                            BugBashItemManager.deleteItems([this.state.viewModel.model]);
-                        }
-                        catch (e) {
-                            
-                        }
-                        this.props.onDelete(this.state.viewModel.model);
-                    }
-                    else {
-                        this.updateState({disableToolbar: false});
-                    }
-                }
             }
         ]
 
         let bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
 
         if (!bugBash.autoAccept) {
+            const isMenuDisabled = this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.viewModel) || this._isNew();
             menuItems.push({
-                key: "Accept", name: "Accept item", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, 
-                disabled: this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.viewModel) || this._isNew(),
-                onClick: () => {
-                    this._acceptItem();
-                }
-            });
+                    key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
+                    disabled: isMenuDisabled,
+                    onClick: () => {
+                        this._acceptItem();
+                    }
+                },{
+                    key: "Reject", name: "Reject", title: "Reject item", iconProps: {iconName: "Cancel"}, className: !isMenuDisabled ? "rejectItemButton" : "",
+                    disabled: isMenuDisabled,
+                    onClick: () => {
+                        this._acceptItem();
+                    }
+                });
         }
         else {
             menuItems.push({

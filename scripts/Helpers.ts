@@ -51,7 +51,7 @@ export class BugBashItemHelpers {
             __etag: 0,
             title: "",
             description: "",
-            areaPath: StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id) ? StoresHub.areaPathStore.getAreaPaths()[0] : "",
+            teamId: VSS.getWebContext().team.id,
             workItemId: 0,
             createdDate: null,
             createdBy: ""
@@ -64,7 +64,7 @@ export class BugBashItemHelpers {
             bugBashId: model.bugBashId,
             __etag: model.__etag,
             title: model.title,
-            areaPath: model.areaPath,
+            teamId: model.teamId,
             description: model.description,
             workItemId: model.workItemId,
             createdDate: model.createdDate,
@@ -85,15 +85,14 @@ export class BugBashItemHelpers {
 
     public static isDirty(viewModel: IBugBashItemViewModel): boolean {        
         return !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
-            || !Utils_String.equals(viewModel.model.areaPath, viewModel.originalModel.areaPath)
+            || !Utils_String.equals(viewModel.model.teamId, viewModel.originalModel.teamId)
             || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description);
     }
 
     public static isValid(model: IBugBashItem): boolean {
-        let dataValid = model.title.trim().length > 0 && model.title.trim().length <= 256 && model.areaPath.trim().length > 0;
-        if (dataValid && StoresHub.areaPathStore.getItem(VSS.getWebContext().project.id)) {
-            const allowedAreaPaths = StoresHub.areaPathStore.getAreaPaths();
-            dataValid = dataValid && Utils_Array.contains(allowedAreaPaths, model.areaPath.trim(), Utils_String.ignoreCaseComparer);
+        let dataValid = model.title.trim().length > 0 && model.title.trim().length <= 256 && model.teamId.trim().length > 0;
+        if (dataValid) {
+            dataValid = dataValid && StoresHub.teamStore.getItem(model.teamId) != null;
         }
 
         return dataValid;
