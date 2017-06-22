@@ -1,7 +1,6 @@
 import * as React from "react";
 
-import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
-
+import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
@@ -50,10 +49,10 @@ export class EditBugBashView extends BaseComponent<IEditBugBashViewProps, IEditB
         }
         else {
             if (!this.state.item) {
-                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash doesn't exist.</MessageBar>;
+                return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
             }
             else if(!Utils_String.equals(VSS.getWebContext().project.id, this.state.item.projectId, true)) {
-                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash is out of scope of current project.</MessageBar>;
+                return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
             }
             else {
                 return <BugBashEditor id={this.state.item.id} />;

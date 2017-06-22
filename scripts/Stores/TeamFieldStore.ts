@@ -37,8 +37,18 @@ export class TeamFieldStore extends BaseStore<IDictionaryStringTo<TeamFieldValue
 
             let key = `${projectId}_${teamId}`.toLowerCase();
 
-            const teamFieldValues = await WorkClient.getClient().getTeamFieldValues(teamContext);
-            this._onAdd(teamId, teamFieldValues);
+            try {
+                const teamFieldValues = await WorkClient.getClient().getTeamFieldValues(teamContext);
+                if (teamFieldValues) {
+                    this._onAdd(teamId, teamFieldValues);
+                    return true;
+                }                
+            }
+            catch (e) {
+                return false;
+            }
+
+            return false;
         }
         else {
             this.emitChanged();

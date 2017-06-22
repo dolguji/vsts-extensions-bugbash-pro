@@ -9,7 +9,6 @@ import { Label } from "OfficeFabric/Label";
 import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
-import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Checkbox } from "OfficeFabric/Checkbox";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
@@ -17,6 +16,7 @@ import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } fro
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 
+import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { WorkItemTypeStore } from "VSTS_Extension/Stores/WorkItemTypeStore";
@@ -133,7 +133,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         }
                     }]} />
 
-                { this.state.error && (<MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar> )}
+                { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} />}
                 
                 <div className="editor-view-contents">                    
                     <div className="first-section">                        
@@ -268,7 +268,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 }
             },
             {
-                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Delete"}, disabled: this.state.disableToolbar || this._isNew(),
+                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Cancel"}, disabled: this.state.disableToolbar || this._isNew(),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     this.updateState({disableToolbar: true});
 

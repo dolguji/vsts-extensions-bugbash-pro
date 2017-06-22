@@ -19,13 +19,14 @@ export interface IBugBashItem {
     bugBashId: string;
     readonly __etag: number;
     title: string;
-    workItemId: number;
-    rejected?: boolean;
-    rejectReason?: string;
+    workItemId: number;    
     teamId: string;
     description?: string;    
     createdDate: Date;
     createdBy: string;
+    rejected?: boolean;
+    rejectReason?: string;
+    rejectedBy?: string;
 }
 
 export interface IBugBashItemViewModel {

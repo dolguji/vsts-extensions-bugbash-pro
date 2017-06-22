@@ -4,10 +4,11 @@ import * as React from "react";
 import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
-import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
+import { Checkbox } from "OfficeFabric/Checkbox";
 import { CommandBar } from "OfficeFabric/CommandBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
+import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
@@ -29,7 +30,7 @@ export interface IBugBashItemEditorProps extends IBaseComponentProps {
     onDelete: (item: IBugBashItem) => void;
     onItemUpdate: (item: IBugBashItem) => void;
     onItemAccept: (item: IBugBashItem, workItem: WorkItem) => void;
-    onChange: (changedData: {id: string, title: string, description: string, teamId: string}) => void;
+    onChange: (changedItem: IBugBashItem) => void;
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
@@ -61,25 +62,20 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     private _onChange(newViewModel: IBugBashItemViewModel) {
-        this.props.onChange({
-            id: newViewModel.model.id,
-            title: newViewModel.model.title,
-            description: newViewModel.model.description,
-            teamId: newViewModel.model.teamId
-        });
+        this.props.onChange(newViewModel.model);
     }
 
     public render(): JSX.Element {
         if (this.state.loadError) {
-            return <MessageBar messageBarType={MessageBarType.error}>{this.state.loadError}</MessageBar>;
+            return <MessagePanel messageType={MessageType.Error} message={this.state.loadError} />;
         }
         else if (!this.state.viewModel) {
             return <Loading />;
         }
         else if (BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
-            return <MessageBar messageBarType={MessageBarType.info}>
-                    This item has been accepted. You can view or edit this item's work item from the "Accepted items" tab. Please refresh the list to clear this message.
-                </MessageBar>;
+            return <MessagePanel 
+                messageType={MessageType.Info} 
+                message={"This item has been accepted. You can view or edit this item's work item from the \"Accepted items\" tab. Please refresh the list to clear this message."} />;
         }
         else {
             const item = this.state.viewModel;
@@ -94,7 +90,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         farItems={this._getFarMenuItems()}
                     />
 
-                    { this.state.error && <MessageBar messageBarType={MessageBarType.error}>{this.state.error}</MessageBar>}
+                    { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} />}
                     
                     <TextField label="Title" 
                             value={item.model.title}
@@ -128,6 +124,20 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
                         { team == null && <InputError error={`${item.model.teamId} team does not exist.`} />}
                     </div>
+
+                    { item.model.rejected && 
+                        <TextField label="Reject reason" 
+                                className="reject-reason-input"
+                                value={item.model.rejectReason}
+                                required={true} 
+                                onGetErrorMessage={this._getRejectReasonError}
+                                onChanged={(newValue: string) => {
+                                    let newModel = {...this.state.viewModel};
+                                    newModel.model.rejectReason = newValue;
+                                    this.updateState({viewModel: newModel});
+                                    this._onChange(newModel);
+                                }} />
+                    }
 
                     <div className="item-description-container">
                         <Label>Description</Label>
@@ -292,10 +302,24 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         this._acceptItem();
                     }
                 },{
-                    key: "Reject", name: "Reject", title: "Reject item", iconProps: {iconName: "Cancel"}, className: !isMenuDisabled ? "rejectItemButton" : "",
-                    disabled: isMenuDisabled,
+                    key: "Reject",
+                    onRender:(item) => {
+                        return <Checkbox
+                                    disabled={this.state.disableToolbar || this._isNew()} 
+                                    className="reject-menu-item-checkbox"
+                                    label="Reject"
+                                    checked={this.state.viewModel.model.rejected === true}
+                                    onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {
+                                        let newViewModel = {...this.state.viewModel};
+                                        newViewModel.model.rejected = !newViewModel.model.rejected;
+                                        newViewModel.model.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+                                        newViewModel.model.rejectReason = "";
+                                        this.updateState({viewModel: newViewModel});
+                                        this._onChange(newViewModel);
+                                    }} />;
+                    },
                     onClick: () => {
-                        this._acceptItem();
+                        alert("reject")
                     }
                 });
         }
@@ -314,6 +338,18 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     private _getTitleError(value: string): string | IPromise<string> {
         if (value.length > 256) {
             return `The length of the title should less than 256 characters, actual is ${value.length}.`;
+        }
+        return "";
+    }
+
+    @autobind
+    private _getRejectReasonError(value: string): string | IPromise<string> {
+        if (value == null || value.trim().length == 0) {
+            return "Reject reason can not be empty";
+        }
+
+        if (value.length > 128) {
+            return `The length of the reject reason should less than 128 characters, actual is ${value.length}.`;
         }
         return "";
     }

@@ -54,7 +54,10 @@ export class BugBashItemHelpers {
             teamId: VSS.getWebContext().team.id,
             workItemId: 0,
             createdDate: null,
-            createdBy: ""
+            createdBy: "",
+            rejected: false,
+            rejectReason: "",
+            rejectedBy: ""
         };
     }
 
@@ -68,7 +71,10 @@ export class BugBashItemHelpers {
             description: model.description,
             workItemId: model.workItemId,
             createdDate: model.createdDate,
-            createdBy: model.createdBy
+            createdBy: model.createdBy,
+            rejected: model.rejected,
+            rejectReason: model.rejectReason,
+            rejectedBy: model.rejectedBy
         }    
     }
 
@@ -86,11 +92,17 @@ export class BugBashItemHelpers {
     public static isDirty(viewModel: IBugBashItemViewModel): boolean {        
         return !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
             || !Utils_String.equals(viewModel.model.teamId, viewModel.originalModel.teamId)
-            || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description);
+            || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description)
+            || !Utils_String.equals(viewModel.model.rejectReason, viewModel.originalModel.rejectReason)
+            || Boolean(viewModel.model.rejected) !== Boolean(viewModel.originalModel.rejected);
     }
 
     public static isValid(model: IBugBashItem): boolean {
-        let dataValid = model.title.trim().length > 0 && model.title.trim().length <= 256 && model.teamId.trim().length > 0;
+        let dataValid = model.title.trim().length > 0 
+            && model.title.trim().length <= 256 
+            && model.teamId.trim().length > 0
+            && (!model.rejected || (model.rejectReason != null && model.rejectReason.trim().length > 0 && model.rejectReason.trim().length <= 128));
+
         if (dataValid) {
             dataValid = dataValid && StoresHub.teamStore.getItem(model.teamId) != null;
         }

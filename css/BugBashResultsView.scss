@@ -22,6 +22,10 @@
                 display: flex;
                 flex-direction: column;
 
+                .analytics-container {
+                    margin-top: 10px;
+                }
+
                 .bugbash-item-grid {
                     flex: 1;
                     padding-top: 10px;

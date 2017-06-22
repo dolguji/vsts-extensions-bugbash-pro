@@ -78,7 +78,7 @@ export class BugBashItemManager {
         let savedWorkItem: WorkItem;
 
         try {
-            // first do a empty save to check if its the latest version of the item            
+            // first do a empty save to check if its the latest version of the item
             updatedItem = await this.beginSave(model);
         }
         catch (e) {
@@ -121,6 +121,9 @@ export class BugBashItemManager {
             
             // associate work item with bug bash item
             updatedItem.workItemId = savedWorkItem.id;
+            updatedItem.rejected = false;
+            updatedItem.rejectedBy = "";
+            updatedItem.rejectReason = "";
             updatedItem = await this.beginSave(updatedItem);
 
             return {

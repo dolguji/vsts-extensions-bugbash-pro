@@ -2,9 +2,9 @@ import "../../css/BugBashResultsAnalytics.scss";
 
 import * as React from "react";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
+import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 
 import { Label } from "OfficeFabric/Label";
-import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Bar, BarChart, XAxis, YAxis, Text, Tooltip } from "recharts";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
@@ -38,7 +38,7 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
 
     public render() {
         if (this.props.itemModels.length === 0) {
-            return <MessageBar messageBarType={MessageBarType.info}>No items created yet.</MessageBar>;
+            return <MessagePanel messageType={MessageType.Info} message=">No items created yet." />;
         }
 
         let teamCounts: IDictionaryStringTo<number> = {};

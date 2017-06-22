@@ -9,14 +9,15 @@ import Utils_Array = require("VSS/Utils/Array");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
-import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
 import { Pivot, PivotItem } from "OfficeFabric/Pivot";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
+import { CommandBar } from "OfficeFabric/CommandBar";
 
+import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
@@ -163,10 +164,10 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         }
         else {
             if (!this.state.bugBashItem) {
-                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash doesn't exist.</MessageBar>;
+                return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
             }
             else if(!Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashItem.projectId, true)) {
-                return <MessageBar messageBarType={MessageBarType.error}>This instance of bug bash is out of scope of current project.</MessageBar>;
+                <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
             }
             else {
                 return (
@@ -187,10 +188,10 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     private _renderPivots(): JSX.Element {
-        const allViewModels = this.state.viewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model) || this.state.workItemsMap[viewModel.model.workItemId] != null);
-        const pendingItems = allViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.model));
-        const rejectedItems = allViewModels.filter(viewModel => viewModel.model.rejected);
-        const workItemIds = allViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.model)).map(viewModel => viewModel.model.workItemId);
+        const allViewModels = this.state.viewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalModel) || this.state.workItemsMap[viewModel.originalModel.workItemId] != null);
+        const pendingItems = allViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalModel) && !viewModel.originalModel.rejected);
+        const rejectedItems = allViewModels.filter(viewModel => viewModel.originalModel.rejected);
+        const workItemIds = allViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalModel)).map(viewModel => viewModel.originalModel.workItemId);
 
         let workItems: WorkItem[] = [];
         for (let id of workItemIds) {
@@ -232,7 +233,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     selectionMode={SelectionMode.single}
                     columns={this._getBugBashItemGridColumns()}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                    contextMenuProps={{menuItems: this._getContextMenuItems}}
                     onItemInvoked={this._onBugBashItemInvoked}
                 />;
                 break;
@@ -258,16 +258,24 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     selectionMode={SelectionMode.single}
                     columns={this._getBugBashItemGridColumns()}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                    contextMenuProps={{menuItems: this._getContextMenuItems}}
                     onItemInvoked={this._onBugBashItemInvoked}
                 />;
                 break;
             default:
-                pivotContent = <LazyLoad module="scripts/BugBashResultsAnalytics">
-                    {(BugBashResultsAnalytics) => (
-                        <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
-                    )}
-                </LazyLoad>;
+                pivotContent = (
+                    <div className="analytics-container">
+                        <CommandBar 
+                            className="analytics-editor-menu"
+                            items={this._getCommandBarMenuItems()} 
+                            farItems={this._getCommandBarFarMenuItems()} />
+
+                        <LazyLoad module="scripts/BugBashResultsAnalytics">
+                            {(BugBashResultsAnalytics) => (
+                                <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
+                            )}
+                        </LazyLoad>
+                    </div>
+                );                
                 break;
         }
 
@@ -337,14 +345,12 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             }
                         }
                     }} 
-                    onChange={(changedData: {id: string, title: string, description: string, teamId: string}) => {
-                        if (changedData.id) {
+                    onChange={(changedModel: IBugBashItem) => {
+                        if (changedModel.id) {
                             let newViewModels = this.state.viewModels.slice();
-                            let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedData.id);
+                            let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedModel.id);
                             if (index !== -1) {
-                                newViewModels[index].model.title = changedData.title;
-                                newViewModels[index].model.description = changedData.description;
-                                newViewModels[index].model.teamId = changedData.teamId;
+                                newViewModels[index].model = {...changedModel};
                                 this.updateState({viewModels: newViewModels, selectedViewModel: newViewModels[index]});
                             }
                         }
@@ -564,30 +570,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             ] as IContextualMenuItem[];
 
         return menuItems;
-    }
-
-    @autobind
-    private _getContextMenuItems(selectedViewModels: IBugBashItemViewModel[]): IContextualMenuItem[] {
-        if (selectedViewModels.length > 1) {
-            return null;
-        }
-
-        return [            
-            {
-                key: "Accept", name: "Accept", title: "Remove selected items from the bug bash instance", iconProps: {iconName: "RemoveLink"}, 
-                disabled: selectedViewModels.length === 0,
-                onClick: async () => {
-                    const confirm = await confirmAction(true, "Are you sure you want to clear selected items from this bug bash? This action is irreversible. Any work item associated with a bug bash item will not be deleted.");
-                    if (confirm) {
-                        if (this.state.selectedViewModel && Utils_Array.findIndex(selectedViewModels, viewModel => viewModel.model.id === this.state.selectedViewModel.model.id) !== -1) {
-                            this.updateState({selectedViewModel: null});
-                        }
-                        
-                        this._removeItems(selectedViewModels);
-                    }
-                }
-            }
-        ];
     }
 
     private async _removeItems(selectedViewModels: IBugBashItemViewModel[]) {

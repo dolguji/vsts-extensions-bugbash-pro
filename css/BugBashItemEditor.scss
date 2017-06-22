@@ -14,10 +14,8 @@
             }
         }        
 
-        .rejectItemButton {
-            i {
-                color: #e81123;
-            }
+        .reject-menu-item-checkbox {
+            padding: 2px 8px;
         }
     }
     
@@ -25,6 +23,10 @@
         .input-error {
             margin-top: 5px;
         }
+    }
+
+    .reject-reason-input {
+        margin-top: 5px;
     }
 
     .item-description-container {
