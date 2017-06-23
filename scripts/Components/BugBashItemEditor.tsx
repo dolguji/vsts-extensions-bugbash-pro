@@ -26,7 +26,6 @@ import { StoresHub } from "../Stores/StoresHub";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     viewModel: IBugBashItemViewModel;
-    onClickNew: () => void;
     onDelete: (item: IBugBashItem) => void;
     onItemUpdate: (item: IBugBashItem) => void;
     onItemAccept: (item: IBugBashItem, workItem: WorkItem) => void;
@@ -86,8 +85,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
                     <CommandBar 
                         className="item-editor-menu"
-                        items={this._getToolbarItems()} 
-                        farItems={this._getFarMenuItems()}
+                        items={this._getToolbarItems()}                         
                     />
 
                     { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} />}
@@ -179,18 +177,6 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     private _isNew(): boolean {
         return !this.state.viewModel.model.id;
-    }
-
-    private _getFarMenuItems(): IContextualMenuItem[] {
-        return [
-            {
-                key: "createnew", name: "New", disabled: this._isNew(),
-                title: "Create new item", iconProps: {iconName: "Add"}, 
-                onClick: () => {
-                    this.props.onClickNew();
-                }
-            }
-        ]
     }
 
     private async _saveItem() {

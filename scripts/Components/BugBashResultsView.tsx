@@ -9,6 +9,7 @@ import Utils_Array = require("VSS/Utils/Array");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
+import { PrimaryButton } from "OfficeFabric/Button";
 import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
@@ -41,6 +42,7 @@ import { StoresHub } from "../Stores/StoresHub";
 
 interface IBugBashResultsViewState extends IBaseComponentState {
     bugBashItem?: IBugBash;
+    bugBashItemDoesntExist?: boolean;
     viewModels?: IBugBashItemViewModel[];
     selectedViewModel?: IBugBashItemViewModel;
     workItemsMap?: IDictionaryNumberTo<WorkItem>;
@@ -59,6 +61,8 @@ enum SelectedPivot {
 }
 
 export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
+    private _itemInvokedTimeout: any;
+
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
         return [BugBashStore, WorkItemFieldStore, TeamStore];
     }
@@ -66,6 +70,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     protected initializeState() {
         this.state = {
             bugBashItem: null,
+            bugBashItemDoesntExist: false,
             viewModels: null,
             selectedViewModel: null,
             workItemsMap: null,
@@ -80,7 +85,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             this.updateState({
                 bugBashItem: null,
                 viewModels: [],
-                selectedViewModel: null
+                selectedViewModel: null,
+                bugBashItemDoesntExist: true
             });
         }
         else {
@@ -121,6 +127,10 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     private _isDataLoading(): boolean {
+        if (this.state.bugBashItemDoesntExist) {
+            return false;
+        }
+        
         return !StoresHub.bugBashStore.isLoaded() 
             || this.state.workItemsMap == null 
             || !StoresHub.workItemFieldStore.isLoaded() 
@@ -167,7 +177,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
             }
             else if(!Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashItem.projectId, true)) {
-                <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
+                return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
             }
             else {
                 return (
@@ -228,16 +238,22 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         switch (this.state.selectedPivot) {
             case SelectedPivot.Pending:
                 pivotContent = <Grid
+                    selectionPreservedOnEmptyClick={true}
+                    setKey="bugbash-pending-item-grid"
                     className="bugbash-item-grid"
                     items={pendingItems}
                     selectionMode={SelectionMode.single}
-                    columns={this._getBugBashItemGridColumns(false)}
+                    columns={this._getBugBashItemGridColumns(false)}                    
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                    onItemInvoked={this._onBugBashItemInvoked}
+                    events={{
+                        onSelectionChanged: this._onBugBashItemSelectionChanged
+                    }}
                 />;
                 break;
             case SelectedPivot.Accepted:
                 pivotContent = <WorkItemGrid
+                    selectionPreservedOnEmptyClick={true}
+                    setKey="bugbash-work-item-grid"
                     className="bugbash-item-grid"
                     workItems={workItems}                    
                     fields={fields}
@@ -253,12 +269,16 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 break;
             case SelectedPivot.Rejected:
                 pivotContent = <Grid
+                    selectionPreservedOnEmptyClick={true}
+                    setKey="bugbash-rejected-item-grid"
                     className="bugbash-item-grid"
                     items={rejectedItems}
                     selectionMode={SelectionMode.single}
                     columns={this._getBugBashItemGridColumns(true)}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
-                    onItemInvoked={this._onBugBashItemInvoked}
+                    events={{
+                        onSelectionChanged: this._onBugBashItemSelectionChanged
+                    }}
                 />;
                 break;
             default:
@@ -290,7 +310,16 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     private _renderItemEditor(): JSX.Element {
         return (
             <div className="item-editor-container">
-                <Label className="item-editor-container-header overflow-ellipsis">{this.state.selectedViewModel ? "Edit Item" : "Add Item"}</Label>
+                <div className="item-editor-container-header">
+                    <Label className="item-editor-header overflow-ellipsis">{this.state.selectedViewModel ? "Edit Item" : "Add Item"}</Label>
+                    <PrimaryButton    
+                        className="add-new-item-button"                    
+                        disabled={this.state.selectedViewModel == null}
+                        text="New"
+                        iconProps={ { iconName: "Add" } }
+                        onClick={ () => this.updateState({selectedViewModel: null}) }
+                        />
+                </div>
                 <BugBashItemEditor 
                     viewModel={this.state.selectedViewModel || BugBashItemHelpers.getNewItemViewModel(this.props.id)}
                     onItemAccept={(model: IBugBashItem, workItem: WorkItem) => {
@@ -313,9 +342,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                         else {
                             this.updateState({viewModels: newViewModels, selectedViewModel: newViewModel});
                         }
-                    }}
-                    onClickNew={() => {
-                        this.updateState({selectedViewModel: null});
                     }}
                     onItemUpdate={(model: IBugBashItem) => {
                         if (model.id) {
@@ -388,13 +414,26 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             }
         ];
     }
-
+    
     @autobind
-    private async _onBugBashItemInvoked(viewModel: IBugBashItemViewModel) {
-        this.updateState({selectedViewModel: viewModel});
+    private _onBugBashItemSelectionChanged(viewModels: IBugBashItemViewModel[]) {
+        if (this._itemInvokedTimeout) {
+            clearTimeout(this._itemInvokedTimeout);
+            this._itemInvokedTimeout = null;
+        }
+
+        this._itemInvokedTimeout = setTimeout(() => {
+            if (viewModels == null || viewModels.length !== 1) {
+                this.updateState({selectedViewModel: null});
+            }
+            else {
+                this.updateState({selectedViewModel: viewModels[0]});
+            }
+
+            this._itemInvokedTimeout = null;
+        }, 200);
     }
 
-    @autobind
     private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {
         const gridCellClassName = "item-grid-cell";
         const getCellClassName = (viewModel: IBugBashItemViewModel) => {
@@ -424,12 +463,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label 
-                                className={`${getCellClassName(viewModel)} title-cell`} 
-                                onClick={(e) => {
-                                        this._onBugBashItemInvoked(viewModel);
-                                    }
-                                } >
+                            <Label className={`${getCellClassName(viewModel)}`}>
                                 {`${BugBashItemHelpers.isDirty(viewModel) ? "* " : ""}${viewModel.model.title}`}
                             </Label>
                         </TooltipHost>

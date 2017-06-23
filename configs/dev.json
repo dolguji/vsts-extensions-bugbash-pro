@@ -1,5 +1,6 @@
 {
     "public": false,
+    "publisher": "mohitbagra-dev",
     "name": "Bug Bash Pro - Dev",
     "baseUri": "https://localhost:8888"
 }

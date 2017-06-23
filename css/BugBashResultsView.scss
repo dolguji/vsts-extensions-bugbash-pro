@@ -24,6 +24,8 @@
 
                 .analytics-container {
                     margin-top: 10px;
+                    overflow: auto;
+                    padding-bottom: 10px;
                 }
 
                 .bugbash-item-grid {
@@ -56,15 +58,6 @@
                             }
                         }
 
-                        &.title-cell {
-                            cursor: pointer;                
-                            
-                            &:hover {
-                                text-decoration: underline;
-                                color: #0078d7;
-                            }
-                        }
-
                         .identity-view {
                             font-size: 13px;
                             height: 16px;
@@ -87,15 +80,34 @@
         .right-content {
             width: 25%;
             border-left: 1px solid #ccc;
+            height: 100%;
 
             .item-editor-container {
                 margin-left: 20px;
                 padding-right: 10px;
+                height: 100%;
+                overflow: auto;
+                padding-bottom: 10px;
 
                 .item-editor-container-header {
-                    font-size: 14px;
-                    font-weight: 600;
-                    line-height: 40px;
+                    display: flex;
+
+                    .item-editor-header {
+                        flex: 1;
+                        font-size: 14px;
+                        font-weight: 600;
+                        line-height: 40px;
+                    }
+
+                    .add-new-item-button {
+                        margin-top: 10px;
+                        font-size: 14px;
+
+                        i {
+                            font-size: 14px;
+                            margin-left: 0;
+                        }
+                    }
                 }
             }  
         }
