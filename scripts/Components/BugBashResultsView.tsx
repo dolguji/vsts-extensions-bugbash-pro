@@ -231,7 +231,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     className="bugbash-item-grid"
                     items={pendingItems}
                     selectionMode={SelectionMode.single}
-                    columns={this._getBugBashItemGridColumns()}
+                    columns={this._getBugBashItemGridColumns(false)}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                     onItemInvoked={this._onBugBashItemInvoked}
                 />;
@@ -256,7 +256,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     className="bugbash-item-grid"
                     items={rejectedItems}
                     selectionMode={SelectionMode.single}
-                    columns={this._getBugBashItemGridColumns()}
+                    columns={this._getBugBashItemGridColumns(true)}
                     commandBarProps={{menuItems: this._getCommandBarMenuItems(), farMenuItems: this._getCommandBarFarMenuItems()}}
                     onItemInvoked={this._onBugBashItemInvoked}
                 />;
@@ -395,7 +395,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     }
 
     @autobind
-    private _getBugBashItemGridColumns(): GridColumn[] {
+    private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {
         const gridCellClassName = "item-grid-cell";
         const getCellClassName = (viewModel: IBugBashItemViewModel) => {
             let className = gridCellClassName;
@@ -414,7 +414,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 key: "title",
                 name: "Title",
                 minWidth: 200,
-                maxWidth: 800,
+                maxWidth: isRejectedGrid ? 600 : 800,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {                 
                     return (
@@ -444,8 +444,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             {
                 key: "team",
                 name: "Team",
-                minWidth: 200,
-                maxWidth: 300,
+                minWidth: isRejectedGrid ? 100 : 200,
+                maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {
                     const team = StoresHub.teamStore.getItem(viewModel.model.teamId);
@@ -479,8 +479,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             {
                 key: "createdby",
                 name: "Created By",
-                minWidth: 200,
-                maxWidth: 300,
+                minWidth: isRejectedGrid ? 100 : 200,
+                maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {
                     return (
@@ -504,8 +504,8 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             {
                 key: "createddate",
                 name: "Created Date",
-                minWidth: 200,
-                maxWidth: 300,
+                minWidth: isRejectedGrid ? 100 : 200,
+                maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,
                 onRenderCell: (viewModel: IBugBashItemViewModel) => {
                     return (
@@ -527,6 +527,60 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 }
             }
         ];
+
+        if (isRejectedGrid) {
+            columns.push({
+                key: "rejectedby",
+                name: "Rejected By",
+                minWidth: 100,
+                maxWidth: 200,
+                resizable: true,
+                onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                    return (
+                        <TooltipHost 
+                            content={viewModel.model.rejectedBy}
+                            delay={TooltipDelay.medium}
+                            directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                            <div className={getCellClassName(viewModel)}>
+                                <IdentityView identityDistinctName={viewModel.model.rejectedBy} />
+                            </div>
+                        </TooltipHost>
+                    )
+                },
+                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.rejectedBy, viewModel2.model.rejectedBy);
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.rejectedBy, filterText)
+            }, 
+            {
+                key: "rejectreason",
+                name: "Reject Reason",
+                minWidth: 200,
+                maxWidth: 800,
+                resizable: true,
+                onRenderCell: (viewModel: IBugBashItemViewModel) => {                 
+                    return (
+                        <TooltipHost 
+                            content={viewModel.model.rejectReason}
+                            delay={TooltipDelay.medium}
+                            overflowMode={TooltipOverflowMode.Parent}
+                            directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                            <Label className={`${getCellClassName(viewModel)}`}>
+                                {viewModel.model.rejectReason}
+                            </Label>
+                        </TooltipHost>
+                    )
+                },
+                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.model.rejectReason, viewModel2.model.rejectReason);
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.model.rejectReason, filterText)
+            });
+        }
 
         return columns;
     }
