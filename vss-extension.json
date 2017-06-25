@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "bugbashpro",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "name": "Bug Bash Pro",
     "description": "Easier way to manage bug bashes",
     "publisher": "mohitbagra",
@@ -11,7 +11,9 @@
     "scopes": [
     	"vso.work",
         "vso.work_write",
-        "vso.profile"
+        "vso.profile",
+        "vso.code",
+        "vso.code_write"
 	 ],
     "targets": [
         {

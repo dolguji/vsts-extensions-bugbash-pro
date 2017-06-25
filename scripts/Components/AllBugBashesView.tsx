@@ -7,11 +7,13 @@ import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { CommandBar } from "OfficeFabric/CommandBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
+import { Panel, PanelType } from "OfficeFabric/Panel";
 
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
@@ -29,6 +31,7 @@ interface IAllBugBashesViewState extends IBaseComponentState {
     pastItems?: IBugBash[];
     currentItems?: IBugBash[];
     upcomingItems?: IBugBash[];
+    settingsPanelOpen?: boolean;
 }
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
@@ -107,6 +110,22 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                                 {this.state.upcomingItems.length > 0 && <List items={this.state.upcomingItems} className="instance-list" onRenderCell={this._onRenderCell} />}
                             </div>
                         </div>
+
+                        { 
+                            this.state.settingsPanelOpen && 
+                            <Panel
+                                isOpen={true}
+                                type={PanelType.smallFixedFar}
+                                isLightDismiss={true} 
+                                onDismiss={() => this.updateState({settingsPanelOpen: false})}>
+
+                                <LazyLoad module="scripts/SettingsPanel">
+                                    {(SettingsPanel) => (
+                                        <SettingsPanel.SettingsPanel />
+                                    )}
+                                </LazyLoad>
+                            </Panel>
+                        }
                     </div>
                 );
             }
@@ -128,6 +147,12 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                     this.updateState({loading: true});
                     await StoresHub.bugBashStore.refreshItems();
                     this.updateState({loading: false});
+                }
+            },
+            {
+                key: "settings", name: "Settings", title: "Open settings panel", iconProps: {iconName: "Settings"},
+                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                    this.updateState({settingsPanelOpen: !(this.state.settingsPanelOpen)});
                 }
             }
          ];

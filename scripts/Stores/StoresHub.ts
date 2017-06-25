@@ -5,12 +5,16 @@ import { WorkItemTemplateStore } from "VSTS_Extension/Stores/WorkItemTemplateSto
 import { WorkItemTemplateItemStore } from "VSTS_Extension/Stores/WorkItemTemplateItemStore";
 
 import { BugBashStore } from "../Stores/BugBashStore";
+import { SettingsStore } from "../Stores/SettingsStore";
+import { GitRepoStore } from "../Stores/GitRepoStore";
 import { TeamStore } from "../Stores/TeamStore";
 import { TeamFieldStore } from "../Stores/TeamFieldStore";
 
 export module StoresHub {
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
+    export var gitRepoStore: GitRepoStore = StoreFactory.getInstance<GitRepoStore>(GitRepoStore);
     export var teamStore: TeamStore = StoreFactory.getInstance<TeamStore>(TeamStore);
+    export var settingsStore: SettingsStore = StoreFactory.getInstance<SettingsStore>(SettingsStore);
     export var teamFieldStore: TeamFieldStore = StoreFactory.getInstance<TeamFieldStore>(TeamFieldStore);
     export var workItemFieldStore: WorkItemFieldStore = StoreFactory.getInstance<WorkItemFieldStore>(WorkItemFieldStore);
     export var workItemTypeStore: WorkItemTypeStore = StoreFactory.getInstance<WorkItemTypeStore>(WorkItemTypeStore);

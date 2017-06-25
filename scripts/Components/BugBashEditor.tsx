@@ -25,12 +25,12 @@ import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
-import { RichEditor } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
 
 import * as Helpers from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
 import { UrlActions } from "../Constants";
 import { IBugBash } from "../Interfaces";
+import { RichEditorComponent } from "./RichEditorComponent";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
     id?: string;
@@ -144,7 +144,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             onGetErrorMessage={this._getTitleError} />
 
                         <Label>Description</Label>
-                        <RichEditor 
+                        <RichEditorComponent 
                             containerId="bugbash-description-editor" 
                             data={model.description} 
                             editorOptions={{

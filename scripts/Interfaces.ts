@@ -38,3 +38,7 @@ export interface IAcceptedItemViewModel {
     model: IBugBashItem;
     workItem: WorkItem;
 }
+
+export interface Settings {
+    gitMediaRepo: string;
+}

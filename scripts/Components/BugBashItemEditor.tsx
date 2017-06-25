@@ -13,12 +13,11 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
-import { RichEditor } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
 
 import Utils_String = require("VSS/Utils/String");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
-import "../PasteImagePlugin";
+import { RichEditorComponent } from "./RichEditorComponent";
 import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
 import { BugBashItemManager } from "../BugBashItemManager";
@@ -139,7 +138,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
                     <div className="item-description-container">
                         <Label>Description</Label>
-                        <RichEditor 
+                        <RichEditorComponent 
                             containerId="description-editor" 
                             data={item.model.description} 
                             editorOptions={{
