@@ -1,8 +1,11 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
+import Context = require("VSS/Context");
 
-import { IBugBashItem, IAcceptedItemViewModel } from "./Interfaces";
+import { UrlActions } from "./Constants";
+import { IBugBash, IBugBashItem, IAcceptedItemViewModel } from "./Interfaces";
 import { createWorkItem, BugBashItemHelpers } from "./Helpers";
 import { StoresHub } from "./Stores/StoresHub";
 
@@ -93,8 +96,9 @@ export class BugBashItemManager {
         if (templateExists) {
             const template = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
             let fieldValues = {...template.fields};
-            fieldValues["System.Title"] = model.title;            
+            fieldValues["System.Title"] = model.title;
             fieldValues[bugBash.itemDescriptionField] = model.description;
+            fieldValues["System.History"] = this._getAcceptedItemComment(bugBash, model);
 
             if (teamFieldValueExists) {
                 const teamFieldValue = StoresHub.teamFieldStore.getItem(model.teamId);
@@ -137,5 +141,18 @@ export class BugBashItemManager {
                 workItem: null
             }
         }
+    }
+
+    private static _getAcceptedItemComment(bugBash: IBugBash, model: IBugBashItem): string {
+        const pageContext = Context.getPageContext();
+        const navigation = pageContext.navigation;
+        const webContext = VSS.getWebContext();
+        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_VIEW}&id=${bugBash.id}`;
+        
+        const entity = parseUniquefiedIdentityName(model.createdBy);
+
+        return `
+            Created from <a href='${bugBashUrl}' target='_blank'>${bugBash.title}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
+        `;
     }
 }
