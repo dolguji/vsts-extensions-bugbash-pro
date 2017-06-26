@@ -5,7 +5,7 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 
 import { Label } from "OfficeFabric/Label";
-import { Bar, BarChart, XAxis, YAxis, Text, Tooltip } from "recharts";
+import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
@@ -21,10 +21,11 @@ interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {
 
 const CustomizedAxisTick: React.StatelessComponent<any> =
     (props: any): JSX.Element => {
-        const {x, y, stroke, payload} = props;		
+        const {x, y, stroke, payload} = props;
+        const value = (payload.value.length > 10) ? payload.value.substr(0, 10) + "..." : payload.value;
         return (
-            <g transform={`translate(${x},${y})`}>
-                <Text angle={-35} width={100} textAnchor="end" verticalAnchor="middle">{payload.value}</Text>
+            <g transform={`translate(${x-4},${y+2})`}>
+                <text fill="#767676" style={{fontSize: "12px"}} width={100} textAnchor="end">{value}</text>
             </g>
         );
     };
