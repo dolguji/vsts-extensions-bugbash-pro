@@ -40,7 +40,8 @@ export class BugBashItemHelpers {
     public static getNewItemViewModel(bugBashId: string): IBugBashItemViewModel {        
         return {
             model: this.getNewItem(bugBashId),
-            originalModel: this.getNewItem(bugBashId)
+            originalModel: this.getNewItem(bugBashId),
+            newComment: ""
         }
     }
 
@@ -81,7 +82,8 @@ export class BugBashItemHelpers {
     public static getItemViewModel(model: IBugBashItem): IBugBashItemViewModel {
         return {
             model: this.deepCopy(model),
-            originalModel: this.deepCopy(model)
+            originalModel: this.deepCopy(model),
+            newComment: ""
         }
     }
 
@@ -90,11 +92,14 @@ export class BugBashItemHelpers {
     }
 
     public static isDirty(viewModel: IBugBashItemViewModel): boolean {        
-        return !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
+        let isDirty = !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
             || !Utils_String.equals(viewModel.model.teamId, viewModel.originalModel.teamId)
             || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description)
             || !Utils_String.equals(viewModel.model.rejectReason, viewModel.originalModel.rejectReason)
-            || Boolean(viewModel.model.rejected) !== Boolean(viewModel.originalModel.rejected);
+            || Boolean(viewModel.model.rejected) !== Boolean(viewModel.originalModel.rejected)
+            || (viewModel.newComment != null && viewModel.newComment.trim() !== "");
+
+        return isDirty;
     }
 
     public static isValid(model: IBugBashItem): boolean {

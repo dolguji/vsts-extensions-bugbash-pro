@@ -29,12 +29,13 @@
         margin-top: 5px;
     }
 
-    .item-description-container {
+    .item-description-container, .item-comments-editor-container {
         margin-top: 10px;
 
         .trumbowyg-box {
             margin: 0;
-            
+            min-height: 250px;
+
             &.trumbowyg-fullscreen {
                 border: 1px solid #DDD !important;
                 position: absolute;
@@ -45,8 +46,61 @@
             }
 
             #description-editor {
-                min-height: 350px;
-                max-height: 350px;
+                min-height: 250px;
+                max-height: 250px;
+                padding: 5px;
+            }        
+        }
+    }
+
+    .item-comments-editor-container {
+        .trumbowyg-button-pane {
+            display: none;
+        }
+
+        .trumbowyg-box {
+            margin: 0;
+            min-height: 100px;
+
+            #comment-editor {
+                min-height: 100px;
+                max-height: 100px;
+                padding: 5px;
+            }
+        }  
+    }
+
+    .item-comments-container {
+        padding-top: 10px;
+        overflow: auto;
+        flex: 1;
+
+        .item-comment {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+
+            .created-by {
+                display: flex;
+
+                .identity-view {
+                    flex: 1;
+                    margin-right: 10px;
+                    color: #666666;
+                    font-weight: bold;
+                }
+
+                .created-date {
+                    font-size: 85%;
+                    font-style: italic;
+                    color: #666666;
+                    margin-right: 10px;
+                }
+            }
+
+            .message {
+                margin-top: 5px;
+                word-wrap: break-word;
             }
         }
     }

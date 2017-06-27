@@ -99,7 +99,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
     private async _refreshData() {
         this.updateState({workItemsMap: null, viewModels: null, selectedViewModel: null});
 
-        let items = await BugBashItemManager.beginGetItems(this.props.id);
+        let items = await BugBashItemManager.getItems(this.props.id);
         const workItemIds = items.filter(item => BugBashItemHelpers.isAccepted(item)).map(item => item.workItemId);
 
         if (workItemIds.length > 0) {
@@ -371,12 +371,13 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                             }
                         }
                     }} 
-                    onChange={(changedModel: IBugBashItem) => {
+                    onChange={(changedModel: IBugBashItem, newComment: string) => {
                         if (changedModel.id) {
                             let newViewModels = this.state.viewModels.slice();
                             let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.model.id === changedModel.id);
                             if (index !== -1) {
                                 newViewModels[index].model = {...changedModel};
+                                newViewModels[index].newComment = newComment;
                                 this.updateState({viewModels: newViewModels, selectedViewModel: newViewModels[index]});
                             }
                         }
@@ -658,14 +659,6 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
             ] as IContextualMenuItem[];
 
         return menuItems;
-    }
-
-    private async _removeItems(selectedViewModels: IBugBashItemViewModel[]) {
-        await BugBashItemManager.deleteItems(selectedViewModels.map(v => v.model));
-        let newItems = this.state.viewModels.slice();
-        newItems = Utils_Array.subtract(newItems, selectedViewModels, (v1, v2) => v1.model.id === v2.model.id ? 0 : 1);
-        
-        this.updateState({viewModels: newItems});
     }
 
     private _isAnyViewModelDirty(viewModels?: IBugBashItemViewModel[]): boolean {

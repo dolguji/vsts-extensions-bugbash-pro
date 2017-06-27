@@ -29,9 +29,18 @@ export interface IBugBashItem {
     rejectedBy?: string;
 }
 
+export interface IBugBashItemComment {
+    id: string;
+    readonly __etag: number;
+    content: string;
+    createdDate: Date;
+    createdBy: string;
+}
+
 export interface IBugBashItemViewModel {
     model: IBugBashItem;
     originalModel: IBugBashItem;
+    newComment: string;
 }
 
 export interface IAcceptedItemViewModel {

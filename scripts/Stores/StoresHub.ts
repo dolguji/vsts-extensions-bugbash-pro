@@ -5,6 +5,7 @@ import { WorkItemTemplateStore } from "VSTS_Extension/Stores/WorkItemTemplateSto
 import { WorkItemTemplateItemStore } from "VSTS_Extension/Stores/WorkItemTemplateItemStore";
 
 import { BugBashStore } from "../Stores/BugBashStore";
+import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { SettingsStore } from "../Stores/SettingsStore";
 import { GitRepoStore } from "../Stores/GitRepoStore";
 import { TeamStore } from "../Stores/TeamStore";
@@ -12,6 +13,7 @@ import { TeamFieldStore } from "../Stores/TeamFieldStore";
 
 export module StoresHub {
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
+    export var bugBashItemCommentStore: BugBashItemCommentStore = StoreFactory.getInstance<BugBashItemCommentStore>(BugBashItemCommentStore);
     export var gitRepoStore: GitRepoStore = StoreFactory.getInstance<GitRepoStore>(GitRepoStore);
     export var teamStore: TeamStore = StoreFactory.getInstance<TeamStore>(TeamStore);
     export var settingsStore: SettingsStore = StoreFactory.getInstance<SettingsStore>(SettingsStore);

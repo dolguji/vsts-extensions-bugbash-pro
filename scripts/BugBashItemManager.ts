@@ -25,7 +25,7 @@ function translateDates(model: IBugBashItem) {
 }
 
 export class BugBashItemManager {
-    public static async beginGetItems(bugBashId: string): Promise<IBugBashItem[]> {
+    public static async getItems(bugBashId: string): Promise<IBugBashItem[]> {
         const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
         for(let model of models) {
             translateDates(model);
@@ -34,7 +34,7 @@ export class BugBashItemManager {
         return models;
     }
 
-    public static async beginGetItem(itemId: string, bugBashId: string): Promise<IBugBashItem> {
+    public static async getItem(itemId: string, bugBashId: string): Promise<IBugBashItem> {
         let model = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), itemId, null, false);
         if (model) {
             translateDates(model);
@@ -42,20 +42,9 @@ export class BugBashItemManager {
             return model;
         }
         return null;
-    }    
+    } 
 
-    public static async deleteItems(models: IBugBashItem[]): Promise<void> {
-        await Promise.all(models.map(async (model) => {
-            try {
-                return await ExtensionDataManager.deleteDocument(getBugBashCollectionKey(model.bugBashId), model.id, false);
-            }
-            catch (e) {
-                return null;
-            }
-        }));
-    }
-
-    public static async beginSave(model: IBugBashItem): Promise<IBugBashItem> {
+    public static async saveItem(model: IBugBashItem): Promise<IBugBashItem> {
         const isNew = BugBashItemHelpers.isNew(model);
         let cloneModel = BugBashItemHelpers.deepCopy(model);
         let updatedModel: IBugBashItem;
@@ -82,7 +71,7 @@ export class BugBashItemManager {
 
         try {
             // first do a empty save to check if its the latest version of the item
-            updatedItem = await this.beginSave(model);
+            updatedItem = await this.saveItem(model);
         }
         catch (e) {
             throw "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
@@ -128,7 +117,7 @@ export class BugBashItemManager {
             updatedItem.rejected = false;
             updatedItem.rejectedBy = "";
             updatedItem.rejectReason = "";
-            updatedItem = await this.beginSave(updatedItem);
+            updatedItem = await this.saveItem(updatedItem);
 
             return {
                 model: updatedItem,

@@ -13,22 +13,26 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
+import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import Utils_String = require("VSS/Utils/String");
+import Utils_Date = require("VSS/Utils/Date");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
 import { confirmAction, BugBashItemHelpers } from "../Helpers";
-import { IBugBashItem, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
+import { IBugBashItem, IBugBashItemComment, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
+import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     viewModel: IBugBashItemViewModel;
     onDelete: (item: IBugBashItem) => void;
     onItemUpdate: (item: IBugBashItem) => void;
     onItemAccept: (item: IBugBashItem, workItem: WorkItem) => void;
-    onChange: (changedItem: IBugBashItem) => void;
+    onChange: (changedItem: IBugBashItem, newComment: string) => void;
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
@@ -36,14 +40,33 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
     viewModel?: IBugBashItemViewModel;
     error?: string;
     disableToolbar?: boolean;
+    comments?: IBugBashItemComment[];
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
+    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
+        return [BugBashItemCommentStore];
+    }
+
+    protected initialize(): void {
+        if (this.props.viewModel.model.id) {
+            StoresHub.bugBashItemCommentStore.ensureComments(this.props.viewModel.model.id);
+        } 
+    }
+
+    protected onStoreChanged() {
+        this.updateState({
+            comments: StoresHub.bugBashItemCommentStore.getItem(this.props.viewModel.model.id)
+        });
+    }  
+
     protected initializeState() {
-        this.state = {
+        this.state = {            
+            comments: this.props.viewModel.model.id ? null : [],
             viewModel: {
                 model: BugBashItemHelpers.deepCopy(this.props.viewModel.model),
-                originalModel: BugBashItemHelpers.deepCopy(this.props.viewModel.originalModel)
+                originalModel: BugBashItemHelpers.deepCopy(this.props.viewModel.originalModel),
+                newComment: this.props.viewModel.newComment
             }
         };
     }
@@ -51,16 +74,22 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
         if (this.state.viewModel.model.id !== nextProps.viewModel.model.id) {
             this.updateState({
+                comments: nextProps.viewModel.model.id ? null : [],
                 viewModel: {
+                    newComment: nextProps.viewModel.newComment,
                     model: BugBashItemHelpers.deepCopy(nextProps.viewModel.model),
                     originalModel: BugBashItemHelpers.deepCopy(nextProps.viewModel.originalModel)
                 }
-            });
+            }, () => {
+                if (nextProps.viewModel.model.id) {
+                    StoresHub.bugBashItemCommentStore.ensureComments(nextProps.viewModel.model.id);
+                }
+            });                    
         }
     }
 
     private _onChange(newViewModel: IBugBashItemViewModel) {
-        this.props.onChange(newViewModel.model);
+        this.props.onChange(newViewModel.model, newViewModel.newComment);
     }
 
     public render(): JSX.Element {
@@ -147,7 +176,6 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                     ['formatting'],
                                     ['bold', 'italic'], 
                                     ['link'],
-                                    ['superscript', 'subscript'],
                                     ['insertImage'],
                                     'btnGrp-lists',
                                     ['removeformat'],
@@ -161,9 +189,60 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                 this._onChange(newViewModel);
                             }} />
                     </div>
+
+                    <div className="item-comments-editor-container">
+                        <Label>Discussion</Label>
+                        <RichEditorComponent 
+                            containerId="comment-editor" 
+                            data={this.state.viewModel.newComment || ""} 
+                            editorOptions={{
+                                svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                                btns: []
+                            }}
+                            onChange={(newComment: string) => {     
+                                let newViewModel = {...this.state.viewModel};   
+                                newViewModel.newComment = newComment;                        
+                                this.updateState({viewModel: newViewModel});
+                                this._onChange(newViewModel);
+                            }} />
+                    </div>
+
+                    <div className="item-comments-container">
+                        {this._renderComments()}
+                    </div>
                 </div>
             );
         }        
+    }
+
+    private _renderComments(): React.ReactNode {
+        if (!this._isNew()) {
+            let comments = StoresHub.bugBashItemCommentStore.getItem(this.state.viewModel.model.id)
+            if (!comments) {
+                return <Loading />;
+            }
+            else {
+                comments = comments.slice();
+                comments = comments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => {
+                    return -1 * Utils_Date.defaultComparer(c1.createdDate, c2.createdDate);
+                })
+                
+                return comments.map((comment: IBugBashItemComment, index: number) => {
+                    return (
+                        <div className="item-comment" key={`${index}`}>
+                            <div className="created-by">
+                                <IdentityView identityDistinctName={comment.createdBy} />
+                                <div className="created-date">{Utils_Date.friendly(comment.createdDate)}</div>
+                            </div>
+                            <div className="message" dangerouslySetInnerHTML={{ __html: comment.content }} />                        
+                        </div>
+                    );
+                });
+            }
+        }
+        else {
+            return null;
+        }
     }
 
     @autobind
@@ -179,6 +258,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     private async _saveItem() {
+        const newComment = this.state.viewModel.newComment;
+
         if (!this.state.disableToolbar && BugBashItemHelpers.isDirty(this.state.viewModel) && BugBashItemHelpers.isValid(this.state.viewModel.model)) {
             const bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
             if (this._isNew() && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
@@ -189,7 +270,13 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 let updatedModel: IBugBashItem;
 
                 try {
-                    updatedModel = await BugBashItemManager.beginSave(this.state.viewModel.model);
+                    updatedModel = await BugBashItemManager.saveItem(this.state.viewModel.model);
+
+                    if (newComment && newComment.trim() !== "") {
+                        // add comment
+                        StoresHub.bugBashItemCommentStore.addCommentItem(updatedModel.id, newComment);
+                    }
+                    
                     this.updateState({error: null, disableToolbar: false,
                         viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
                     });
@@ -199,7 +286,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
                 } 
             }
-        }          
+        }
     }
 
     private async _acceptItem() {
@@ -240,11 +327,13 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         const id = this.state.viewModel.model.id;
                         const bugBashId = this.state.viewModel.model.bugBashId;
 
-                        this.updateState({viewModel: null});
-                        newModel = await BugBashItemManager.beginGetItem(id, bugBashId);
+                        this.updateState({viewModel: null});                        
+                        newModel = await BugBashItemManager.getItem(id, bugBashId);
                         if (newModel) {
                             this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
                             this.props.onItemUpdate(newModel);
+
+                            StoresHub.bugBashItemCommentStore.refreshComments(id);
                         }
                         else {
                             this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
@@ -266,6 +355,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     if (confirm) {
                         let newViewModel = {...this.state.viewModel};
                         newViewModel.model = BugBashItemHelpers.deepCopy(newViewModel.originalModel);
+                        newViewModel.newComment = "";
                         this.updateState({viewModel: newViewModel, disableToolbar: false, error: null});
                         this.props.onItemUpdate(newViewModel.model);
                     }
@@ -280,13 +370,15 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
         if (!bugBash.autoAccept) {
             const isMenuDisabled = this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.viewModel) || this._isNew();
-            menuItems.push({
+            menuItems.push(
+                {
                     key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
                     disabled: isMenuDisabled,
                     onClick: () => {
                         this._acceptItem();
                     }
-                },{
+                },
+                {
                     key: "Reject",
                     onRender:(item) => {
                         return <Checkbox
@@ -302,9 +394,6 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                         this.updateState({viewModel: newViewModel});
                                         this._onChange(newViewModel);
                                     }} />;
-                    },
-                    onClick: () => {
-                        alert("reject")
                     }
                 });
         }

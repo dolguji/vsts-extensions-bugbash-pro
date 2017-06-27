@@ -153,7 +153,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                                     ['formatting'],
                                     ['bold', 'italic'], 
                                     ['link'],
-                                    ['superscript', 'subscript'],
                                     ['insertImage'],
                                     'btnGrp-lists',
                                     ['removeformat'],
