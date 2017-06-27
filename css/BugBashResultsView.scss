@@ -40,10 +40,12 @@
 
                         &.is-dirty {
                             font-weight: bold;
+                            color: #000;
 
                             .identity-view {
                                 .ms-Persona-primaryText {
                                     font-weight: bold;
+                                    color: #000;
                                 }
                             }
                         }

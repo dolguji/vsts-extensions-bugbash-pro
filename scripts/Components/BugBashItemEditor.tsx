@@ -259,10 +259,11 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     private async _saveItem() {
         const newComment = this.state.viewModel.newComment;
+        const isNew = this._isNew();
 
         if (!this.state.disableToolbar && BugBashItemHelpers.isDirty(this.state.viewModel) && BugBashItemHelpers.isValid(this.state.viewModel.model)) {
             const bugBash = StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId);
-            if (this._isNew() && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
+            if (isNew && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.viewModel.model)) {
                 this._acceptItem();
             }
             else {
@@ -275,6 +276,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     if (newComment && newComment.trim() !== "") {
                         // add comment
                         StoresHub.bugBashItemCommentStore.addCommentItem(updatedModel.id, newComment);
+                    }
+                    else if (isNew) {
+                        StoresHub.bugBashItemCommentStore.ensureComments(updatedModel.id);
                     }
                     
                     this.updateState({error: null, disableToolbar: false,
