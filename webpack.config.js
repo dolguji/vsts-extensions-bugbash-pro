@@ -51,12 +51,16 @@ module.exports = {
         ]
     },
     plugins: [
+        new webpack.DefinePlugin({
+            "process.env.NODE_ENV": JSON.stringify("production")
+        }),
         new webpack.optimize.CommonsChunkPlugin({
             name: "common_chunks",
             filename: "./scripts/common_chunks.js",
             minChunks: 3
         }),
         new UglifyJSPlugin({
+            minimize: true,
             compress: {
                 warnings: false
             },
