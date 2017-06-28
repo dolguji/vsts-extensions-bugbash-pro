@@ -9,7 +9,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
     }
 
     protected async initializeItems(): Promise<void> {
-        this.items = await ExtensionDataManager.readUserSetting("bugBashProSettings", {} as Settings, false);
+        this.items = await ExtensionDataManager.readUserSetting(`bugBashProSettings_${VSS.getWebContext().project.id}`, {} as Settings, false);
     }
 
     public getKey(): string {
@@ -17,7 +17,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
     }
 
     public async updateSettings(settings: Settings): Promise<void> {
-        this.items = await ExtensionDataManager.writeUserSetting<Settings>("bugBashProSettings", settings, false);
+        this.items = await ExtensionDataManager.writeUserSetting<Settings>(`bugBashProSettings_${VSS.getWebContext().project.id}`, settings, false);
         this.emitChanged();
     }
 }

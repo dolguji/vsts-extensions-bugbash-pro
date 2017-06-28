@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "bugbashpro",
-    "version": "2.0.0",
+    "version": "2.0.2",
     "name": "Bug Bash Pro",
     "description": "Easier way to manage bug bashes",
     "publisher": "mohitbagra",
