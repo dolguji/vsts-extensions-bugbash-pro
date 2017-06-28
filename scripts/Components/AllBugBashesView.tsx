@@ -72,6 +72,22 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             <div className="all-view">
                 <CommandBar className="all-view-menu-toolbar" items={this._getMenuItems()} />
                 {this._getContents()}
+
+                { 
+                    this.state.settingsPanelOpen && 
+                    <Panel
+                        isOpen={true}
+                        type={PanelType.smallFixedFar}
+                        isLightDismiss={true} 
+                        onDismiss={() => this.updateState({settingsPanelOpen: false})}>
+
+                        <LazyLoad module="scripts/SettingsPanel">
+                            {(SettingsPanel) => (
+                                <SettingsPanel.SettingsPanel />
+                            )}
+                        </LazyLoad>
+                    </Panel>
+                }
             </div>
         );
     }
@@ -110,22 +126,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                                 {this.state.upcomingItems.length > 0 && <List items={this.state.upcomingItems} className="instance-list" onRenderCell={this._onRenderCell} />}
                             </div>
                         </div>
-
-                        { 
-                            this.state.settingsPanelOpen && 
-                            <Panel
-                                isOpen={true}
-                                type={PanelType.smallFixedFar}
-                                isLightDismiss={true} 
-                                onDismiss={() => this.updateState({settingsPanelOpen: false})}>
-
-                                <LazyLoad module="scripts/SettingsPanel">
-                                    {(SettingsPanel) => (
-                                        <SettingsPanel.SettingsPanel />
-                                    )}
-                                </LazyLoad>
-                            </Panel>
-                        }
                     </div>
                 );
             }
