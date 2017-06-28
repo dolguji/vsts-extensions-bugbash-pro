@@ -291,7 +291,7 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
 
                         <LazyLoad module="scripts/BugBashResultsAnalytics">
                             {(BugBashResultsAnalytics) => (
-                                <BugBashResultsAnalytics.BugBashResultsAnalytics bugBashId={this.props.id} itemModels={allViewModels.map(vm => vm.originalModel)} workItemsMap={this.state.workItemsMap} />
+                                <BugBashResultsAnalytics.BugBashResultsAnalytics itemModels={allViewModels.map(vm => vm.originalModel)} />
                             )}
                         </LazyLoad>
                     </div>

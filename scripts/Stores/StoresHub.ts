@@ -1,4 +1,4 @@
-import { BaseStore, StoreFactory } from "VSTS_Extension/Stores/BaseStore";
+import { StoreFactory } from "VSTS_Extension/Stores/BaseStore";
 import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
 import { WorkItemTypeStore } from "VSTS_Extension/Stores/WorkItemTypeStore";
 import { WorkItemTemplateStore } from "VSTS_Extension/Stores/WorkItemTemplateStore";

@@ -1,6 +1,3 @@
-import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
-
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { TeamFieldValues } from "TFS/Work/Contracts";
 import { TeamContext } from "TFS/Core/Contracts";
@@ -13,7 +10,7 @@ export class TeamFieldStore extends BaseStore<IDictionaryStringTo<TeamFieldValue
     }
 
     protected getItemByKey(teamId: string): TeamFieldValues {
-         return this.items[teamId];
+         return this.items[teamId.toLowerCase()];
     }
 
     protected async initializeItems(): Promise<void> {
@@ -65,7 +62,7 @@ export class TeamFieldStore extends BaseStore<IDictionaryStringTo<TeamFieldValue
             this.items = {};
         }
 
-        this.items[teamId] = item;
+        this.items[teamId.toLowerCase()] = item;
 
         this.emitChanged();
     }

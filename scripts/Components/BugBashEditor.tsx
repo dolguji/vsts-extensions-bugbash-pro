@@ -15,6 +15,7 @@ import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
+import Utils_Core = require("VSS/Utils/Core");
 
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
@@ -45,6 +46,8 @@ export interface IBugBashEditorState extends IBaseComponentState {
 }
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
+    private _imagePastedHandler: (event, data) => void;
+
     public static getNewModel(): IBugBash {
         return {
             id: "",
@@ -60,6 +63,12 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 templateId: ""
             }
         };
+    }
+
+    constructor(props: IBugBashEditorProps, context?: any) {
+        super(props, context);
+
+        this._imagePastedHandler = Utils_Core.delegate(this, this._onImagePaste);
     }
 
     protected initializeState(): void {
@@ -84,6 +93,9 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     protected initialize(): void {
+        $(window).off("imagepasted", this._imagePastedHandler);
+        $(window).on("imagepasted", this._imagePastedHandler);
+
         StoresHub.workItemFieldStore.initialize();
         StoresHub.workItemTemplateStore.initialize();
         StoresHub.workItemTypeStore.initialize();
@@ -94,6 +106,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             loading: StoresHub.workItemTypeStore.isLoaded() && StoresHub.workItemFieldStore.isLoaded() && StoresHub.workItemTemplateStore.isLoaded() ? false : true
         });
     }    
+
+    public componentWillUnmount() {
+        $(window).off("imagepasted", this._imagePastedHandler);
+    }      
 
     public render(): JSX.Element {
         if (this.state.loading) {
@@ -303,6 +319,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 }
             },
         ];
+    }
+
+    private _onImagePaste(event, args) {
+        args.callback(null);
     }
 
     @autobind

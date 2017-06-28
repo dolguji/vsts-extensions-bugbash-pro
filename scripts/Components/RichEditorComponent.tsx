@@ -7,7 +7,6 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { SettingsStore } from "../Stores/SettingsStore";
-import { Settings } from "../Interfaces";
 
 import "../PasteImagePlugin";
 

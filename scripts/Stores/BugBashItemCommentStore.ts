@@ -1,6 +1,3 @@
-import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
-
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 

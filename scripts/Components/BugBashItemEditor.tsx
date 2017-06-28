@@ -16,12 +16,14 @@ import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
 import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
-import Utils_String = require("VSS/Utils/String");
+import { VersionControlChangeType, ItemContentType } from "TFS/VersionControl/Contracts";
+import * as GitClient from "TFS/VersionControl/GitRestClient";
 import Utils_Date = require("VSS/Utils/Date");
+import Utils_Core = require("VSS/Utils/Core");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
-import { confirmAction, BugBashItemHelpers } from "../Helpers";
+import { confirmAction, buildGitPush, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemComment, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
 import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
@@ -44,11 +46,22 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
+    private _imagePastedHandler: (event, data) => void;
+
+    constructor(props: IBugBashItemEditorProps, context?: any) {
+        super(props, context);
+
+        this._imagePastedHandler = Utils_Core.delegate(this, this._onImagePaste);
+    }
+
     protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
         return [BugBashItemCommentStore];
     }
 
     protected initialize(): void {
+        $(window).off("imagepasted", this._imagePastedHandler);
+        $(window).on("imagepasted", this._imagePastedHandler);
+
         if (this.props.viewModel.model.id) {
             StoresHub.bugBashItemCommentStore.ensureComments(this.props.viewModel.model.id);
         } 
@@ -88,9 +101,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }
     }
 
-    private _onChange(newViewModel: IBugBashItemViewModel) {
-        this.props.onChange(newViewModel.model, newViewModel.newComment);
-    }
+    public componentWillUnmount() {
+        $(window).off("imagepasted", this._imagePastedHandler);
+    } 
 
     public render(): JSX.Element {
         if (this.state.loadError) {
@@ -214,6 +227,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             );
         }        
     }
+
+    private _onChange(newViewModel: IBugBashItemViewModel) {
+        this.props.onChange(newViewModel.model, newViewModel.newComment);
+    }    
 
     private _renderComments(): React.ReactNode {
         if (!this._isNew()) {
@@ -431,4 +448,37 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }
         return "";
     }
+
+    private async _onImagePaste(event, args) {
+        const data = args.data;
+        const callback = args.callback;
+
+        const settings = StoresHub.settingsStore.getAll();
+        if (settings && settings.gitMediaRepo) {
+            const dataStartIndex = data.indexOf(",") + 1;
+            const metaPart = data.substring(5, dataStartIndex - 1);
+            const dataPart = data.substring(dataStartIndex);
+
+            const extension = metaPart.split(";")[0].split("/").pop();
+            const fileName = `pastedImage_${Date.now().toString()}.${extension}`;
+            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.state.viewModel.model.bugBashId).title.replace(" ", "_")}/pastedImages/${fileName}`;
+            const projectId = VSS.getWebContext().project.id;
+
+            try {
+                const gitClient = GitClient.getClient();
+                const gitItem = await gitClient.getItem(settings.gitMediaRepo, "/", projectId);
+                const pushModel = buildGitPush(gitPath, gitItem.commitId, VersionControlChangeType.Add, dataPart, ItemContentType.Base64Encoded);
+                await gitClient.createPush(pushModel, settings.gitMediaRepo, projectId);
+
+                const imageUrl = `${VSS.getWebContext().collection.uri}/${VSS.getWebContext().project.id}/_api/_versioncontrol/itemContent?repositoryId=${settings.gitMediaRepo}&path=${gitPath}&version=GBmaster&contentOnly=true`;
+                callback(imageUrl);
+            }
+            catch (e) {
+                callback(null);
+            }
+        }
+        else {
+            callback(null);
+        }
+    }   
 }

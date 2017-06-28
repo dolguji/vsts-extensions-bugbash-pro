@@ -11,7 +11,7 @@ export class TeamStore extends BaseStore<WebApiTeam[], WebApiTeam, string> {
     }
 
     protected async initializeItems(): Promise<void> {
-        this.items = await CoreClient.getClient().getTeams(VSS.getWebContext().project.id);
+        this.items = await CoreClient.getClient().getTeams(VSS.getWebContext().project.id, 300);
     }
 
     public getKey(): string {

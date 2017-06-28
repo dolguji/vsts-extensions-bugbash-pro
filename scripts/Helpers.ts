@@ -2,7 +2,7 @@ import { JsonPatchDocument, JsonPatchOperation, Operation } from "VSS/WebApi/Con
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
+import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 
 import { StoresHub } from "./Stores/StoresHub";
 import { IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
@@ -21,6 +21,29 @@ export async function confirmAction(condition: boolean, msg: string): Promise<bo
     }
 
     return true;
+}
+
+export function buildGitPush(path: string, oldObjectId: string, changeType: VersionControlChangeType, content: string, contentType: ItemContentType): GitPush {
+    const commits = [{
+    comment: "Adding new image from bug bash pro extension",
+    changes: [
+        {
+        changeType,
+        item: {path},
+        newContent: content !== undefined ? {
+            content,
+            contentType,
+        } : undefined,
+        }],
+    }];
+
+    return {
+        refUpdates: [{
+            name: "refs/heads/master",
+            oldObjectId: oldObjectId,
+        }],
+        commits,
+    } as GitPush;
 }
 
 export async function createWorkItem(workItemType: string, fieldValues: IDictionaryStringTo<string>): Promise<WorkItem> {

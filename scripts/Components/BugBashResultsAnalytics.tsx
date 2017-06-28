@@ -7,16 +7,12 @@ import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/Mess
 import { Label } from "OfficeFabric/Label";
 import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 
-import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-
 import { IBugBashItem } from "../Interfaces";
 import { BugBashItemHelpers } from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
 
 interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {
-    bugBashId: string;
     itemModels: IBugBashItem[];
-    workItemsMap: IDictionaryNumberTo<WorkItem>;
 }
 
 const CustomizedAxisTick: React.StatelessComponent<any> =
