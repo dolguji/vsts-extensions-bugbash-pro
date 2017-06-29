@@ -18,7 +18,7 @@ interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {
 const CustomizedAxisTick: React.StatelessComponent<any> =
     (props: any): JSX.Element => {
         const {x, y, stroke, payload} = props;
-        const value = (payload.value.length > 10) ? payload.value.substr(0, 10) + "..." : payload.value;
+        const value = (payload.value.length > 9) ? payload.value.substr(0, 9) + "..." : payload.value;
         return (
             <g transform={`translate(${x-4},${y+2})`}>
                 <text fill="#767676" style={{fontSize: "12px"}} width={100} textAnchor="end">{value}</text>
