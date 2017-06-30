@@ -11,7 +11,10 @@ export class TeamStore extends BaseStore<WebApiTeam[], WebApiTeam, string> {
     }
 
     protected async initializeItems(): Promise<void> {
-        this.items = await CoreClient.getClient().getTeams(VSS.getWebContext().project.id, 300);
+        const teams = await CoreClient.getClient().getTeams(VSS.getWebContext().project.id, 300);
+        this.items = teams.sort((t1: WebApiTeam, t2: WebApiTeam) => {
+            return Utils_String.ignoreCaseComparer(t1.name, t2.name);
+        });
     }
 
     public getKey(): string {
