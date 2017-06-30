@@ -43,13 +43,17 @@
                 right: 0;
                 bottom: 0;
                 left: 0;
+
+                #description-editor {
+                    max-height: 100%;
+                }
             }
 
             #description-editor {
                 min-height: 250px;
                 max-height: 250px;
                 padding: 5px;
-            }        
+            }
         }
     }
 
@@ -66,7 +70,7 @@
                 min-height: 100px;
                 max-height: 100px;
                 padding: 5px;
-            }
+            }            
         }  
     }
 
