@@ -46,6 +46,7 @@ export interface IBugBashItemViewModel {
 export interface IAcceptedItemViewModel {
     model: IBugBashItem;
     workItem: WorkItem;
+    error?: string;
 }
 
 export interface Settings {

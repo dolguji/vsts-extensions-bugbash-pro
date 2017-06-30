@@ -35,7 +35,7 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
 
     public render() {
         if (this.props.itemModels.length === 0) {
-            return <MessagePanel messageType={MessageType.Info} message=">No items created yet." />;
+            return <MessagePanel messageType={MessageType.Info} message="No items created yet." />;
         }
 
         let teamCounts: IDictionaryStringTo<number> = {};

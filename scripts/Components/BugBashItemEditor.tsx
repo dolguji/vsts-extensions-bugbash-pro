@@ -242,7 +242,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 comments = comments.slice();
                 comments = comments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => {
                     return -1 * Utils_Date.defaultComparer(c1.createdDate, c2.createdDate);
-                })
+                });
                 
                 return comments.map((comment: IBugBashItemComment, index: number) => {
                     return (
@@ -312,11 +312,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     private async _acceptItem() {
         this.updateState({disableToolbar: true});
-
-        let result: IAcceptedItemViewModel;
+        
         try {
-            result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
-            this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
+            const result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
+            this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : result.error || "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
 
             this.props.onItemAccept(result.model, result.workItem);
         }

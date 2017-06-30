@@ -3,10 +3,11 @@ import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemC
 
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import Context = require("VSS/Context");
+import Utils_Date = require("VSS/Utils/Date");
 
 import { UrlActions } from "./Constants";
-import { IBugBash, IBugBashItem, IAcceptedItemViewModel } from "./Interfaces";
-import { createWorkItem, BugBashItemHelpers } from "./Helpers";
+import { IBugBash, IBugBashItem, IAcceptedItemViewModel, IBugBashItemComment } from "./Interfaces";
+import { createWorkItem, updateWorkItem, BugBashItemHelpers } from "./Helpers";
 import { StoresHub } from "./Stores/StoresHub";
 
 function getBugBashCollectionKey(bugBashId: string): string {
@@ -78,19 +79,18 @@ export class BugBashItemManager {
         }
 
         // get accept template
-        const bugBash = StoresHub.bugBashStore.getItem(model.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(updatedItem.bugBashId);
         const templateExists = await StoresHub.workItemTemplateItemStore.ensureTemplateItem(bugBash.acceptTemplate.templateId, bugBash.acceptTemplate.team);
-        const teamFieldValueExists = await StoresHub.teamFieldStore.ensureItem(model.teamId);
+        const teamFieldValueExists = await StoresHub.teamFieldStore.ensureItem(updatedItem.teamId);
 
         if (templateExists) {
             const template = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
             let fieldValues = {...template.fields};
-            fieldValues["System.Title"] = model.title;
-            fieldValues[bugBash.itemDescriptionField] = model.description;
-            fieldValues["System.History"] = this._getAcceptedItemComment(bugBash, model);
+            fieldValues["System.Title"] = updatedItem.title;
+            fieldValues[bugBash.itemDescriptionField] = updatedItem.description;            
 
             if (teamFieldValueExists) {
-                const teamFieldValue = StoresHub.teamFieldStore.getItem(model.teamId);
+                const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedItem.teamId);
                 fieldValues[teamFieldValue.field.referenceName] = teamFieldValue.defaultValue;
             }
 
@@ -108,7 +108,8 @@ export class BugBashItemManager {
             catch (e) {
                 return {
                     model: updatedItem,
-                    workItem: null
+                    workItem: null,
+                    error: e.message
                 };
             }
             
@@ -119,6 +120,8 @@ export class BugBashItemManager {
             updatedItem.rejectReason = "";
             updatedItem = await this.saveItem(updatedItem);
 
+            this._addExtraFieldsToWorkitem(savedWorkItem.id, updatedItem);
+
             return {
                 model: updatedItem,
                 workItem: savedWorkItem
@@ -127,9 +130,19 @@ export class BugBashItemManager {
         else {
             return {
                 model: updatedItem,
-                workItem: null
+                workItem: null,
+                error: `Bug bash template '${bugBash.acceptTemplate.templateId}' does not exist in team '${bugBash.acceptTemplate.team}'`
             }
         }
+    }
+
+    private static _addExtraFieldsToWorkitem(workItemId: number, model: IBugBashItem) {
+        let fieldValues: IDictionaryStringTo<string> = {};
+        const bugBash = StoresHub.bugBashStore.getItem(model.bugBashId);
+
+        fieldValues["System.History"] = this._getAcceptedItemComment(bugBash, model);
+
+        updateWorkItem(workItemId, fieldValues);
     }
 
     private static _getAcceptedItemComment(bugBash: IBugBash, model: IBugBashItem): string {
@@ -140,8 +153,30 @@ export class BugBashItemManager {
         
         const entity = parseUniquefiedIdentityName(model.createdBy);
 
-        return `
+        let commentToSave = `
             Created from <a href='${bugBashUrl}' target='_blank'>${bugBash.title}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
+
+        let discussionComments = StoresHub.bugBashItemCommentStore.getItem(model.id);
+
+        if (discussionComments && discussionComments.length > 0) {
+            discussionComments = discussionComments.slice();
+            discussionComments = discussionComments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => {
+                return Utils_Date.defaultComparer(c1.createdDate, c2.createdDate);
+            });
+
+            commentToSave += "<div style='margin: 15px 0;font-size: 15px; font-weight: bold; text-decoration: underline;'>Discussions :</div>";
+
+            for (const comment of discussionComments) {
+                commentToSave += `
+                    <div style='border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 10px;'>
+                        <div><span style='font-size: 13px; font-weight: bold;'>${comment.createdBy}</span> wrote:</div>
+                        <div>${comment.content}</div>
+                    </div>
+                `;
+            }            
+        }
+
+        return commentToSave;
     }
 }
