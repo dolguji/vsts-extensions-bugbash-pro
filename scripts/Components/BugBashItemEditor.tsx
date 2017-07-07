@@ -21,6 +21,7 @@ import * as GitClient from "TFS/VersionControl/GitRestClient";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_Core = require("VSS/Utils/Core");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
+import { WebApiTeam } from "TFS/Core/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
 import { confirmAction, buildGitPush, BugBashItemHelpers } from "../Helpers";
@@ -160,8 +161,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                 this.updateState({viewModel: newModel});
                                 this._onChange(newModel);
                             }}/>
-
-                        { team == null && <InputError error={`${item.model.teamId} team does not exist.`} />}
+                        
+                        { this._renderTeamError(item.model.teamId, team) }
                     </div>
 
                     { item.model.rejected && 
@@ -428,8 +429,20 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         return menuItems;
     }
 
+    private _renderTeamError(teamId: string, team: WebApiTeam): JSX.Element {
+        if (teamId == null || teamId.trim() === "") {
+            return <InputError error={`Team is required.`} />;
+        }
+        else if (team == null) {
+            return <InputError error={`${teamId} team does not exist.`} />;
+        }
+    }
+
     @autobind
     private _getTitleError(value: string): string | IPromise<string> {
+        if (value == null || value.trim() === "") {
+            return "Title is required";
+        }
         if (value.length > 256) {
             return `The length of the title should less than 256 characters, actual is ${value.length}.`;
         }

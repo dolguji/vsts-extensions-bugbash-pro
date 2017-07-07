@@ -38,12 +38,10 @@
 
             &.trumbowyg-fullscreen {
                 border: 1px solid #DDD !important;
-                position: absolute;
-                top: 0;
                 right: 0;
-                bottom: 0;
-                left: 0;
-
+                left: 10px;
+                width: inherit;
+                
                 #description-editor {
                     max-height: 100%;
                 }

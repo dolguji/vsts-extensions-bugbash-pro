@@ -30,7 +30,7 @@ export class BugBashItemManager {
         const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
         for(let model of models) {
             translateDates(model);
-            model.teamId = model.teamId || VSS.getWebContext().team.id;
+            model.teamId = model.teamId || "";
         }
         return models;
     }
@@ -39,7 +39,7 @@ export class BugBashItemManager {
         let model = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), itemId, null, false);
         if (model) {
             translateDates(model);
-            model.teamId = model.teamId || VSS.getWebContext().team.id;
+            model.teamId = model.teamId || "";
             return model;
         }
         return null;

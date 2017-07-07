@@ -88,7 +88,7 @@ export class BugBashItemHelpers {
             __etag: 0,
             title: "",
             description: "",
-            teamId: VSS.getWebContext().team.id,
+            teamId: "",
             workItemId: 0,
             createdDate: null,
             createdBy: "",

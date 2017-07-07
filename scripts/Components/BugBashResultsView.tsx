@@ -29,6 +29,7 @@ import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/Identit
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 import { ColumnPosition, IExtraWorkItemGridColumn } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid.Props";
 import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
+import SplitterLayout from "rc-split-layout";
 
 import { UrlActions } from "../Constants";
 import { IBugBash, IBugBashItem, IBugBashItemViewModel } from "../Interfaces";
@@ -184,12 +185,24 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                     <div className="results-view">
                         <Label className="bugbash-title overflow-ellipsis">{StoresHub.bugBashStore.getItem(this.props.id).title}</Label>
                         <div className="results-container">
-                            <div className="left-content">
-                                {this._renderPivots()}
-                            </div>
-                            <div className="right-content">
-                                {this._renderItemEditor()}
-                            </div>    
+                            <SplitterLayout 
+                                primaryIndex={0}
+                                primaryMinSize={550}
+                                secondaryMinSize={400}
+                                secondaryInitialSize={500}
+                                onChange={() => {
+                                    let evt = document.createEvent('UIEvents');
+                                    evt.initUIEvent('resize', true, false, window, 0);
+                                    window.dispatchEvent(evt);
+                                }} >
+                                
+                                <div className="left-content">
+                                    {this._renderPivots()}
+                                </div>
+                                <div className="right-content">
+                                    {this._renderItemEditor()}
+                                </div>
+                            </SplitterLayout>
                         </div>
                     </div>
                 );
