@@ -1,87 +1,63 @@
 import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
 
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
-import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
-
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBash } from "../Interfaces";
+import { BugBashActionsCreator } from "../Actions/ActionsCreator";
 
 export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
-    protected getItemByKey(id: string): IBugBash {
-         return Utils_Array.first(this.items, (item: IBugBash) => Utils_String.equals(item.id, id, true));
+    public getItem(id: string): IBugBash {
+         return Utils_Array.first(this.items || [], (item: IBugBash) => Utils_String.equals(item.id, id, true));
     }
 
-    protected async initializeItems(): Promise<void> {
-        let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
-        for(let bugBash of bugBashes) {
-            this._translateDates(bugBash);            
-        }
+    protected initializeActionListeners() {
+        BugBashActionsCreator.InitializeAllBugBashes.addListener((bugBashes: IBugBash[]) => {
+            if (bugBashes) {
+                this.items = bugBashes;
+            }
 
-        this.items = bugBashes;
+            this.emitChanged();
+        }); 
+
+        BugBashActionsCreator.RefreshAllBugBashes.addListener((bugBashes: IBugBash[]) => {
+            this.items = bugBashes;
+            this.emitChanged();
+        });
+
+        BugBashActionsCreator.InitializeBugBash.addListener((bugBash: IBugBash) => {
+            if (bugBash) {
+                this._addItem(bugBash);
+            }
+
+            this.emitChanged();
+        });  
+
+        BugBashActionsCreator.CreateBugBash.addListener((bugBash: IBugBash) => {
+            this._addItem(bugBash);
+            this.emitChanged();
+        });  
+
+        BugBashActionsCreator.DeleteBugBash.addListener((bugBash: IBugBash) => {
+            this._removeItem(bugBash);
+            this.emitChanged();
+        });
+
+        BugBashActionsCreator.UpdateBugBash.addListener((bugBash: IBugBash) => {
+            this._addItem(bugBash);
+            this.emitChanged();
+        });   
     }
 
     public getKey(): string {
-        return "WorkItemBugBashItemStore";
+        return "BugBashStore";
+    }
+
+    protected convertItemKeyToString(key: string): string {
+        return key;
     }    
-
-    public async ensureItem(id: string): Promise<boolean> {
-        if (!this.itemExists(id)) {
-            try {
-                let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", id, null, false);
-                if (bugBash) {
-                    this._translateDates(bugBash);
-                    this._addItems(bugBash);
-                    return true;
-                }
-                else {
-                    return false;
-                }
-            }
-            catch (e) {
-                return false;
-            }            
-        }
-        else {
-            this.emitChanged();
-            return true;
-        }
-    }
-
-    public async updateItem(bugBash: IBugBash): Promise<IBugBash> {
-        const savedBugBash = await ExtensionDataManager.updateDocument<IBugBash>("bugbashes", bugBash, false);
-
-        this._translateDates(savedBugBash);
-        this._addItems(savedBugBash);
-
-        return savedBugBash;
-    }
-
-    public async createItem(bugBash: IBugBash): Promise<IBugBash> {
-        let model = {...bugBash};
-        model.id = Date.now().toString();
-
-        const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
-
-        this._translateDates(savedBugBash);
-        this._addItems(savedBugBash);
-
-        return savedBugBash;
-    }
-
-    public async deleteItem(bugBash: IBugBash): Promise<void> {
-        this._removeItems(bugBash);
-        await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBash.id, false);
-    }
-
-    public async refreshItems() {
-        if (this.isLoaded()) {
-            await this.initializeItems();
-            this.emitChanged();
-        }
-    }
-
-    private _addItems(items: IBugBash | IBugBash[]): void {
-        if (!items) {
+    
+    private _addItem(item: IBugBash): void {
+        if (!item) {
             return;
         }
 
@@ -89,38 +65,8 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.items = [];
         }
 
-        if (Array.isArray(items)) {
-            for (const item of items) {
-                this._addItem(item);
-            }
-        }
-        else {
-            this._addItem(items);
-        }
-
-        this.emitChanged();
-    }
-
-    private _removeItems(items: IBugBash | IBugBash[]): void {
-        if (!items || !this.isLoaded()) {
-            return;
-        }
-
-        if (Array.isArray(items)) {
-            for (const item of items) {
-                this._removeItem(item);
-            }
-        }
-        else {
-            this._removeItem(items);
-        }
-
-        this.emitChanged();
-    }    
-
-    private _addItem(item: IBugBash): void {
         const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(item.id, existingItem.id, true));
-        if (existingItemIndex != -1) {
+        if (existingItemIndex !== -1) {
             // Overwrite the item data
             this.items[existingItemIndex] = item;
         }
@@ -130,29 +76,14 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     }
 
     private _removeItem(item: IBugBash): void {
+        if (!item || this.items == null || this.items.length === 0) {
+            return;
+        }
+
         const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(item.id, existingItem.id, true));
 
-        if (existingItemIndex != -1) {
+        if (existingItemIndex !== -1) {
             this.items.splice(existingItemIndex, 1);
-        }
-    }
-
-    private _translateDates(item: IBugBash) {
-        if (typeof item.startTime === "string") {
-            if ((item.startTime as string).trim() === "") {
-                item.startTime = undefined;
-            }
-            else {
-                item.startTime = new Date(item.startTime);
-            }
-        }
-        if (typeof item.endTime === "string") {
-            if ((item.endTime as string).trim() === "") {
-                item.endTime = undefined;
-            }
-            else {
-                item.endTime = new Date(item.endTime);
-            }
         }
     }
 }

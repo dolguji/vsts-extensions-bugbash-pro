@@ -30,7 +30,8 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         this.state = {};
     }
 
-    protected initialize() { 
+    public componentDidMount() { 
+        super.componentDidMount();
         this._initialize();
     }
 

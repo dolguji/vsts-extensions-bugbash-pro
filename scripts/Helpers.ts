@@ -4,7 +4,9 @@ import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 
-import { StoresHub } from "./Stores/StoresHub";
+import { StoreFactory } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
+
 import { IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
@@ -145,7 +147,7 @@ export class BugBashItemHelpers {
             && (!model.rejected || (model.rejectReason != null && model.rejectReason.trim().length > 0 && model.rejectReason.trim().length <= 128));
 
         if (dataValid) {
-            dataValid = dataValid && StoresHub.teamStore.getItem(model.teamId) != null;
+            dataValid = dataValid && StoreFactory.getInstance<TeamStore>(TeamStore).getItem(model.teamId) != null;
         }
 
         return dataValid;

@@ -1,23 +1,36 @@
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
-import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 
+import { SettingsActionsCreator } from "../Actions/ActionsCreator";
 import { Settings } from "../Interfaces";
 
 export class SettingsStore extends BaseStore<Settings, Settings, void> {
-    protected getItemByKey(id: void): Settings {
-         return null;
+    public getItem(id: void): Settings {
+         return this.items;
     }
 
-    protected async initializeItems(): Promise<void> {
-        this.items = await ExtensionDataManager.readUserSetting(`bugBashProSettings_${VSS.getWebContext().project.id}`, {} as Settings, false);
+    protected initializeActionListeners() {
+        SettingsActionsCreator.InitializeBugBashSettings.addListener((settings: Settings) => {
+            if (settings) {
+                this.items = settings;
+            }
+
+            this.emitChanged();
+        });
+
+        SettingsActionsCreator.UpdateBugBashSettings.addListener((settings: Settings) => {
+            if (settings) {
+                this.items = settings;
+            }
+
+            this.emitChanged();
+        });
     }
 
     public getKey(): string {
         return "SettingsStore";
     }
 
-    public async updateSettings(settings: Settings): Promise<void> {
-        this.items = await ExtensionDataManager.writeUserSetting<Settings>(`bugBashProSettings_${VSS.getWebContext().project.id}`, settings, false);
-        this.emitChanged();
+    protected convertItemKeyToString(key: void): string {
+        return null;
     }
 }
