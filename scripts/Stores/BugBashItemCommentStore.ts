@@ -1,3 +1,6 @@
+import Utils_String = require("VSS/Utils/String");
+import Utils_Array = require("VSS/Utils/Array");
+
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBashItemComment } from "../Interfaces";
 import { BugBashItemCommentActionsCreator } from "../Actions/ActionsCreator";
@@ -9,6 +12,19 @@ export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugB
     }
 
     public getItem(bugBashItemId: string): IBugBashItemComment[] {
+         return this.getComments(bugBashItemId);
+    }
+
+    public getComment(bugBashItemId: string, commentId: string): IBugBashItemComment {
+         const comments = this.getComments(bugBashItemId);
+         if (comments) {
+            return Utils_Array.first(comments, (comment: IBugBashItemComment) => Utils_String.equals(comment.id, commentId, true));
+         }
+         
+         return null;
+    }
+
+    public getComments(bugBashItemId: string): IBugBashItemComment[] {
          return this.items[bugBashItemId.toLowerCase()] || null;
     }
 

@@ -54,22 +54,30 @@ export module BugBashItemCommentActions {
     }
 
     export async function createComment(bugBashItemId: string, comment: string) {
-        try {
-            let commentModel: IBugBashItemComment = {
-                id: `${bugBashItemId}_${Date.now().toString()}`,
-                __etag: 0,
-                createdBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
-                createdDate: new Date(Date.now()),
-                content: comment
-            };
+        if (!bugBashItemCommentStore.isLoading(bugBashItemId)) {
+            bugBashItemCommentStore.setLoading(true, bugBashItemId);
 
-            const savedComment = await ExtensionDataManager.createDocument<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), commentModel, false);
-            translateDates(savedComment);
-     
-            BugBashItemCommentActionsCreator.CreateComment.invoke({bugBashItemId: bugBashItemId, comment: savedComment});
-        }
-        catch (e) {
-            
+            try {
+                let commentModel: IBugBashItemComment = {
+                    id: `${bugBashItemId}_${Date.now().toString()}`,
+                    __etag: 0,
+                    createdBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
+                    createdDate: new Date(Date.now()),
+                    content: comment
+                };
+
+                const savedComment = await ExtensionDataManager.createDocument<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), commentModel, false);
+                translateDates(savedComment);
+                
+                bugBashItemCommentStore.setLoading(false, bugBashItemId);
+                bugBashItemCommentStore.setError(null, bugBashItemId);
+
+                BugBashItemCommentActionsCreator.CreateComment.invoke({bugBashItemId: bugBashItemId, comment: savedComment});
+            }
+            catch (e) {
+                bugBashItemCommentStore.setLoading(false, bugBashItemId);
+                bugBashItemCommentStore.setError(e.message || e, bugBashItemId);
+            }
         }
     }
 

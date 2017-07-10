@@ -104,17 +104,25 @@ export module BugBashActions {
     }
 
     export async function createBugBash(bugBash: IBugBash) {
-        try {
-            let model = {...bugBash};
-            model.id = Date.now().toString();
+        if (!bugBashStore.isLoading()) {
+            bugBashStore.setLoading(true);
 
-            const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
-            translateDates(savedBugBash);            
+            try {
+                let model = {...bugBash};
+                model.id = Date.now().toString();
 
-            BugBashActionsCreator.CreateBugBash.invoke(savedBugBash);
-        }
-        catch (e) {
-            
+                const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
+                translateDates(savedBugBash);            
+
+                bugBashStore.setLoading(false);
+                bugBashStore.setError(null);
+
+                BugBashActionsCreator.CreateBugBash.invoke(savedBugBash);
+            }
+            catch (e) {
+                bugBashStore.setLoading(false);
+                bugBashStore.setError(e.message || e);
+            }
         }
     }
 

@@ -10,41 +10,8 @@ import { IBugBash, IBugBashItem, IAcceptedItemViewModel, IBugBashItemComment } f
 import { createWorkItem, updateWorkItem, BugBashItemHelpers } from "./Helpers";
 import { StoresHub } from "./Stores/StoresHub";
 
-function getBugBashCollectionKey(bugBashId: string): string {
-    return `BugBashCollection_${bugBashId}`;
-}
-
-function translateDates(model: IBugBashItem) {
-    if (typeof model.createdDate === "string") {
-        if ((model.createdDate as string).trim() === "") {
-            model.createdDate = undefined;
-        }
-        else {
-            model.createdDate = new Date(model.createdDate);
-        }
-    }
-}
 
 export class BugBashItemManager {
-    public static async getItems(bugBashId: string): Promise<IBugBashItem[]> {
-        const models = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
-        for(let model of models) {
-            translateDates(model);
-            model.teamId = model.teamId || "";
-        }
-        return models;
-    }
-
-    public static async getItem(itemId: string, bugBashId: string): Promise<IBugBashItem> {
-        let model = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), itemId, null, false);
-        if (model) {
-            translateDates(model);
-            model.teamId = model.teamId || "";
-            return model;
-        }
-        return null;
-    } 
-
     public static async saveItem(model: IBugBashItem): Promise<IBugBashItem> {
         const isNew = BugBashItemHelpers.isNew(model);
         let cloneModel = BugBashItemHelpers.deepCopy(model);
