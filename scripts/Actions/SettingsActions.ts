@@ -12,17 +12,9 @@ export module SettingsActions {
         }
         else if (!StoresHub.settingsStore.isLoading()) {
             StoresHub.settingsStore.setLoading(true);
-
-            try {
-                const settings = await ExtensionDataManager.readUserSetting(`bugBashProSettings_${VSS.getWebContext().project.id}`, {} as Settings, false);
-                
-                SettingsActionsCreator.InitializeBugBashSettings.invoke(settings);
-                StoresHub.settingsStore.setLoading(false);
-            }
-            catch (e) {
-                StoresHub.settingsStore.setLoading(false);
-                throw e;
-            }
+            const settings = await ExtensionDataManager.readUserSetting(`bugBashProSettings_${VSS.getWebContext().project.id}`, {} as Settings, false);            
+            SettingsActionsCreator.InitializeBugBashSettings.invoke(settings);
+            StoresHub.settingsStore.setLoading(false);
         }
     }
 
@@ -37,7 +29,7 @@ export module SettingsActions {
         }
         catch (e) {
             StoresHub.settingsStore.setLoading(false);
-            throw e;
+            throw e.message;
         }
     }
 }

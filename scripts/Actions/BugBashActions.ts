@@ -12,20 +12,13 @@ export module BugBashActions {
         }
         else if (!StoresHub.bugBashStore.isLoading()) {
             StoresHub.bugBashStore.setLoading(true);
-
-            try {
-                let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
-                for(let bugBash of bugBashes) {
-                    translateDates(bugBash);
-                }
-
-                BugBashActionsCreator.InitializeAllBugBashes.invoke(bugBashes);
-                StoresHub.bugBashStore.setLoading(false);
+            let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
+            for(let bugBash of bugBashes) {
+                translateDates(bugBash);
             }
-            catch (e) {
-                StoresHub.bugBashStore.setLoading(false);
-                throw e;                
-            }
+
+            BugBashActionsCreator.InitializeAllBugBashes.invoke(bugBashes);
+            StoresHub.bugBashStore.setLoading(false);
         }
     } 
 
@@ -35,23 +28,15 @@ export module BugBashActions {
         }
         else if (!StoresHub.bugBashStore.isLoading(bugBashId)) {
             StoresHub.bugBashStore.setLoading(true, bugBashId);
-
-            try {
-                let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
-                if (bugBash) {
-                    translateDates(bugBash);                    
-
-                    BugBashActionsCreator.InitializeBugBash.invoke(bugBash);
-                    StoresHub.bugBashStore.setLoading(false, bugBashId);
-                }
-                else {
-                    StoresHub.bugBashStore.setLoading(false, bugBashId);
-                    throw new Error("This instance of bug bash does not exist.");
-                }          
-            }
-            catch (e) {
+            let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
+            if (bugBash) {
+                translateDates(bugBash);
+                BugBashActionsCreator.InitializeBugBash.invoke(bugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
-                throw e;
+            }
+            else {
+                StoresHub.bugBashStore.setLoading(false, bugBashId);
+                throw "This instance of bug bash does not exist.";
             }
         }
     } 
@@ -60,19 +45,13 @@ export module BugBashActions {
         if (!StoresHub.bugBashStore.isLoading()) {
             StoresHub.bugBashStore.setLoading(true);
 
-            try {
-                let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
-                for(let bugBash of bugBashes) {
-                    translateDates(bugBash);
-                }
-                
-                BugBashActionsCreator.RefreshAllBugBashes.invoke(bugBashes);
-                StoresHub.bugBashStore.setLoading(false);
+            let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
+            for(let bugBash of bugBashes) {
+                translateDates(bugBash);
             }
-            catch (e) {
-                StoresHub.bugBashStore.setLoading(false);
-                throw e;
-            }
+            
+            BugBashActionsCreator.RefreshAllBugBashes.invoke(bugBashes);
+            StoresHub.bugBashStore.setLoading(false);
         }
     }
 
@@ -89,15 +68,13 @@ export module BugBashActions {
             }
             catch (e) {
                 StoresHub.bugBashStore.setLoading(false, bugBash.id);
-                throw new Error("This bug bash instance has been modified by some one else. Please refresh the page to get the latest version and try updating it again.");
+                throw "This bug bash instance has been modified by some one else. Please refresh the page to get the latest version and try updating it again.";
             }
         }
     }
 
     export async function createBugBash(bugBash: IBugBash) {
         if (!StoresHub.bugBashStore.isLoading()) {
-            StoresHub.bugBashStore.setLoading(true);
-
             try {
                 let model = {...bugBash};
                 model.id = Date.now().toString();
@@ -106,11 +83,9 @@ export module BugBashActions {
                 translateDates(savedBugBash);            
                 
                 BugBashActionsCreator.CreateBugBash.invoke(savedBugBash);
-                StoresHub.bugBashStore.setLoading(false);
             }
             catch (e) {
-                StoresHub.bugBashStore.setLoading(false);
-                throw e;
+                throw e.message;
             }
         }
     }
@@ -123,12 +98,11 @@ export module BugBashActions {
                 await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBash.id, false);                
             }
             catch (e) {
-                
+                // eat exception
             }
-            finally {                
-                BugBashActionsCreator.DeleteBugBash.invoke(bugBash);
-                StoresHub.bugBashStore.setLoading(false, bugBash.id);
-            }
+
+            BugBashActionsCreator.DeleteBugBash.invoke(bugBash);
+            StoresHub.bugBashStore.setLoading(false, bugBash.id);
         }
     }
 

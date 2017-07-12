@@ -13,19 +13,13 @@ export module BugBashItemCommentActions {
         else if (!StoresHub.bugBashItemCommentStore.isLoading(bugBashItemId)) {
             StoresHub.bugBashItemCommentStore.setLoading(true, bugBashItemId);
 
-            try {
-                const comments = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), false);
-                for(let comment of comments) {
-                    translateDates(comment);
-                }
-                
-                BugBashItemCommentActionsCreator.InitializeComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
-                StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
+            const comments = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), false);
+            for(let comment of comments) {
+                translateDates(comment);
             }
-            catch (e) {
-                StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
-                throw e;
-            }
+            
+            BugBashItemCommentActionsCreator.InitializeComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
+            StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
         }
     } 
 
@@ -33,19 +27,13 @@ export module BugBashItemCommentActions {
         if (!StoresHub.bugBashItemCommentStore.isLoading(bugBashItemId)) {
             StoresHub.bugBashItemCommentStore.setLoading(true, bugBashItemId);
 
-            try {
-                const comments = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), false);
-                for(let comment of comments) {
-                    translateDates(comment);
-                }
-                
-                BugBashItemCommentActionsCreator.RefreshComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
-                StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
+            const comments = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), false);
+            for(let comment of comments) {
+                translateDates(comment);
             }
-            catch (e) {
-                StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
-                throw e;
-            }
+            
+            BugBashItemCommentActionsCreator.RefreshComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
+            StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
         }
     }
 
@@ -70,7 +58,7 @@ export module BugBashItemCommentActions {
             }
             catch (e) {
                 StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
-                throw e;
+                throw e.message;
             }
         }
     }
