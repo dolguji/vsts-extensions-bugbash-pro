@@ -16,7 +16,7 @@ import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { IBugBashItem, IBugBash, IBugBashItemComment, IAcceptedItemViewModel } from "../Interfaces";
 import { createWorkItem, updateWorkItem, BugBashItemHelpers } from "../Helpers";
 
-export module BugBashItemCommentActions {
+export module BugBashItemActions {
     export async function initializeItems(bugBashId: string) {
         if (StoresHub.bugBashItemStore.isLoaded(bugBashId)) {
             BugBashItemActionsCreator.InitializeItems.invoke(null);

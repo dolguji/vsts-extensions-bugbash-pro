@@ -2,11 +2,11 @@ import * as React from "react";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { RichEditor, IRichEditorProps } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { SettingsStore } from "../Stores/SettingsStore";
+import { SettingsActions } from "../Actions/SettingsActions";
 
 import "../PasteImagePlugin";
 
@@ -15,8 +15,8 @@ interface IRichComponentState extends IBaseComponentState {
 }
 
 export class RichEditorComponent extends BaseComponent<IRichEditorProps, IRichComponentState> {
-    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [SettingsStore];
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.settingsStore];
     }
 
     protected initializeState() {
@@ -25,14 +25,15 @@ export class RichEditorComponent extends BaseComponent<IRichEditorProps, IRichCo
         };
     }
 
-    protected initialize(): void {
-        StoresHub.settingsStore.initialize();
+    public componentDidMount(): void {
+        super.componentDidMount();
+        SettingsActions.initializeBugBashSettings();
     }
 
-    protected onStoreChanged() {                
-        this.updateState({
-            loading: !StoresHub.settingsStore.isLoaded()
-        });
+    protected getStoresState(): IRichComponentState {                
+        return {
+            loading: StoresHub.settingsStore.isLoading()
+        };
     }
 
     public render(): JSX.Element {

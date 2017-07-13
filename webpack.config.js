@@ -8,8 +8,7 @@ module.exports = {
     entry: {
         App: "./scripts/App.tsx",
         AllBugBashesView: "./scripts/Components/AllBugBashesView.tsx",
-        NewBugBashView: "./scripts/Components/NewBugBashView.tsx",
-        EditBugBashView: "./scripts/Components/EditBugBashView.tsx",
+        BugBashEditor: "./scripts/Components/BugBashEditor.tsx",
         BugBashResultsView: "./scripts/Components/BugBashResultsView.tsx",
         BugBashResultsAnalytics: "./scripts/Components/BugBashResultsAnalytics.tsx",
         SettingsPanel: "./scripts/Components/SettingsPanel.tsx"
@@ -74,7 +73,6 @@ module.exports = {
             { from: "./node_modules/requirejs/require.js", to: "scripts/libs/require.js" },
 
             { from: "./node_modules/trumbowyg/dist/ui/icons.svg", to: "css/libs/icons.svg" },
-            { from: "./node_modules/office-ui-fabric-react/dist/css/fabric.min.css", to: "css/libs/fabric.min.css" },
             
             { from: "./img", to: "img" },
             { from: "./index.html", to: "./" },

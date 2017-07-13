@@ -7,7 +7,7 @@ import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionC
 import { StoreFactory } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
 
-import { IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
+import { IBugBash, IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {
@@ -72,6 +72,25 @@ export async function updateWorkItem(workItemId: number, fieldValues: IDictionar
     }
 
     return await WitClient.getClient().updateWorkItem(patchDocument, workItemId);
+}
+
+export class BugBashHelpers {
+    public static getNewModel(): IBugBash {
+        return {
+            id: "",
+            title: "",
+            __etag: 0,
+            projectId: VSS.getWebContext().project.id,
+            workItemType: "",
+            itemDescriptionField: "",
+            autoAccept: false,
+            description: "",
+            acceptTemplate: {
+                team: VSS.getWebContext().team.id,
+                templateId: ""
+            }
+        };
+    }
 }
 
 export class BugBashItemHelpers {

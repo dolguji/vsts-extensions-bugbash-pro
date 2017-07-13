@@ -13,7 +13,7 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import { VersionControlChangeType, ItemContentType } from "TFS/VersionControl/Contracts";
@@ -26,9 +26,8 @@ import { WebApiTeam } from "TFS/Core/Contracts";
 import { RichEditorComponent } from "./RichEditorComponent";
 import { confirmAction, buildGitPush, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemComment, IBugBashItemViewModel, IAcceptedItemViewModel } from "../Interfaces";
-import { BugBashItemManager } from "../BugBashItemManager";
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
+import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     viewModel: IBugBashItemViewModel;
@@ -55,23 +54,26 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         this._imagePastedHandler = Utils_Core.delegate(this, this._onImagePaste);
     }
 
-    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashItemCommentStore];
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.bugBashItemCommentStore, StoresHub.bugBashItemStore];
     }
 
-    protected initialize(): void {
+    public componentDidMount(): void {
+        super.componentDidMount();
+
         $(window).off("imagepasted", this._imagePastedHandler);
         $(window).on("imagepasted", this._imagePastedHandler);
 
         if (this.props.viewModel.model.id) {
-            StoresHub.bugBashItemCommentStore.ensureComments(this.props.viewModel.model.id);
+            //StoresHub.bugBashItemCommentStore.ensureComments(this.props.viewModel.model.id);
+            BugBashItemCommentActions.initializeComments(this.props.viewModel.model.id);
         } 
     }
 
-    protected onStoreChanged() {
-        this.updateState({
+    protected getStatesStore(): IBugBashItemEditorState {
+        return {
             comments: StoresHub.bugBashItemCommentStore.getItem(this.props.viewModel.model.id)
-        });
+        };
     }  
 
     protected initializeState() {
@@ -96,9 +98,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 }
             }, () => {
                 if (nextProps.viewModel.model.id) {
-                    StoresHub.bugBashItemCommentStore.ensureComments(nextProps.viewModel.model.id);
+                    BugBashItemCommentActions.initializeComments(this.props.viewModel.model.id);
                 }
-            });                    
+            });
         }
     }
 
@@ -289,20 +291,20 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 let updatedModel: IBugBashItem;
 
                 try {
-                    updatedModel = await BugBashItemManager.saveItem(this.state.viewModel.model);
+                    // updatedModel = await BugBashItemManager.saveItem(this.state.viewModel.model);
 
-                    if (newComment && newComment.trim() !== "") {
-                        // add comment
-                        StoresHub.bugBashItemCommentStore.addCommentItem(updatedModel.id, newComment);
-                    }
-                    else if (isNew) {
-                        StoresHub.bugBashItemCommentStore.ensureComments(updatedModel.id);
-                    }
+                    // if (newComment && newComment.trim() !== "") {
+                    //     // add comment
+                    //     StoresHub.bugBashItemCommentStore.addCommentItem(updatedModel.id, newComment);
+                    // }
+                    // else if (isNew) {
+                    //     StoresHub.bugBashItemCommentStore.ensureComments(updatedModel.id);
+                    // }
                     
-                    this.updateState({error: null, disableToolbar: false,
-                        viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
-                    });
-                    this.props.onItemUpdate(updatedModel);
+                    // this.updateState({error: null, disableToolbar: false,
+                    //     viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
+                    // });
+                    // this.props.onItemUpdate(updatedModel);
                 }
                 catch (e) {
                     this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
@@ -315,10 +317,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         this.updateState({disableToolbar: true});
         
         try {
-            const result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
-            this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : result.error || "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
+            //const result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
+            //this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : result.error || "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
 
-            this.props.onItemAccept(result.model, result.workItem);
+            //this.props.onItemAccept(result.model, result.workItem);
         }
         catch (e) {
             this.updateState({disableToolbar: false, error: e.message || e});
@@ -348,17 +350,17 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         const id = this.state.viewModel.model.id;
                         const bugBashId = this.state.viewModel.model.bugBashId;
 
-                        this.updateState({viewModel: null});                        
-                        newModel = await BugBashItemManager.getItem(id, bugBashId);
-                        if (newModel) {
-                            this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
-                            this.props.onItemUpdate(newModel);
+                        // this.updateState({viewModel: null});                        
+                        // newModel = await BugBashItemManager.getItem(id, bugBashId);
+                        // if (newModel) {
+                        //     this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
+                        //     this.props.onItemUpdate(newModel);
 
-                            StoresHub.bugBashItemCommentStore.refreshComments(id);
-                        }
-                        else {
-                            this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
-                        }
+                        //     StoresHub.bugBashItemCommentStore.refreshComments(id);
+                        // }
+                        // else {
+                        //     this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
+                        // }
                     }
                     else {
                         this.updateState({disableToolbar: false});                    

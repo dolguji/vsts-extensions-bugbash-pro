@@ -5,7 +5,8 @@ import { GitRepository } from "TFS/VersionControl/Contracts";
 import Utils_String = require("VSS/Utils/String");
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { GitRepoActions } from "VSTS_Extension/Flux/Actions/GitRepoActions";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
 
@@ -15,38 +16,41 @@ import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown
 import { PrimaryButton } from "OfficeFabric/Button";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { SettingsStore } from "../Stores/SettingsStore";
-import { GitRepoStore } from "../Stores/GitRepoStore";
 import { Settings } from "../Interfaces";
+import { SettingsActions } from "../Actions/SettingsActions";
 
 interface ISettingsPanelState extends IBaseComponentState {
     loading?: boolean;
     origSettings?: Settings;
     newSettings?: Settings;
+    gitRepos?: GitRepository[];
 }
 
 export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsPanelState> {
-    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [SettingsStore, GitRepoStore];
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.settingsStore, StoresHub.gitRepoStore];
     }
 
     protected initializeState() {
         this.state = {
-            loading: true
+            loading: true,
+            gitRepos: []
         };
     }
 
-    protected initialize(): void {
-        StoresHub.settingsStore.initialize();
-        StoresHub.gitRepoStore.initialize();
+    public componentDidMount() {
+        super.componentDidMount();
+        SettingsActions.initializeBugBashSettings();
+        GitRepoActions.initializeGitRepos();
     }
 
-    protected onStoreChanged() {                
-        this.updateState({
+    protected getStoresState(): ISettingsPanelState {
+        return {
             newSettings: {...StoresHub.settingsStore.getAll()},
             origSettings: {...StoresHub.settingsStore.getAll()},
-            loading: !StoresHub.settingsStore.isLoaded() || !StoresHub.gitRepoStore.isLoaded()
-        });
+            gitRepos: StoresHub.gitRepoStore.getAll(),
+            loading: StoresHub.settingsStore.isLoading() || StoresHub.gitRepoStore.isLoading()
+        };
     }
 
     public render(): JSX.Element {
@@ -54,7 +58,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
             return <Loading />;
         }
         else {
-            let gitDropdownOptions = StoresHub.gitRepoStore.getAll().map((repo: GitRepository, index: number) => {
+            let gitDropdownOptions = this.state.gitRepos.map((repo: GitRepository, index: number) => {
                 return {
                     key: repo.id,
                     index: index,
@@ -103,7 +107,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
     @autobind
     private async _onSaveClick(): Promise<void> {
         if (this._isSettingsDirty()) {
-            StoresHub.settingsStore.updateSettings(this.state.newSettings);
+            SettingsActions.updateBugBashSettings(this.state.newSettings);
         }        
     }
 }

@@ -41,6 +41,23 @@ export module BugBashActions {
         }
     } 
 
+    export async function refreshBugBash(bugBashId: string) {
+        if (!StoresHub.bugBashStore.isLoading(bugBashId)) {
+            StoresHub.bugBashStore.setLoading(true, bugBashId);
+
+            let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
+            if (bugBash) {
+                translateDates(bugBash);
+                BugBashActionsCreator.RefreshBugBash.invoke(bugBash);
+                StoresHub.bugBashStore.setLoading(false, bugBashId);
+            }
+            else {
+                StoresHub.bugBashStore.setLoading(false, bugBashId);
+                throw "This instance of bug bash does not exist.";
+            }
+        }
+    } 
+
     export async function refreshAllBugBashes() {
         if (!StoresHub.bugBashStore.isLoading()) {
             StoresHub.bugBashStore.setLoading(true);
@@ -55,7 +72,7 @@ export module BugBashActions {
         }
     }
 
-    export async function updateBugBash(bugBash: IBugBash) {
+    export async function updateBugBash(bugBash: IBugBash): Promise<IBugBash> {
         if (!StoresHub.bugBashStore.isLoading(bugBash.id)) {
             StoresHub.bugBashStore.setLoading(true, bugBash.id);
 
@@ -65,6 +82,8 @@ export module BugBashActions {
                 
                 BugBashActionsCreator.UpdateBugBash.invoke(savedBugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBash.id);
+
+                return savedBugBash;
             }
             catch (e) {
                 StoresHub.bugBashStore.setLoading(false, bugBash.id);
@@ -73,8 +92,10 @@ export module BugBashActions {
         }
     }
 
-    export async function createBugBash(bugBash: IBugBash) {
+    export async function createBugBash(bugBash: IBugBash): Promise<IBugBash> {
         if (!StoresHub.bugBashStore.isLoading()) {
+            StoresHub.bugBashStore.setLoading(true);
+
             try {
                 let model = {...bugBash};
                 model.id = Date.now().toString();
@@ -83,8 +104,11 @@ export module BugBashActions {
                 translateDates(savedBugBash);            
                 
                 BugBashActionsCreator.CreateBugBash.invoke(savedBugBash);
+                StoresHub.bugBashStore.setLoading(false);
+                return savedBugBash;
             }
             catch (e) {
+                StoresHub.bugBashStore.setLoading(false);
                 throw e.message;
             }
         }

@@ -12,7 +12,7 @@ import { Panel, PanelType } from "OfficeFabric/Panel";
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
@@ -23,7 +23,7 @@ import Context = require("VSS/Context");
 import { UrlActions } from "../Constants";
 import { IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashStore } from "../Stores/BugBashStore";
+import { BugBashActions } from "../Actions/BugBashActions";
 
 interface IAllBugBashesViewState extends IBaseComponentState {
     loading?: boolean,
@@ -35,8 +35,8 @@ interface IAllBugBashesViewState extends IBaseComponentState {
 }
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
-    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashStore];
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.bugBashStore];
     }
 
     protected initializeState() {
@@ -49,22 +49,23 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         };
     }
 
-    protected initialize(): void {
-        StoresHub.bugBashStore.initialize();
+    public componentDidMount() {
+        super.componentDidMount();
+        BugBashActions.initializeAllBugBashes(); 
     }
 
-    protected onStoreChanged() {        
+    protected getStoresState(): IAllBugBashesViewState {        
         let allItems = StoresHub.bugBashStore.getAll() || [];
         let currentTime = new Date();
         allItems = allItems.filter((item: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, item.projectId, true));
         
-        this.updateState({
+        return {
             allItems: allItems,
             pastItems: this._getPastBugBashes(allItems, currentTime),
             currentItems: this._getCurrentBugBashes(allItems, currentTime),
             upcomingItems: this._getUpcomingBugBashes(allItems, currentTime),
-            loading: StoresHub.bugBashStore.isLoaded() ? false : true
-        });
+            loading: StoresHub.bugBashStore.isLoading()
+        };
     }
 
     public render(): JSX.Element {
@@ -144,9 +145,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             {
                 key: "refresh", name: "Refresh", title: "Refresh list", iconProps: {iconName: "Refresh"},
                 onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                    this.updateState({loading: true});
-                    await StoresHub.bugBashStore.refreshItems();
-                    this.updateState({loading: false});
+                    BugBashActions.refreshAllBugBashes();
                 }
             },
             {

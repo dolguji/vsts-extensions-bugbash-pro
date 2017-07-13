@@ -20,8 +20,11 @@ import { CommandBar } from "OfficeFabric/CommandBar";
 
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Stores/BaseStore";
-import { WorkItemFieldStore } from "VSTS_Extension/Stores/WorkItemFieldStore";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { WorkItemFieldStore } from "VSTS_Extension/Flux/Stores/WorkItemFieldStore";
+import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
+import { WorkItemFieldActions } from "VSTS_Extension/Flux/Actions/WorkItemFieldActions";
+import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
 import { WorkItemGrid } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid";
@@ -34,12 +37,10 @@ import SplitterLayout from "rc-split-layout";
 import { UrlActions } from "../Constants";
 import { IBugBash, IBugBashItem, IBugBashItemViewModel } from "../Interfaces";
 import { confirmAction, BugBashItemHelpers } from "../Helpers";
-import { BugBashItemManager } from "../BugBashItemManager";
 import { BugBashItemEditor } from "./BugBashItemEditor";
-import { BugBashStore } from "../Stores/BugBashStore";
-import { TeamStore } from "../Stores/TeamStore";
 import { StoresHub } from "../Stores/StoresHub";
-
+import { BugBashActions } from "../Actions/BugBashActions";
+import { BugBashItemActions } from "../Actions/BugBashItemActions";
 
 interface IBugBashResultsViewState extends IBaseComponentState {
     bugBashItem?: IBugBash;
@@ -64,8 +65,8 @@ enum SelectedPivot {
 export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, IBugBashResultsViewState> {
     private _itemInvokedTimeout: any;
 
-    protected getStoresToLoad(): {new (): BaseStore<any, any, any>}[] {
-        return [BugBashStore, WorkItemFieldStore, TeamStore];
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.bugBashStore, StoresHub.workItemFieldStore, StoresHub.teamStore];
     }
 
     protected initializeState() {
@@ -79,10 +80,16 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
         };
     }
 
-    protected async initialize() {            
-        const found = await StoresHub.bugBashStore.ensureItem(this.props.id);
+    public componentDidMount() {
+        super.componentDidMount();
+        this._initialize();
+    }
 
-        if (!found) {
+    private async _initialize() {
+        try {
+            await BugBashActions.initializeBugBash(this.props.id);
+        }
+        catch (e) {
             this.updateState({
                 bugBashItem: null,
                 viewModels: [],
@@ -90,17 +97,16 @@ export class BugBashResultsView extends BaseComponent<IBugBashResultsViewProps, 
                 bugBashItemDoesntExist: true
             });
         }
-        else {
-            StoresHub.teamStore.initialize();
-            StoresHub.workItemFieldStore.initialize();
-            this._refreshData();
-        }
+
+        TeamActions.initializeTeams();
+        WorkItemFieldActions.initializeWorkItemFields();
+        this._refreshData();        
     }   
 
     private async _refreshData() {
         this.updateState({workItemsMap: null, viewModels: null, selectedViewModel: null});
 
-        let items = await BugBashItemManager.getItems(this.props.id);
+        let items = [] //await BugBashItemManager.getItems(this.props.id);
         const workItemIds = items.filter(item => BugBashItemHelpers.isAccepted(item)).map(item => item.workItemId);
 
         if (workItemIds.length > 0) {

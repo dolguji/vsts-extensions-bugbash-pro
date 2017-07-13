@@ -6,6 +6,16 @@ import { IBugBash } from "../Interfaces";
 import { BugBashActionsCreator } from "../Actions/ActionsCreator";
 
 export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
+    private _allLoaded: boolean = false;
+
+    public isLoaded(key?: string): boolean {
+        if (key) {
+            return super.isLoaded();
+        }
+        
+        return this._allLoaded && super.isLoaded();
+    }
+
     public getItem(id: string): IBugBash {
          return Utils_Array.first(this.items || [], (item: IBugBash) => Utils_String.equals(item.id, id, true));
     }
@@ -15,7 +25,7 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             if (bugBashes) {
                 this.items = bugBashes;
             }
-
+            this._allLoaded = true;
             this.emitChanged();
         }); 
 
@@ -30,7 +40,12 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             }
 
             this.emitChanged();
-        });  
+        }); 
+        
+        BugBashActionsCreator.RefreshBugBash.addListener((bugBash: IBugBash) => {
+            this._addItem(bugBash);
+            this.emitChanged();
+        }); 
 
         BugBashActionsCreator.CreateBugBash.addListener((bugBash: IBugBash) => {
             this._addItem(bugBash);

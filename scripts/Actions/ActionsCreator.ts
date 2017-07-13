@@ -10,6 +10,7 @@ export module SettingsActionsCreator {
 export module BugBashActionsCreator {
     export var InitializeAllBugBashes = new Action<IBugBash[]>();
     export var InitializeBugBash = new Action<IBugBash>();
+    export var RefreshBugBash = new Action<IBugBash>();
     export var RefreshAllBugBashes = new Action<IBugBash[]>();
     export var UpdateBugBash = new Action<IBugBash>();
     export var DeleteBugBash = new Action<IBugBash>();
