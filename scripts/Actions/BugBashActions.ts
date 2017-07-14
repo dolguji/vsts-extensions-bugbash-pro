@@ -52,6 +52,7 @@ export module BugBashActions {
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
             }
             else {
+                BugBashActionsCreator.DeleteBugBash.invoke(bugBashId);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
                 throw "This instance of bug bash does not exist.";
             }
@@ -87,7 +88,7 @@ export module BugBashActions {
             }
             catch (e) {
                 StoresHub.bugBashStore.setLoading(false, bugBash.id);
-                throw "This bug bash instance has been modified by some one else. Please refresh the page to get the latest version and try updating it again.";
+                throw "This bug bash instance has been modified by some one else. Please refresh the instance to get the latest version and try updating it again.";
             }
         }
     }
@@ -114,19 +115,19 @@ export module BugBashActions {
         }
     }
 
-    export async function deleteBugBash(bugBash: IBugBash) {
-        if (!StoresHub.bugBashStore.isLoading(bugBash.id)) {
-            StoresHub.bugBashStore.setLoading(true, bugBash.id);
+    export async function deleteBugBash(bugBashId: string) {
+        if (!StoresHub.bugBashStore.isLoading(bugBashId)) {
+            StoresHub.bugBashStore.setLoading(true, bugBashId);
 
             try {            
-                await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBash.id, false);                
+                await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBashId, false);                
             }
             catch (e) {
                 // eat exception
             }
 
-            BugBashActionsCreator.DeleteBugBash.invoke(bugBash);
-            StoresHub.bugBashStore.setLoading(false, bugBash.id);
+            BugBashActionsCreator.DeleteBugBash.invoke(bugBashId);
+            StoresHub.bugBashStore.setLoading(false, bugBashId);
         }
     }
 

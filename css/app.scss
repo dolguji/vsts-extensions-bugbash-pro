@@ -12,7 +12,11 @@
 
     .fabric-container {
         height: 100%;
-    }
+
+        .loading-overlay {
+            z-index: 10002;
+        }
+    }    
 }
 
 .callout-container {

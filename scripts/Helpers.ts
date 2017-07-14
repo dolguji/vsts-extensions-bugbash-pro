@@ -119,27 +119,10 @@ export class BugBashItemHelpers {
         };
     }
 
-    public static deepCopy(model: IBugBashItem): IBugBashItem {
-        return {
-            id: model.id,
-            bugBashId: model.bugBashId,
-            __etag: model.__etag,
-            title: model.title,
-            teamId: model.teamId,
-            description: model.description,
-            workItemId: model.workItemId,
-            createdDate: model.createdDate,
-            createdBy: model.createdBy,
-            rejected: model.rejected,
-            rejectReason: model.rejectReason,
-            rejectedBy: model.rejectedBy
-        }    
-    }
-
     public static getItemViewModel(model: IBugBashItem): IBugBashItemViewModel {
         return {
-            model: this.deepCopy(model),
-            originalModel: this.deepCopy(model),
+            model: {...model},
+            originalModel: {...model},
             newComment: ""
         }
     }

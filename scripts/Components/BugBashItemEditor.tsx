@@ -80,8 +80,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         this.state = {            
             comments: this.props.viewModel.model.id ? null : [],
             viewModel: {
-                model: BugBashItemHelpers.deepCopy(this.props.viewModel.model),
-                originalModel: BugBashItemHelpers.deepCopy(this.props.viewModel.originalModel),
+                model: {...this.props.viewModel.model},
+                originalModel: {...this.props.viewModel.originalModel},
                 newComment: this.props.viewModel.newComment
             }
         };
@@ -93,8 +93,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 comments: nextProps.viewModel.model.id ? null : [],
                 viewModel: {
                     newComment: nextProps.viewModel.newComment,
-                    model: BugBashItemHelpers.deepCopy(nextProps.viewModel.model),
-                    originalModel: BugBashItemHelpers.deepCopy(nextProps.viewModel.originalModel)
+                    model: {...nextProps.viewModel.model},
+                    originalModel: {...nextProps.viewModel.originalModel}
                 }
             }, () => {
                 if (nextProps.viewModel.model.id) {
@@ -267,7 +267,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     @autobind
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
-        if (e.ctrlKey && e.key === "s") {
+        if (e.ctrlKey && e.keyCode === 83) {
             e.preventDefault();
             this._saveItem();
         }
@@ -377,7 +377,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                     const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
                     if (confirm) {
                         let newViewModel = {...this.state.viewModel};
-                        newViewModel.model = BugBashItemHelpers.deepCopy(newViewModel.originalModel);
+                        newViewModel.model = {...newViewModel.originalModel};
                         newViewModel.newComment = "";
                         this.updateState({viewModel: newViewModel, disableToolbar: false, error: null});
                         this.props.onItemUpdate(newViewModel.model);

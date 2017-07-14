@@ -52,8 +52,8 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.emitChanged();
         });  
 
-        BugBashActionsCreator.DeleteBugBash.addListener((bugBash: IBugBash) => {
-            this._removeItem(bugBash);
+        BugBashActionsCreator.DeleteBugBash.addListener((bugBashId: string) => {
+            this._removeItem(bugBashId);
             this.emitChanged();
         });
 
@@ -90,12 +90,12 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         }
     }
 
-    private _removeItem(item: IBugBash): void {
-        if (!item || this.items == null || this.items.length === 0) {
+    private _removeItem(itemId: string): void {
+        if (!itemId || this.items == null || this.items.length === 0) {
             return;
         }
 
-        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(item.id, existingItem.id, true));
+        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(itemId, existingItem.id, true));
 
         if (existingItemIndex !== -1) {
             this.items.splice(existingItemIndex, 1);

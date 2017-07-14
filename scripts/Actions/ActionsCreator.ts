@@ -13,7 +13,7 @@ export module BugBashActionsCreator {
     export var RefreshBugBash = new Action<IBugBash>();
     export var RefreshAllBugBashes = new Action<IBugBash[]>();
     export var UpdateBugBash = new Action<IBugBash>();
-    export var DeleteBugBash = new Action<IBugBash>();
+    export var DeleteBugBash = new Action<string>();
     export var CreateBugBash = new Action<IBugBash>();
 }
 

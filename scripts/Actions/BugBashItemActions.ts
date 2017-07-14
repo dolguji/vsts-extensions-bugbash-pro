@@ -98,7 +98,7 @@ export module BugBashItemActions {
     export async function createBugBashItem(bugBashId: string, bugBashItem: IBugBashItem) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             try {
-                let cloneModel = BugBashItemHelpers.deepCopy(bugBashItem);
+                let cloneModel = {...bugBashItem};
                 cloneModel.id = `${bugBashId}_${Date.now().toString()}`;
                 cloneModel.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
                 cloneModel.createdDate = new Date(Date.now());
