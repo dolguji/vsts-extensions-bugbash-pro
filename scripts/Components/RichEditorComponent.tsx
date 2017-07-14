@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
+import { BaseComponent, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { RichEditor, IRichEditorProps } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";

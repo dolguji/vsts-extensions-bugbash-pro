@@ -37,20 +37,20 @@ export module BugBashItemCommentActions {
         }
     }
 
-    export async function createComment(bugBashItemId: string, comment: string) {
+    export async function createComment(bugBashItemId: string, commentString: string) {
         if (!StoresHub.bugBashItemCommentStore.isLoading(bugBashItemId)) {
             StoresHub.bugBashItemCommentStore.setLoading(true, bugBashItemId);
 
             try {
-                let commentModel: IBugBashItemComment = {
+                let bugBashItemComment: IBugBashItemComment = {
                     id: `${bugBashItemId}_${Date.now().toString()}`,
                     __etag: 0,
                     createdBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
                     createdDate: new Date(Date.now()),
-                    content: comment
+                    content: commentString
                 };
 
-                const savedComment = await ExtensionDataManager.createDocument<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), commentModel, false);
+                const savedComment = await ExtensionDataManager.createDocument<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), bugBashItemComment, false);
                 translateDates(savedComment);
                                 
                 BugBashItemCommentActionsCreator.CreateComment.invoke({bugBashItemId: bugBashItemId, comment: savedComment});
@@ -63,17 +63,17 @@ export module BugBashItemCommentActions {
         }
     }
 
-    function getBugBashItemCollectionKey(itemId: string): string {
-        return `BugBashItemCollection_${itemId}`;
+    function getBugBashItemCollectionKey(bugBashItemId: string): string {
+        return `BugBashItemCollection_${bugBashItemId}`;
     }
 
-    function translateDates(model: IBugBashItemComment) {
-        if (typeof model.createdDate === "string") {
-            if ((model.createdDate as string).trim() === "") {
-                model.createdDate = undefined;
+    function translateDates(bugBashItemComment: IBugBashItemComment) {
+        if (typeof bugBashItemComment.createdDate === "string") {
+            if ((bugBashItemComment.createdDate as string).trim() === "") {
+                bugBashItemComment.createdDate = undefined;
             }
             else {
-                model.createdDate = new Date(model.createdDate);
+                bugBashItemComment.createdDate = new Date(bugBashItemComment.createdDate);
             }
         }
     }

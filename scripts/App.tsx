@@ -21,13 +21,15 @@ export enum HubViewMode {
 }
 
 export interface IHubState extends IBaseComponentState {
-    hubViewMode?: HubViewMode;
-    id?: string;
+    hubViewMode: HubViewMode;
+    bugBashId?: string;
 }
 
 export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
     protected initializeState(): void {
-        this.state = {};
+        this.state = {
+            hubViewMode: null
+        };
     }
 
     public componentDidMount() { 
@@ -60,14 +62,14 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
                 case HubViewMode.Edit:
                     view = <LazyLoad module="scripts/EditBugBashView">
                             {(EditBugBashView) => (
-                                <EditBugBashView.EditBugBashView id={this.state.id} />
+                                <EditBugBashView.EditBugBashView id={this.state.bugBashId} />
                             )}
                         </LazyLoad>;
                     break;
                 case HubViewMode.View:
                     view = <LazyLoad module="scripts/BugBashResultsView">
                             {(BugBashResultsView) => (
-                                <BugBashResultsView.BugBashResultsView id={this.state.id} />
+                                <BugBashResultsView.BugBashResultsView id={this.state.bugBashId} />
                             )}
                         </LazyLoad>;
                     break;
@@ -110,14 +112,14 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         navigationService.attachNavigate(UrlActions.ACTION_EDIT, async () => {
             const state = await navigationService.getCurrentState();
             if (state.id) {
-                this.updateState({ hubViewMode: HubViewMode.Edit, id: state.id });
+                this.updateState({ hubViewMode: HubViewMode.Edit, bugBashId: state.id });
             }
         }, true);
 
         navigationService.attachNavigate(UrlActions.ACTION_VIEW, async () => {
             const state = await navigationService.getCurrentState();
             if (state.id) {
-                this.updateState({ hubViewMode: HubViewMode.View, id: state.id });
+                this.updateState({ hubViewMode: HubViewMode.View, bugBashId: state.id });
             }
         }, true);
     }

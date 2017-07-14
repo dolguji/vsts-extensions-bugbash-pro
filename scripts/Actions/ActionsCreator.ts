@@ -24,10 +24,11 @@ export module BugBashItemCommentActionsCreator {
 }
 
 export module BugBashItemActionsCreator {
-    export var InitializeItems = new Action<{bugBashId: string, bugBashItems: IBugBashItem[]}>();
-    export var RefreshItems = new Action<{bugBashId: string, bugBashItems: IBugBashItem[]}>();
-    export var RefreshItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-    export var CreateItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-    export var UpdateItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-    export var AcceptItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
+    export var InitializeBugBashItems = new Action<{bugBashId: string, bugBashItems: IBugBashItem[]}>();
+    export var RefreshBugBashItems = new Action<{bugBashId: string, bugBashItems: IBugBashItem[]}>();
+    export var RefreshBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
+    export var CreateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
+    export var UpdateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
+    export var DeleteBugBashItem = new Action<{bugBashId: string, bugBashItemId: string}>();
+    export var AcceptBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
 }

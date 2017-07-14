@@ -21,20 +21,20 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
     }
 
     public getBugBashItem(bugBashId: string, bugBashItemId: string): IBugBashItem {
-         const items = this.getBugBashItems(bugBashItemId);
-         if (items) {
-            return Utils_Array.first(items, (item: IBugBashItem) => Utils_String.equals(item.id, bugBashItemId, true));
+         const bugBashItems = this.getBugBashItems(bugBashId);
+         if (bugBashItems) {
+            return Utils_Array.first(bugBashItems, (bugBashItem: IBugBashItem) => Utils_String.equals(bugBashItem.id, bugBashItemId, true));
          }
          
          return null;
     }
 
-    public getBugBashItems(bugBashItemId: string): IBugBashItem[] {
-         return this.items[bugBashItemId.toLowerCase()] || null;
+    public getBugBashItems(bugBashId: string): IBugBashItem[] {
+         return this.items[bugBashId.toLowerCase()] || null;
     }
 
     protected initializeActionListeners() {
-        BugBashItemActionsCreator.InitializeItems.addListener((bugBashItems: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
+        BugBashItemActionsCreator.InitializeBugBashItems.addListener((bugBashItems: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
             if (bugBashItems) {
                 this.items[bugBashItems.bugBashId.toLowerCase()] = bugBashItems.bugBashItems;
             }
@@ -42,28 +42,33 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.RefreshItems.addListener((bugBashItems: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
+        BugBashItemActionsCreator.RefreshBugBashItems.addListener((bugBashItems: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
             this.items[bugBashItems.bugBashId.toLowerCase()] = bugBashItems.bugBashItems;
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.RefreshItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.RefreshBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.CreateItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.CreateBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.UpdateItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.UpdateBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.AcceptItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.DeleteBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItemId: string}) => {
+            this._removeBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItemId);
+            this.emitChanged();
+        });
+
+        BugBashItemActionsCreator.AcceptBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
             this.emitChanged();
         });
     } 
@@ -76,7 +81,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
         return key;
     }
 
-    private _addItem(bugBashId: string, bugBashItem: IBugBashItem): void {
+    private _addBugBashItem(bugBashId: string, bugBashItem: IBugBashItem): void {
         if (!bugBashItem) {
             return;
         }
@@ -85,25 +90,24 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
             this.items[bugBashId.toLowerCase()] = [];
         }
 
-        const existingItemIndex = Utils_Array.findIndex(this.items[bugBashId.toLowerCase()], (existingItem: IBugBashItem) => Utils_String.equals(bugBashItem.id, existingItem.id, true));
-        if (existingItemIndex !== -1) {
-            // Overwrite the item data
-            this.items[bugBashId.toLowerCase()][existingItemIndex] = bugBashItem;
+        const existingBugBashItemIndex = Utils_Array.findIndex(this.items[bugBashId.toLowerCase()], (existingBugBashItem: IBugBashItem) => Utils_String.equals(bugBashItem.id, existingBugBashItem.id, true));
+        if (existingBugBashItemIndex !== -1) {
+            this.items[bugBashId.toLowerCase()][existingBugBashItemIndex] = bugBashItem;
         }
         else {
             this.items[bugBashId.toLowerCase()].push(bugBashItem);
         }
     }
 
-    private _removeItem(bugBashId: string, bugBashItem: IBugBashItem): void {
-        if (!bugBashItem || this.items[bugBashId.toLowerCase()] == null || this.items[bugBashId.toLowerCase()].length === 0) {
+    private _removeBugBashItem(bugBashId: string, bugBashItemId: string): void {
+        if (!bugBashItemId || this.items[bugBashId.toLowerCase()] == null || this.items[bugBashId.toLowerCase()].length === 0) {
             return;
         }
 
-        const existingItemIndex = Utils_Array.findIndex(this.items[bugBashId.toLowerCase()], (existingItem: IBugBashItem) => Utils_String.equals(bugBashItem.id, existingItem.id, true));
+        const existingBugBashItemIndex = Utils_Array.findIndex(this.items[bugBashId.toLowerCase()], (existingBugBashItem: IBugBashItem) => Utils_String.equals(bugBashItemId, existingBugBashItem.id, true));
 
-        if (existingItemIndex !== -1) {
-            this.items[bugBashId.toLowerCase()].splice(existingItemIndex, 1);
+        if (existingBugBashItemIndex !== -1) {
+            this.items[bugBashId.toLowerCase()].splice(existingBugBashItemIndex, 1);
         }
     }
 }

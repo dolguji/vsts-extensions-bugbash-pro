@@ -98,10 +98,10 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true);
 
             try {
-                let model = {...bugBash};
-                model.id = Date.now().toString();
+                let cloneBugBash = {...bugBash};
+                cloneBugBash.id = Date.now().toString();
 
-                const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", model, false);
+                const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", cloneBugBash, false);
                 translateDates(savedBugBash);            
                 
                 BugBashActionsCreator.CreateBugBash.invoke(savedBugBash);
@@ -131,21 +131,21 @@ export module BugBashActions {
         }
     }
 
-    function translateDates(item: IBugBash) {
-        if (typeof item.startTime === "string") {
-            if ((item.startTime as string).trim() === "") {
-                item.startTime = undefined;
+    function translateDates(bugBash: IBugBash) {
+        if (typeof bugBash.startTime === "string") {
+            if ((bugBash.startTime as string).trim() === "") {
+                bugBash.startTime = undefined;
             }
             else {
-                item.startTime = new Date(item.startTime);
+                bugBash.startTime = new Date(bugBash.startTime);
             }
         }
-        if (typeof item.endTime === "string") {
-            if ((item.endTime as string).trim() === "") {
-                item.endTime = undefined;
+        if (typeof bugBash.endTime === "string") {
+            if ((bugBash.endTime as string).trim() === "") {
+                bugBash.endTime = undefined;
             }
             else {
-                item.endTime = new Date(item.endTime);
+                bugBash.endTime = new Date(bugBash.endTime);
             }
         }
     }  

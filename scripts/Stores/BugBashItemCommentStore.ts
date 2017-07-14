@@ -1,6 +1,3 @@
-import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
-
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBashItemComment } from "../Interfaces";
 import { BugBashItemCommentActionsCreator } from "../Actions/ActionsCreator";

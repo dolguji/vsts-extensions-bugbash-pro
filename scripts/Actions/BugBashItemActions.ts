@@ -13,23 +13,23 @@ import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemStore } from "../Stores/BugBashItemStore";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
-import { IBugBashItem, IBugBash, IBugBashItemComment, IAcceptedItemViewModel } from "../Interfaces";
+import { IBugBashItem, IBugBash, IBugBashItemComment, IAcceptedBugBashItemViewModel } from "../Interfaces";
 import { createWorkItem, updateWorkItem, BugBashItemHelpers } from "../Helpers";
 
 export module BugBashItemActions {
     export async function initializeItems(bugBashId: string) {
         if (StoresHub.bugBashItemStore.isLoaded(bugBashId)) {
-            BugBashItemActionsCreator.InitializeItems.invoke(null);
+            BugBashItemActionsCreator.InitializeBugBashItems.invoke(null);
         }
         else if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashId);
 
-            const items = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
-            for(let item of items) {
-                translateDates(item);
+            const bugBashItems = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
+            for(let bugBashItem of bugBashItems) {
+                translateDates(bugBashItem);
             }
             
-            BugBashItemActionsCreator.InitializeItems.invoke({bugBashId: bugBashId, bugBashItems: items});
+            BugBashItemActionsCreator.InitializeBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
         }
     } 
@@ -38,12 +38,12 @@ export module BugBashItemActions {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashId);
 
-            const items = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
-            for(let item of items) {
-                translateDates(item);
+            const bugBashItems = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
+            for(let bugBashItem of bugBashItems) {
+                translateDates(bugBashItem);
             }
             
-            BugBashItemActionsCreator.RefreshItems.invoke({bugBashId: bugBashId, bugBashItems: items});
+            BugBashItemActionsCreator.RefreshBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
         }
     } 
@@ -51,12 +51,12 @@ export module BugBashItemActions {
     export async function refreshItem(bugBashId: string, bugBashItemId: string) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItemId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashItemId);
-            const item = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), bugBashItemId, null, false);
+            const bugBashItem = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), bugBashItemId, null, false);
 
-            if (item) {
-                translateDates(item);
+            if (bugBashItem) {
+                translateDates(bugBashItem);
                 
-                BugBashItemActionsCreator.RefreshItem.invoke({bugBashId: bugBashId, bugBashItem: item});
+                BugBashItemActionsCreator.RefreshBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: bugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
             }
             else {
@@ -85,7 +85,7 @@ export module BugBashItemActions {
                 let savedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashId), bugBashItem, false);
                 translateDates(savedBugBashItem);
                 
-                BugBashItemActionsCreator.UpdateItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
+                BugBashItemActionsCreator.UpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
             }
             catch (e) {
@@ -98,19 +98,35 @@ export module BugBashItemActions {
     export async function createBugBashItem(bugBashId: string, bugBashItem: IBugBashItem) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             try {
-                let cloneModel = {...bugBashItem};
-                cloneModel.id = `${bugBashId}_${Date.now().toString()}`;
-                cloneModel.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-                cloneModel.createdDate = new Date(Date.now());
+                let cloneBugBashItem = {...bugBashItem};
+                cloneBugBashItem.id = `${bugBashId}_${Date.now().toString()}`;
+                cloneBugBashItem.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+                cloneBugBashItem.createdDate = new Date(Date.now());
                 
                 let savedBugBashItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(bugBashId), bugBashItem, false);
                 translateDates(savedBugBashItem);         
                 
-                BugBashItemActionsCreator.CreateItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
+                BugBashItemActionsCreator.CreateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
             }
             catch (e) {
                 throw e.message;
             }
+        }
+    }
+
+    export async function deleteBugBashItem(bugBashId: string, bugBashItemId: string) {
+        if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItemId)) {
+            StoresHub.bugBashItemStore.setLoading(true, bugBashItemId);
+
+            try {            
+                await ExtensionDataManager.deleteDocument<IBugBash>(getBugBashCollectionKey(bugBashId), bugBashItemId, false);                
+            }
+            catch (e) {
+                // eat exception
+            }
+
+            BugBashItemActionsCreator.DeleteBugBashItem.invoke({bugBashId: bugBashId, bugBashItemId: bugBashItemId});
+            StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
         }
     }
     
@@ -119,9 +135,9 @@ export module BugBashItemActions {
             StoresHub.bugBashItemStore.setLoading(true, bugBashItem.id);
 
             try {
-                let savedBugBashItem = await acceptItem(bugBashItem);
+                let acceptedBugBashItemViewModel = await acceptItem(bugBashItem);
                 
-                BugBashItemActionsCreator.AcceptItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem.model});
+                BugBashItemActionsCreator.AcceptBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: acceptedBugBashItemViewModel.bugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
             }
             catch (e) {
@@ -135,23 +151,23 @@ export module BugBashItemActions {
         return `BugBashCollection_${bugBashId}`;
     }
 
-    function translateDates(model: IBugBashItem) {
-        if (typeof model.createdDate === "string") {
-            if ((model.createdDate as string).trim() === "") {
-                model.createdDate = undefined;
+    function translateDates(bugBashItem: IBugBashItem) {
+        if (typeof bugBashItem.createdDate === "string") {
+            if ((bugBashItem.createdDate as string).trim() === "") {
+                bugBashItem.createdDate = undefined;
             }
             else {
-                model.createdDate = new Date(model.createdDate);
+                bugBashItem.createdDate = new Date(bugBashItem.createdDate);
             }
         }
 
-        model.teamId = model.teamId || "";
+        bugBashItem.teamId = bugBashItem.teamId || "";
     }    
 
-    async function acceptItem(model: IBugBashItem): Promise<IAcceptedItemViewModel> {
-        let updatedItem: IBugBashItem;
+    async function acceptItem(bugBashItem: IBugBashItem): Promise<IAcceptedBugBashItemViewModel> {
+        let updatedBugBashItem: IBugBashItem;
         let savedWorkItem: WorkItem;
-        const bugBash = StoresHub.bugBashStore.getItem(model.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
         // read bug bash wit template
         try {
@@ -162,25 +178,25 @@ export module BugBashItemActions {
         }
 
         try {
-            await TeamFieldActions.initializeTeamFields(updatedItem.teamId);
+            await TeamFieldActions.initializeTeamFields(updatedBugBashItem.teamId);
         }
         catch (e) {
-            throw `Cannot read team field value for team: ${updatedItem.teamId}.`;
+            throw `Cannot read team field value for team: ${updatedBugBashItem.teamId}.`;
         }
 
         try {
             // first do a empty save to check if its the latest version of the item
-            updatedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(model.bugBashId), model, false);
+            updatedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashItem.bugBashId), bugBashItem, false);
         }
         catch (e) {
             throw "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
         }
 
         const template = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
-        const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedItem.teamId);
+        const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedBugBashItem.teamId);
         let fieldValues = {...template.fields};
-        fieldValues["System.Title"] = updatedItem.title;
-        fieldValues[bugBash.itemDescriptionField] = updatedItem.description;            
+        fieldValues["System.Title"] = updatedBugBashItem.title;
+        fieldValues[bugBash.itemDescriptionField] = updatedBugBashItem.description;            
         fieldValues[teamFieldValue.field.referenceName] = teamFieldValue.defaultValue;        
 
         if (fieldValues["System.Tags-Add"]) {
@@ -195,47 +211,47 @@ export module BugBashItemActions {
             savedWorkItem = await createWorkItem(bugBash.workItemType, fieldValues);
         }
         catch (e) {
-            BugBashItemActionsCreator.UpdateItem.invoke({bugBashId: updatedItem.bugBashId, bugBashItem: updatedItem});
+            BugBashItemActionsCreator.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
             throw e.message;
         }
         
         // associate work item with bug bash item
-        updatedItem.workItemId = savedWorkItem.id;
-        updatedItem.rejected = false;
-        updatedItem.rejectedBy = "";
-        updatedItem.rejectReason = "";
-        updatedItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(updatedItem.bugBashId), updatedItem, false);
+        updatedBugBashItem.workItemId = savedWorkItem.id;
+        updatedBugBashItem.rejected = false;
+        updatedBugBashItem.rejectedBy = "";
+        updatedBugBashItem.rejectReason = "";
+        updatedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(updatedBugBashItem.bugBashId), updatedBugBashItem, false);
 
-        addExtraFieldsToWorkitem(savedWorkItem.id, updatedItem);
+        addExtraFieldsToWorkitem(savedWorkItem.id, updatedBugBashItem);
 
         return {
-            model: updatedItem,
+            bugBashItem: updatedBugBashItem,
             workItem: savedWorkItem
         };
     }
 
-    function addExtraFieldsToWorkitem(workItemId: number, model: IBugBashItem) {
+    function addExtraFieldsToWorkitem(workItemId: number, bugBashItem: IBugBashItem) {
         let fieldValues: IDictionaryStringTo<string> = {};
-        const bugBash = StoresHub.bugBashStore.getItem(model.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
-        fieldValues["System.History"] = getAcceptedItemComment(bugBash, model);
+        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItem);
 
         updateWorkItem(workItemId, fieldValues);
     }
 
-    function getAcceptedItemComment(bugBash: IBugBash, model: IBugBashItem): string {
+    function getAcceptedItemComment(bugBash: IBugBash, bugBashItem: IBugBashItem): string {
         const pageContext = Context.getPageContext();
         const navigation = pageContext.navigation;
         const webContext = VSS.getWebContext();
         const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_VIEW}&id=${bugBash.id}`;
         
-        const entity = parseUniquefiedIdentityName(model.createdBy);
+        const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
 
         let commentToSave = `
             Created from <a href='${bugBashUrl}' target='_blank'>${bugBash.title}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
 
-        let discussionComments = StoresHub.bugBashItemCommentStore.getItem(model.id);
+        let discussionComments = StoresHub.bugBashItemCommentStore.getItem(bugBashItem.id);
 
         if (discussionComments && discussionComments.length > 0) {
             discussionComments = discussionComments.slice();

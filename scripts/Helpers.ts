@@ -75,7 +75,7 @@ export async function updateWorkItem(workItemId: number, fieldValues: IDictionar
 }
 
 export class BugBashHelpers {
-    public static getNewModel(): IBugBash {
+    public static getNewBugBash(): IBugBash {
         return {
             id: "",
             title: "",
@@ -94,15 +94,15 @@ export class BugBashHelpers {
 }
 
 export class BugBashItemHelpers {
-    public static getNewItemViewModel(bugBashId: string): IBugBashItemViewModel {        
+    public static getNewBugBashItemViewModel(bugBashId: string): IBugBashItemViewModel {        
         return {
-            model: this.getNewItem(bugBashId),
-            originalModel: this.getNewItem(bugBashId),
+            bugBashItem: this.getNewBugBashItem(bugBashId),
+            originalBugBashItem: this.getNewBugBashItem(bugBashId),
             newComment: ""
         }
     }
 
-    public static getNewItem(bugBashId: string): IBugBashItem {
+    public static getNewBugBashItem(bugBashId: string): IBugBashItem {
         return {
             id: "",
             bugBashId: bugBashId,
@@ -119,43 +119,47 @@ export class BugBashItemHelpers {
         };
     }
 
-    public static getItemViewModel(model: IBugBashItem): IBugBashItemViewModel {
+    public static getBugBashItemViewModel(bugBashItem: IBugBashItem): IBugBashItemViewModel {
+        if (!bugBashItem) {
+            return null;
+        }
+
         return {
-            model: {...model},
-            originalModel: {...model},
+            bugBashItem: {...bugBashItem},
+            originalBugBashItem: {...bugBashItem},
             newComment: ""
         }
     }
 
-    public static isNew(model: IBugBashItem): boolean {
-        return !model.id;
+    public static isNew(bugBashItem: IBugBashItem): boolean {
+        return !bugBashItem.id;
     }
 
-    public static isDirty(viewModel: IBugBashItemViewModel): boolean {        
-        let isDirty = !Utils_String.equals(viewModel.model.title, viewModel.originalModel.title)
-            || !Utils_String.equals(viewModel.model.teamId, viewModel.originalModel.teamId)
-            || !Utils_String.equals(viewModel.model.description, viewModel.originalModel.description)
-            || !Utils_String.equals(viewModel.model.rejectReason, viewModel.originalModel.rejectReason)
-            || Boolean(viewModel.model.rejected) !== Boolean(viewModel.originalModel.rejected)
-            || (viewModel.newComment != null && viewModel.newComment.trim() !== "");
+    public static isDirty(bugBashItemViewModel: IBugBashItemViewModel): boolean {        
+        let isDirty = !Utils_String.equals(bugBashItemViewModel.bugBashItem.title, bugBashItemViewModel.originalBugBashItem.title)
+            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.teamId, bugBashItemViewModel.originalBugBashItem.teamId)
+            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.description, bugBashItemViewModel.originalBugBashItem.description)
+            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.rejectReason, bugBashItemViewModel.originalBugBashItem.rejectReason)
+            || Boolean(bugBashItemViewModel.bugBashItem.rejected) !== Boolean(bugBashItemViewModel.originalBugBashItem.rejected)
+            || (bugBashItemViewModel.newComment != null && bugBashItemViewModel.newComment.trim() !== "");
 
         return isDirty;
     }
 
-    public static isValid(model: IBugBashItem): boolean {
-        let dataValid = model.title.trim().length > 0 
-            && model.title.trim().length <= 256 
-            && model.teamId.trim().length > 0
-            && (!model.rejected || (model.rejectReason != null && model.rejectReason.trim().length > 0 && model.rejectReason.trim().length <= 128));
+    public static isValid(bugBashItem: IBugBashItem): boolean {
+        let dataValid = bugBashItem.title.trim().length > 0 
+            && bugBashItem.title.trim().length <= 256 
+            && bugBashItem.teamId.trim().length > 0
+            && (!bugBashItem.rejected || (bugBashItem.rejectReason != null && bugBashItem.rejectReason.trim().length > 0 && bugBashItem.rejectReason.trim().length <= 128));
 
         if (dataValid) {
-            dataValid = dataValid && StoreFactory.getInstance<TeamStore>(TeamStore).getItem(model.teamId) != null;
+            dataValid = dataValid && StoreFactory.getInstance<TeamStore>(TeamStore).getItem(bugBashItem.teamId) != null;
         }
 
         return dataValid;
     }
 
-    public static isAccepted(model: IBugBashItem): boolean {
-        return model.workItemId != null && model.workItemId > 0;
+    public static isAccepted(bugBashItem: IBugBashItem): boolean {
+        return bugBashItem.workItemId != null && bugBashItem.workItemId > 0;
     }
 }

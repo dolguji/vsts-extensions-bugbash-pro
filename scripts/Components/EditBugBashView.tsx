@@ -14,13 +14,12 @@ import Utils_String = require("VSS/Utils/String");
 
 import { IBugBash } from "../Interfaces";
 import { BugBashEditor } from "./BugBashEditor";
-import { BugBashStore } from "../Stores/BugBashStore";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 
 interface IEditBugBashViewState extends IBaseComponentState {
-    model: IBugBash;
+    bugBash: IBugBash;
     loading?: boolean;
 }
 
@@ -31,7 +30,7 @@ interface IEditBugBashViewProps extends IBaseComponentProps {
 export class EditBugBashView extends BaseComponent<IEditBugBashViewProps, IEditBugBashViewState> {
     protected initializeState() {
         this.state = {
-            model: this.props.id ? null : BugBashHelpers.getNewModel(),
+            bugBash: this.props.id ? null : BugBashHelpers.getNewBugBash(),
             loading: true
         };
     }
@@ -42,14 +41,14 @@ export class EditBugBashView extends BaseComponent<IEditBugBashViewProps, IEditB
 
     protected getStoresState(): IEditBugBashViewState {
         if (this.props.id) {
-            const model = StoresHub.bugBashStore.getItem(this.props.id);
+            const bugBash = StoresHub.bugBashStore.getItem(this.props.id);
             const loading = StoresHub.workItemTypeStore.isLoading() || StoresHub.workItemFieldStore.isLoading() || StoresHub.workItemTemplateStore.isLoading() || StoresHub.bugBashStore.isLoading(this.props.id);
             let newState = {
                 loading: loading
             } as IEditBugBashViewState;
             
             if (!loading) {
-                newState = {...newState, model: model && {...model}};
+                newState = {...newState, bugBash: bugBash && {...bugBash}};
             }
 
             return newState;
@@ -72,10 +71,10 @@ export class EditBugBashView extends BaseComponent<IEditBugBashViewProps, IEditB
 
     public componentWillReceiveProps(nextProps: Readonly<IEditBugBashViewProps>): void {
         if (nextProps.id !== this.props.id) {
-            const model: IBugBash = nextProps.id ? StoresHub.bugBashStore.getItem(nextProps.id) : BugBashHelpers.getNewModel();            
+            const bugBash: IBugBash = nextProps.id ? StoresHub.bugBashStore.getItem(nextProps.id) : BugBashHelpers.getNewBugBash();            
 
             this.updateState({
-                model: {...model},
+                bugBash: {...bugBash},
                 loading: false
             });
         }        
@@ -93,16 +92,16 @@ export class EditBugBashView extends BaseComponent<IEditBugBashViewProps, IEditB
     }
 
     public render(): JSX.Element {
-        if (!this.state.loading && !this.state.model) {
+        if (!this.state.loading && !this.state.bugBash) {
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
         }
-        else if(!this.state.loading && this.state.model && !Utils_String.equals(VSS.getWebContext().project.id, this.state.model.projectId, true)) {
+        else if(!this.state.loading && this.state.bugBash && !Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBash.projectId, true)) {
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
         }
         else {
             return <div>
                 { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay> }
-                { this.state.model && StoresHub.workItemTypeStore.isLoaded() && StoresHub.workItemFieldStore.isLoaded() && StoresHub.workItemTemplateStore.isLoaded() && <BugBashEditor model={this.state.model} /> }
+                { this.state.bugBash && StoresHub.workItemTypeStore.isLoaded() && StoresHub.workItemFieldStore.isLoaded() && StoresHub.workItemTemplateStore.isLoaded() && <BugBashEditor bugBash={this.state.bugBash} /> }
             </div>;
         }            
     }

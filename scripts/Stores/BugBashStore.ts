@@ -17,7 +17,7 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     }
 
     public getItem(id: string): IBugBash {
-         return Utils_Array.first(this.items || [], (item: IBugBash) => Utils_String.equals(item.id, id, true));
+         return Utils_Array.first(this.items || [], (bugBash: IBugBash) => Utils_String.equals(bugBash.id, id, true));
     }
 
     protected initializeActionListeners() {
@@ -36,29 +36,29 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
 
         BugBashActionsCreator.InitializeBugBash.addListener((bugBash: IBugBash) => {
             if (bugBash) {
-                this._addItem(bugBash);
+                this._addBugBash(bugBash);
             }
 
             this.emitChanged();
         }); 
         
         BugBashActionsCreator.RefreshBugBash.addListener((bugBash: IBugBash) => {
-            this._addItem(bugBash);
+            this._addBugBash(bugBash);
             this.emitChanged();
         }); 
 
         BugBashActionsCreator.CreateBugBash.addListener((bugBash: IBugBash) => {
-            this._addItem(bugBash);
+            this._addBugBash(bugBash);
             this.emitChanged();
         });  
 
         BugBashActionsCreator.DeleteBugBash.addListener((bugBashId: string) => {
-            this._removeItem(bugBashId);
+            this._removeBugBash(bugBashId);
             this.emitChanged();
         });
 
         BugBashActionsCreator.UpdateBugBash.addListener((bugBash: IBugBash) => {
-            this._addItem(bugBash);
+            this._addBugBash(bugBash);
             this.emitChanged();
         });   
     }
@@ -71,8 +71,8 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         return key;
     }    
     
-    private _addItem(item: IBugBash): void {
-        if (!item) {
+    private _addBugBash(bugBash: IBugBash): void {
+        if (!bugBash) {
             return;
         }
 
@@ -80,25 +80,24 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.items = [];
         }
 
-        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(item.id, existingItem.id, true));
-        if (existingItemIndex !== -1) {
-            // Overwrite the item data
-            this.items[existingItemIndex] = item;
+        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBash) => Utils_String.equals(bugBash.id, existingBugBash.id, true));
+        if (existingBugBashIndex !== -1) {
+            this.items[existingBugBashIndex] = bugBash;
         }
         else {
-            this.items.push(item);
+            this.items.push(bugBash);
         }
     }
 
-    private _removeItem(itemId: string): void {
-        if (!itemId || this.items == null || this.items.length === 0) {
+    private _removeBugBash(bugBashId: string): void {
+        if (!bugBashId || this.items == null || this.items.length === 0) {
             return;
         }
 
-        const existingItemIndex = Utils_Array.findIndex(this.items, (existingItem: IBugBash) => Utils_String.equals(itemId, existingItem.id, true));
+        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBash) => Utils_String.equals(bugBashId, existingBugBash.id, true));
 
-        if (existingItemIndex !== -1) {
-            this.items.splice(existingItemIndex, 1);
+        if (existingBugBashIndex !== -1) {
+            this.items.splice(existingBugBashIndex, 1);
         }
     }
 }

@@ -38,13 +38,13 @@ export interface IBugBashItemComment {
 }
 
 export interface IBugBashItemViewModel {
-    model: IBugBashItem;
-    originalModel: IBugBashItem;
+    bugBashItem: IBugBashItem;
+    originalBugBashItem: IBugBashItem;
     newComment: string;
 }
 
-export interface IAcceptedItemViewModel {
-    model: IBugBashItem;
+export interface IAcceptedBugBashItemViewModel {
+    bugBashItem: IBugBashItem;
     workItem: WorkItem;
 }
 
