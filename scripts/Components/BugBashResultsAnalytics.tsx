@@ -12,7 +12,7 @@ import { BugBashItemHelpers } from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
 
 interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {
-    itemModels: IBugBashItem[];
+    bugBashItems: IBugBashItem[];
 }
 
 const CustomizedAxisTick: React.StatelessComponent<any> =
@@ -34,7 +34,7 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
     }
 
     public render() {
-        if (this.props.itemModels.length === 0) {
+        if (this.props.bugBashItems.length === 0) {
             return <MessagePanel messageType={MessageType.Info} message="No items created yet." />;
         }
 
@@ -43,7 +43,7 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
         let teamData = [];
         let createdByData = [];
 
-        for (const model of this.props.itemModels) {
+        for (const model of this.props.bugBashItems) {
             let teamId = model.teamId;
 
             let createdBy = model.createdBy;

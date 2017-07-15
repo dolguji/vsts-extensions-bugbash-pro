@@ -180,7 +180,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         if (!e.ctrlKey) {
             e.preventDefault();
             let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-            navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, {id: bugBash.id});
+            navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: bugBash.id});
         }      
     }
 
