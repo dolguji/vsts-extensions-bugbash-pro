@@ -1,4 +1,4 @@
-import "../../css/BugBashResultsView.scss";
+import "../../css/BugBashResults.scss";
 
 import * as React from "react";
 
@@ -13,7 +13,7 @@ import { PrimaryButton } from "OfficeFabric/Button";
 import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
-import { Pivot, PivotItem } from "OfficeFabric/Pivot";
+import { Nav, INavLink, INavProps } from "OfficeFabric/Nav";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
 import { CommandBar } from "OfficeFabric/CommandBar";
@@ -32,7 +32,6 @@ import { WorkItemGrid } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkI
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 import { ColumnPosition, IExtraWorkItemGridColumn } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid.Props";
-import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
 import SplitterLayout from "rc-split-layout";
 
 import { UrlActions } from "../Constants";
@@ -154,26 +153,24 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             <div className="results-view">
                 { this.state.loading && <Overlay><Loading /></Overlay> }
                 { this.state.bugBashItemViewModels && this.state.workItemsMap && 
-                    <div className="results-container">
-                        <SplitterLayout 
-                            primaryIndex={0}
-                            primaryMinSize={550}
-                            secondaryMinSize={400}
-                            secondaryInitialSize={500}
-                            onChange={() => {
-                                let evt = document.createEvent('UIEvents');
-                                evt.initUIEvent('resize', true, false, window, 0);
-                                window.dispatchEvent(evt);
-                            }} >
-                            
-                            <div className="left-content">
-                                { this._renderPivots() }
-                            </div>
-                            <div className="right-content">
-                                { this._renderItemEditor() }
-                            </div>
-                        </SplitterLayout>
-                    </div>
+                    <SplitterLayout 
+                        primaryIndex={0}
+                        primaryMinSize={550}
+                        secondaryMinSize={400}
+                        secondaryInitialSize={500}
+                        onChange={() => {
+                            let evt = document.createEvent('UIEvents');
+                            evt.initUIEvent('resize', true, false, window, 0);
+                            window.dispatchEvent(evt);
+                        }} >
+                        
+                        <div className="left-content">
+                            { this._renderPivots() }
+                        </div>
+                        <div className="right-content">
+                            { this._renderItemEditor() }
+                        </div>
+                    </SplitterLayout>
                 }
             </div>
         );
@@ -203,16 +200,29 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         let pivotContent: JSX.Element;
 
         if (this.props.bugBash.autoAccept) {
-            pivots = <Pivot initialSelectedKey={this._getSelectedPivotKey()} onLinkClick={(item: PivotItem) => this._updateSelectedPivot(item.props.itemKey)}>
-                <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted" />
-            </Pivot>;
+            pivots = <Nav
+                className="nav-panel"
+                initialSelectedKey="Accepted"
+                groups={ [{
+                    links: [
+                        { name: `Accepted Items (${workItems.length})`, key:"Accepted", url: "" },
+                    ]
+                }] }
+            />;
         }
         else {
-            pivots = <Pivot initialSelectedKey={this._getSelectedPivotKey()} onLinkClick={(item: PivotItem) => this._updateSelectedPivot(item.props.itemKey)}>
-                <PivotItem linkText={`Pending Items (${pendingBugBashItemViewModels.length})`} itemKey="Pending" />
-                <PivotItem linkText={`Accepted Items (${workItems.length})`} itemKey="Accepted" />
-                <PivotItem linkText={`Rejected Items (${rejectedBugBashItemViewModels.length})`} itemKey="Rejected" />
-            </Pivot>;
+            pivots = <Nav
+                className="nav-panel"
+                initialSelectedKey={this._getSelectedPivotKey()}
+                onLinkClick={(ev?: React.MouseEvent<HTMLElement>, item?: INavLink) => this._updateSelectedPivot(item.key)}
+                groups={ [{
+                    links: [
+                        { name: `Pending Items (${pendingBugBashItemViewModels.length})`, key: "Pending", url: "" },
+                        { name: `Accepted Items (${workItems.length})`, key:"Accepted", url: "" },
+                        { name: `Rejected Items (${rejectedBugBashItemViewModels.length})`, key:"Rejected", url: "" }
+                    ]
+                }] }
+            />;
         }
         
         switch (this.state.selectedPivot) {

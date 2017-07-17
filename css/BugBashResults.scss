@@ -1,0 +1,128 @@
+.results-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    
+    .split-layout {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+
+        & > .layout-split {
+            background-color: #ccc;
+            cursor: e-resize;
+            width: 5px;
+            border-left: 2px solid #fff;
+            border-right: 2px solid #fff;
+
+            &:hover {
+                background-color: #ccc;
+                width: 5px;
+                border-left: 2px solid #ccc;
+                border-right: 2px solid #ccc;
+            }
+        }
+
+        .left-content {
+            height: 100%;
+
+            .pivot-container {
+                height: 100%;
+                display: flex;
+
+                .nav-panel {
+                    margin-right: 10px;
+                    border-right: 1px solid #ccc;
+                    height: 100%;
+                    padding-right: 1px;
+
+                    .ms-Nav-linkText {
+                        vertical-align: top;
+                    }
+                }
+
+                .bugbash-item-grid {
+                    flex: 1;                    
+
+                    .item-grid-cell {
+                        padding: 0;
+                        margin: 0;
+                        display: inline;
+                        font-size: 13px;
+
+                        &.is-dirty {
+                            font-weight: bold;
+                            color: #000;
+
+                            .identity-view {
+                                .ms-Persona-primaryText {
+                                    font-weight: bold;
+                                    color: #000;
+                                }
+                            }
+                        }
+
+                        &.is-invalid {
+                            color: red;
+
+                            .identity-view {
+                                .ms-Persona-primaryText {
+                                    color: red;
+                                }
+                            }
+                        }
+
+                        .identity-view {
+                            font-size: 13px;
+                            height: 16px;
+                            line-height: 16px;
+                            margin-right: 0;
+
+                            .ms-Persona-details {
+                                padding: 0 0 0 5px;
+                            }
+
+                            .ms-Persona-primaryText {
+                                font-size: 13px;
+                            }
+                        }
+                    }                 
+                }      
+            }
+        }
+
+        .right-content {
+            height: 100%;
+
+            .item-editor-container {
+                margin-left: 10px;
+                padding-right: 10px;
+                height: 100%;
+                padding-bottom: 10px;
+
+                .item-editor-container-header {
+                    display: flex;
+
+                    .item-editor-header {
+                        flex: 1;
+                        font-size: 14px;
+                        font-weight: 600;
+                        line-height: 40px;
+                    }
+
+                    .add-new-item-button {
+                        margin-top: 10px;
+                        font-size: 14px;
+
+                        i {
+                            font-size: 14px;
+                            margin-left: 0;
+                        }
+                    }
+                }
+            }  
+        }
+    }     
+}

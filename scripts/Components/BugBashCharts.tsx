@@ -1,4 +1,4 @@
-import "../../css/BugBashResultsAnalytics.scss";
+import "../../css/BugBashCharts.scss";
 
 import * as React from "react";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
