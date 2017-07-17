@@ -150,7 +150,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     
     public render(): JSX.Element {        
         return (
-            <div className="results-view">
+            <div className="bugbash-results">
                 { this.state.loading && <Overlay><Loading /></Overlay> }
                 { this.state.bugBashItemViewModels && this.state.workItemsMap && 
                     <SplitterLayout 
@@ -164,12 +164,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             window.dispatchEvent(evt);
                         }} >
                         
-                        <div className="left-content">
-                            { this._renderPivots() }
-                        </div>
-                        <div className="right-content">
-                            { this._renderItemEditor() }
-                        </div>
+                        { this._renderPivots() }
+                        { this._renderItemEditor() }
                     </SplitterLayout>
                 }
             </div>
@@ -233,7 +229,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     className="bugbash-item-grid"
                     items={pendingBugBashItemViewModels}
                     selectionMode={SelectionMode.single}
-                    columns={this._getBugBashItemGridColumns(false)}                    
+                    columns={this._getBugBashItemGridColumns(false)}  
+                    noResultsText="No Pending items"
                     events={{
                         onSelectionChanged: this._onBugBashItemSelectionChanged
                     }}
@@ -244,10 +241,14 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     selectionPreservedOnEmptyClick={true}
                     setKey="bugbash-work-item-grid"
                     className="bugbash-item-grid"
-                    workItems={workItems}                    
+                    workItems={workItems}
                     fields={fields}
                     noResultsText="No Accepted items"
                     extraColumns={this._getExtraWorkItemGridColumns()}
+                    commandBarProps={{
+                        hideSearchBox: true,
+                        hideCommandBar: true
+                    }}
                     onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
                         let map = {...this.state.workItemsMap};
                         map[updatedWorkItem.id] = updatedWorkItem;
@@ -260,6 +261,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     selectionPreservedOnEmptyClick={true}
                     setKey="bugbash-rejected-item-grid"
                     className="bugbash-item-grid"
+                    noResultsText="No Rejected items"
                     items={rejectedBugBashItemViewModels}
                     selectionMode={SelectionMode.single}
                     columns={this._getBugBashItemGridColumns(true)}
@@ -271,7 +273,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         }
 
         return (
-            <div className="pivot-container">
+            <div className="left-content">
                 {pivots}
                 {pivotContent}
             </div>
@@ -280,79 +282,81 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
     private _renderItemEditor(): JSX.Element {
         return (
-            <div className="item-editor-container">
-                <div className="item-editor-container-header">
-                    <Label className="item-editor-header overflow-ellipsis">{this.state.selectedBugBashItemViewModel ? "Edit Item" : "Add Item"}</Label>
-                    <PrimaryButton    
-                        className="add-new-item-button"                    
-                        disabled={this.state.selectedBugBashItemViewModel == null}
-                        text="New"
-                        iconProps={ { iconName: "Add" } }
-                        onClick={ () => this.updateState({selectedBugBashItemViewModel: null} as IBugBashResultsState) }
-                        />
+            <div className="right-content">
+                <div className="item-editor-container">
+                    <div className="item-editor-container-header">
+                        <Label className="item-editor-header overflow-ellipsis">{this.state.selectedBugBashItemViewModel ? "Edit Item" : "Add Item"}</Label>
+                        <PrimaryButton    
+                            className="add-new-item-button"                    
+                            disabled={this.state.selectedBugBashItemViewModel == null}
+                            text="New"
+                            iconProps={ { iconName: "Add" } }
+                            onClick={ () => this.updateState({selectedBugBashItemViewModel: null} as IBugBashResultsState) }
+                            />
+                    </div>
+                    <BugBashItemEditor 
+                        bugBashItemViewModel={this.state.selectedBugBashItemViewModel || BugBashItemHelpers.getNewBugBashItemViewModel(this.props.bugBash.id)}
+                        onItemAccept={(bugBashItem: IBugBashItem, workItem: WorkItem) => {
+                            let newViewModels = this.state.bugBashItemViewModels.slice();
+                            let newViewModel = BugBashItemHelpers.getBugBashItemViewModel(bugBashItem);
+                            let newWorkItemsMap = {...this.state.workItemsMap};
+
+                            let index = Utils_Array.findIndex(newViewModels, v => v.bugBashItem.id === bugBashItem.id);
+                            if (index !== -1) {
+                                newViewModels[index] = newViewModel;
+                            }
+                            else {
+                                newViewModels.push(newViewModel);
+                            }
+
+                            if (workItem) {
+                                newWorkItemsMap[workItem.id] = workItem;
+                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: null, workItemsMap: newWorkItemsMap} as IBugBashResultsState);
+                            }
+                            else {
+                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newViewModel} as IBugBashResultsState);
+                            }
+                        }}
+                        onItemUpdate={(bugBashItem: IBugBashItem) => {
+                            if (bugBashItem.id) {
+                                let newViewModels = this.state.bugBashItemViewModels.slice();
+                                let newVideModel = BugBashItemHelpers.getBugBashItemViewModel(bugBashItem);
+
+                                let index = Utils_Array.findIndex(newViewModels, v => v.bugBashItem.id === bugBashItem.id);
+                                if (index !== -1) {
+                                    newViewModels[index] = newVideModel;
+                                }
+                                else {
+                                    newViewModels.push(newVideModel);
+                                }
+                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newVideModel} as IBugBashResultsState);
+                            }
+                        }}
+                        onDelete={(bugBashItem: IBugBashItem) => {
+                            if (bugBashItem.id) {
+                                let newViewModels = this.state.bugBashItemViewModels.slice();
+                                let index = Utils_Array.findIndex(newViewModels, v => v.bugBashItem.id === bugBashItem.id);
+                                if (index !== -1) {
+                                    newViewModels.splice(index, 1);
+                                    this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: null} as IBugBashResultsState);
+                                }
+                                else {
+                                    this.updateState({selectedBugBashItemViewModel: null} as IBugBashResultsState);
+                                }
+                            }
+                        }} 
+                        onChange={(changedBugBashItem: IBugBashItem, newComment: string) => {
+                            if (changedBugBashItem.id) {
+                                let newViewModels = this.state.bugBashItemViewModels.slice();
+                                let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.bugBashItem.id === changedBugBashItem.id);
+                                if (index !== -1) {
+                                    newViewModels[index].bugBashItem = {...changedBugBashItem};
+                                    newViewModels[index].newComment = newComment;
+                                    this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newViewModels[index]} as IBugBashResultsState);
+                                }
+                            }
+                        }} />
                 </div>
-                <BugBashItemEditor 
-                    bugBashItemViewModel={this.state.selectedBugBashItemViewModel || BugBashItemHelpers.getNewBugBashItemViewModel(this.props.bugBash.id)}
-                    onItemAccept={(bugBashItem: IBugBashItem, workItem: WorkItem) => {
-                        let newViewModels = this.state.bugBashItemViewModels.slice();
-                        let newViewModel = BugBashItemHelpers.getBugBashItemViewModel(bugBashItem);
-                        let newWorkItemsMap = {...this.state.workItemsMap};
-
-                        let index = Utils_Array.findIndex(newViewModels, v => v.bugBashItem.id === bugBashItem.id);
-                        if (index !== -1) {
-                            newViewModels[index] = newViewModel;
-                        }
-                        else {
-                            newViewModels.push(newViewModel);
-                        }
-
-                        if (workItem) {
-                            newWorkItemsMap[workItem.id] = workItem;
-                            this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: null, workItemsMap: newWorkItemsMap} as IBugBashResultsState);
-                        }
-                        else {
-                            this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newViewModel} as IBugBashResultsState);
-                        }
-                    }}
-                    onItemUpdate={(bugBashItem: IBugBashItem) => {
-                        if (bugBashItem.id) {
-                            let newViewModels = this.state.bugBashItemViewModels.slice();
-                            let newVideModel = BugBashItemHelpers.getBugBashItemViewModel(bugBashItem);
-
-                            let index = Utils_Array.findIndex(newViewModels, v => v.bugBashItem.id === bugBashItem.id);
-                            if (index !== -1) {
-                                newViewModels[index] = newVideModel;
-                            }
-                            else {
-                                newViewModels.push(newVideModel);
-                            }
-                            this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newVideModel} as IBugBashResultsState);
-                        }
-                    }}
-                    onDelete={(bugBashItem: IBugBashItem) => {
-                        if (bugBashItem.id) {
-                            let newViewModels = this.state.bugBashItemViewModels.slice();
-                            let index = Utils_Array.findIndex(newViewModels, v => v.bugBashItem.id === bugBashItem.id);
-                            if (index !== -1) {
-                                newViewModels.splice(index, 1);
-                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: null} as IBugBashResultsState);
-                            }
-                            else {
-                                this.updateState({selectedBugBashItemViewModel: null} as IBugBashResultsState);
-                            }
-                        }
-                    }} 
-                    onChange={(changedBugBashItem: IBugBashItem, newComment: string) => {
-                        if (changedBugBashItem.id) {
-                            let newViewModels = this.state.bugBashItemViewModels.slice();
-                            let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.bugBashItem.id === changedBugBashItem.id);
-                            if (index !== -1) {
-                                newViewModels[index].bugBashItem = {...changedBugBashItem};
-                                newViewModels[index].newComment = newComment;
-                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newViewModels[index]} as IBugBashResultsState);
-                            }
-                        }
-                    }} />
             </div>
         );
     }

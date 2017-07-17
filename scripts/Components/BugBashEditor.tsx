@@ -84,7 +84,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
 
         return (
-            <div className="editor-view">                
+            <div className="bugbash-editor">                
                 { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} /> }
                 { this._renderEditor() }                
             </div>
@@ -112,7 +112,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             }
         });
         
-        return <div className="editor-view-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
+        return <div className="bugbash-editor-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
             <div className="first-section">                        
                 <TextField 
                     label='Title' 

@@ -106,7 +106,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
         }
         else {
-            return <div>
+            return <div className="bugbash-view">
                 { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay> }
                 { this._renderHub() }
             </div>;
@@ -117,67 +117,66 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         if (this.state.originalBugBash) {
 
             let title = this.state.updatedBugBash.title;
-            let className = "bugbash-view";
+            let className = "bugbash-hub";
             if (BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash)) {
                 className += " is-dirty";
                 title = "* " + title;
             }
 
-            if (!BugBashHelpers.isValid(this.state.updatedBugBash)) {
-                className += " is-invalid";
-            }
+            return <Hub 
+                className={className}
+                title={title}
+                pivotProps={{
+                    onPivotClick: async (selectedPivotKey: string, ev?: React.MouseEvent<HTMLElement>) => {
+                        this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
+                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                        navigationService.updateHistoryEntry(selectedPivotKey, null, false, true, null, true);
+                    },
+                    initialSelectedKey: this.state.selectedPivot,
+                    onRenderPivotContent: (key: string) => {
+                        let content: JSX.Element = null;
+                        switch (key) {
+                            case "edit":
+                                content = this._renderEditor();
+                                break;
+                            case "results":
+                                content = this._renderResults();
+                                break;
+                            case "charts":
+                                content = this._renderCharts();
+                                break;
+                        }
 
-            return <div className={className}>
-                <Hub 
-                    title={title}
-                    pivotProps={{
-                        onPivotClick: async (selectedPivotKey: string, ev?: React.MouseEvent<HTMLElement>) => {
-                            this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(selectedPivotKey, null, false, true, null, true);
-                        },
-                        initialSelectedKey: this.state.selectedPivot,
-                        onRenderPivotContent: (key: string) => {
-                            let content: JSX.Element = null;
-                            switch (key) {
-                                case "edit":
-                                    content = this._renderEditor();
-                                    break;
-                                case "results":
-                                    content = this._renderResults();
-                                    break;
-                                case "charts":
-                                    content = this._renderCharts();
-                                    break;
+                        return <div className="bugbash-hub-contents">
+                            {content}
+                        </div>;
+                    },
+                    pivots: [
+                        {
+                            key: "results",
+                            text: "Results",
+                            commands: this._getResultViewCommands(),
+                            farCommands: this._getFarCommands(),
+                            filterProps: {
+                                showFilter: true,
+                                onFilterChange: (filterText) => console.log(filterText)
                             }
-
-                            return <div className="bugbash-view-contents">
-                                {content}
-                            </div>;
                         },
-                        pivots: [
-                            {
-                                key: "results",
-                                text: "Results",
-                                commands: this._getResultViewCommands(),
-                                farCommands: this._getFarCommands()                           
-                            },
-                            {
-                                key: "edit",
-                                text: "Editor",
-                                commands: this._getEditorViewCommands(),
-                                farCommands: this._getFarCommands()
-                            },
-                            {
-                                key: "charts",
-                                text: "Charts",
-                                commands: this._getChartsViewCommands(),
-                                farCommands: this._getFarCommands()
-                            }                        
-                        ]
-                    }}
-                />
-            </div>
+                        {
+                            key: "edit",
+                            text: "Editor",
+                            commands: this._getEditorViewCommands(),
+                            farCommands: this._getFarCommands()
+                        },
+                        {
+                            key: "charts",
+                            text: "Charts",
+                            commands: this._getChartsViewCommands(),
+                            farCommands: this._getFarCommands()
+                        }
+                    ]
+                }}
+            />;
         }
         else {
             return null;
