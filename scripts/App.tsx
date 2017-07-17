@@ -11,13 +11,14 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 
 import { UrlActions } from "./Constants";
+import { BugBashView } from "./Components/BugBashView";
 
 export enum HubViewMode {
     All,
     New,
     View,
     Edit,
-    Loading
+    Charts
 }
 
 export interface IHubState extends IBaseComponentState {
@@ -53,25 +54,14 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
                         </LazyLoad>;
                     break;
                 case HubViewMode.New:
-                    view = <LazyLoad module="scripts/EditBugBashView">
-                            {(EditBugBashView) => (
-                                <EditBugBashView.EditBugBashView />
-                            )}
-                        </LazyLoad>;
-                    break;
                 case HubViewMode.Edit:
-                    view = <LazyLoad module="scripts/EditBugBashView">
-                            {(EditBugBashView) => (
-                                <EditBugBashView.EditBugBashView id={this.state.bugBashId} />
-                            )}
-                        </LazyLoad>;
+                    view = <BugBashView pivotKey={UrlActions.ACTION_EDIT} bugBashId={this.state.bugBashId} />;
                     break;
                 case HubViewMode.View:
-                    view = <LazyLoad module="scripts/BugBashResultsView">
-                            {(BugBashResultsView) => (
-                                <BugBashResultsView.BugBashResultsView id={this.state.bugBashId} />
-                            )}
-                        </LazyLoad>;
+                    view = <BugBashView pivotKey={UrlActions.ACTION_RESULTS} bugBashId={this.state.bugBashId} />;
+                    break;
+                case HubViewMode.Charts:
+                    view = <BugBashView pivotKey={UrlActions.ACTION_CHARTS} bugBashId={this.state.bugBashId} />;
                     break;
                 default:
                     view = <Loading />;
@@ -87,8 +77,6 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
     }
 
     private async _initialize() {
-        this.updateState({ hubViewMode: HubViewMode.Loading });
-
         this._attachNavigate();
 
         const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
@@ -102,25 +90,22 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
 
         navigationService.attachNavigate(UrlActions.ACTION_ALL, () => {
-            this.updateState({ hubViewMode: HubViewMode.All });
-        }, true);
-
-        navigationService.attachNavigate(UrlActions.ACTION_NEW, () => {
-            this.updateState({ hubViewMode: HubViewMode.New });
+            this.updateState({ hubViewMode: HubViewMode.All, bugBashId: null });
         }, true);
 
         navigationService.attachNavigate(UrlActions.ACTION_EDIT, async () => {
             const state = await navigationService.getCurrentState();
-            if (state.id) {
-                this.updateState({ hubViewMode: HubViewMode.Edit, bugBashId: state.id });
-            }
+            this.updateState({ hubViewMode: HubViewMode.Edit, bugBashId: state.id || null });
         }, true);
 
-        navigationService.attachNavigate(UrlActions.ACTION_VIEW, async () => {
+        navigationService.attachNavigate(UrlActions.ACTION_RESULTS, async () => {
             const state = await navigationService.getCurrentState();
-            if (state.id) {
-                this.updateState({ hubViewMode: HubViewMode.View, bugBashId: state.id });
-            }
+            this.updateState({ hubViewMode: HubViewMode.View, bugBashId: state.id || null });
+        }, true);
+
+        navigationService.attachNavigate(UrlActions.ACTION_CHARTS, async () => {
+            const state = await navigationService.getCurrentState();
+            this.updateState({ hubViewMode: HubViewMode.Charts, bugBashId: state.id || null });
         }, true);
     }
 }

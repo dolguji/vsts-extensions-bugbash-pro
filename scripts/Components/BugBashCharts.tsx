@@ -3,16 +3,24 @@ import "../../css/BugBashResultsAnalytics.scss";
 import * as React from "react";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { Label } from "OfficeFabric/Label";
 import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 
-import { IBugBashItem } from "../Interfaces";
+import { IBugBashItem, IBugBash } from "../Interfaces";
 import { BugBashItemHelpers } from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
+import { BugBashItemActions } from "../Actions/BugBashItemActions";
 
-interface IBugBashResultsAnalyticsProps extends IBaseComponentProps {
+interface IBugBashChartsState extends IBaseComponentState {
     bugBashItems: IBugBashItem[];
+    loading?: boolean;
+}
+
+interface IBugBashChartsProps extends IBaseComponentProps {
+    bugBash: IBugBash;
 }
 
 const CustomizedAxisTick: React.StatelessComponent<any> =
@@ -26,15 +34,36 @@ const CustomizedAxisTick: React.StatelessComponent<any> =
         );
     };
 
-export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyticsProps, IBaseComponentState> {
+export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashChartsState> {
     protected initializeState() {
         this.state = {
-            
+            bugBashItems: null,
+            loading: true
         };
     }
 
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.bugBashItemStore];
+    }
+
+    protected getStoresState(): IBugBashChartsState {
+        return {
+            loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id),
+            bugBashItems: StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id)
+        } as IBugBashChartsState;
+    }
+
+    public componentDidMount(): void {
+        super.componentDidMount();
+        BugBashItemActions.initializeItems(this.props.bugBash.id);
+    }  
+
     public render() {
-        if (this.props.bugBashItems.length === 0) {
+        if (this.state.loading) {
+            return <Loading />;
+        }
+
+        if (this.state.bugBashItems.length === 0) {
             return <MessagePanel messageType={MessageType.Info} message="No items created yet." />;
         }
 
@@ -43,7 +72,7 @@ export class BugBashResultsAnalytics extends BaseComponent<IBugBashResultsAnalyt
         let teamData = [];
         let createdByData = [];
 
-        for (const model of this.props.bugBashItems) {
+        for (const model of this.state.bugBashItems) {
             let teamId = model.teamId;
 
             let createdBy = model.createdBy;

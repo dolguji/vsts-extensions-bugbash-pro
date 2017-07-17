@@ -243,7 +243,7 @@ export module BugBashItemActions {
         const pageContext = Context.getPageContext();
         const navigation = pageContext.navigation;
         const webContext = VSS.getWebContext();
-        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_VIEW}&id=${bugBash.id}`;
+        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_RESULTS}&id=${bugBash.id}`;
         
         const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
 
