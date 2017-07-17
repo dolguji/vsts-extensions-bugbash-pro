@@ -227,8 +227,14 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         return [{
             key: "Home", name: "Home", iconProps: {iconName: "Home"}, 
             onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                const confirm = await confirmAction(
+                    BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash), 
+                    "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
+
+                if (confirm) {
+                    let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                    navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                }                
             }
         }];
     }

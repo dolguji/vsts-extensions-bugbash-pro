@@ -155,7 +155,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 { this.state.bugBashItemViewModels && this.state.workItemsMap && 
                     <SplitterLayout 
                         primaryIndex={0}
-                        primaryMinSize={550}
+                        primaryMinSize={700}
                         secondaryMinSize={400}
                         secondaryInitialSize={500}
                         onChange={() => {
@@ -254,7 +254,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         map[updatedWorkItem.id] = updatedWorkItem;
                         this.updateState({workItemsMap: map} as IBugBashResultsState);
                     }}
-                />;
+                />;                
                 break;
             default:
                 pivotContent = <Grid

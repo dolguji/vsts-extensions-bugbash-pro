@@ -40,8 +40,13 @@
             }
 
             .bugbash-item-grid {
-                flex: 1;                    
-                padding: 0 10px;
+                flex: 1;
+                overflow: hidden;
+                
+                .message-panel {
+                    margin-left: 10px;
+                    margin-right: 10px;
+                }
 
                 .item-grid-cell {
                     padding: 0;
