@@ -167,7 +167,7 @@ export module BugBashItemActions {
     async function acceptItem(bugBashItem: IBugBashItem): Promise<IAcceptedBugBashItemViewModel> {
         let updatedBugBashItem: IBugBashItem;
         let savedWorkItem: WorkItem;
-        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId).originalBugBash;
 
         // read bug bash wit template
         try {
@@ -234,7 +234,7 @@ export module BugBashItemActions {
         let fieldValues: IDictionaryStringTo<string> = {};
         const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
-        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItem);
+        fieldValues["System.History"] = getAcceptedItemComment(bugBash.originalBugBash, bugBashItem);
 
         updateWorkItem(workItemId, fieldValues);
     }
@@ -243,7 +243,7 @@ export module BugBashItemActions {
         const pageContext = Context.getPageContext();
         const navigation = pageContext.navigation;
         const webContext = VSS.getWebContext();
-        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_VIEW}&id=${bugBash.id}`;
+        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_RESULTS}&id=${bugBash.id}`;
         
         const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
 

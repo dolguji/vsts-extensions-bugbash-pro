@@ -73,7 +73,7 @@ export module BugBashActions {
         }
     }
 
-    export async function updateBugBash(bugBash: IBugBash): Promise<IBugBash> {
+    export async function updateBugBash(bugBash: IBugBash) {
         if (!StoresHub.bugBashStore.isLoading(bugBash.id)) {
             StoresHub.bugBashStore.setLoading(true, bugBash.id);
 

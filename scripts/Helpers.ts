@@ -2,6 +2,7 @@ import { JsonPatchDocument, JsonPatchOperation, Operation } from "VSS/WebApi/Con
 import * as WitClient from "TFS/WorkItemTracking/RestClient";
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
+import Utils_Date = require("VSS/Utils/Date");
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 
 import { StoreFactory } from "VSTS_Extension/Flux/Stores/BaseStore";
@@ -78,7 +79,7 @@ export class BugBashHelpers {
     public static getNewBugBash(): IBugBash {
         return {
             id: "",
-            title: "",
+            title: "New Bug Bash",
             __etag: 0,
             projectId: VSS.getWebContext().project.id,
             workItemType: "",
@@ -91,12 +92,36 @@ export class BugBashHelpers {
             }
         };
     }
+
+    public static isNew(bugBash: IBugBash): boolean {
+        return bugBash.id == null || bugBash.id.trim() === "";
+    }
+
+    public static isDirty(bugBash: IBugBash, originalBugBash: IBugBash): boolean {        
+        return !Utils_String.equals(bugBash.title, originalBugBash.title)
+            || !Utils_String.equals(bugBash.workItemType, originalBugBash.workItemType, true)
+            || !Utils_String.equals(bugBash.description, originalBugBash.description)
+            || !Utils_Date.equals(bugBash.startTime, originalBugBash.startTime)
+            || !Utils_Date.equals(bugBash.endTime, originalBugBash.endTime)
+            || !Utils_String.equals(bugBash.itemDescriptionField, originalBugBash.itemDescriptionField, true)
+            || bugBash.autoAccept !== originalBugBash.autoAccept
+            || !Utils_String.equals(bugBash.acceptTemplate.team, originalBugBash.acceptTemplate.team)
+            || !Utils_String.equals(bugBash.acceptTemplate.templateId, originalBugBash.acceptTemplate.templateId)
+    }
+
+    public static isValid(bugBash: IBugBash): boolean {
+        return bugBash.title.trim().length > 0
+            && bugBash.title.length <= 256
+            && bugBash.workItemType.trim().length > 0
+            && bugBash.itemDescriptionField.trim().length > 0
+            && (!bugBash.startTime || !bugBash.endTime || Utils_Date.defaultComparer(bugBash.startTime, bugBash.endTime) < 0);
+    }
 }
 
 export class BugBashItemHelpers {
     public static getNewBugBashItemViewModel(bugBashId: string): IBugBashItemViewModel {        
         return {
-            bugBashItem: this.getNewBugBashItem(bugBashId),
+            updatedBugBashItem: this.getNewBugBashItem(bugBashId),
             originalBugBashItem: this.getNewBugBashItem(bugBashId),
             newComment: ""
         }
@@ -125,7 +150,7 @@ export class BugBashItemHelpers {
         }
 
         return {
-            bugBashItem: {...bugBashItem},
+            updatedBugBashItem: {...bugBashItem},
             originalBugBashItem: {...bugBashItem},
             newComment: ""
         }
@@ -136,11 +161,11 @@ export class BugBashItemHelpers {
     }
 
     public static isDirty(bugBashItemViewModel: IBugBashItemViewModel): boolean {        
-        let isDirty = !Utils_String.equals(bugBashItemViewModel.bugBashItem.title, bugBashItemViewModel.originalBugBashItem.title)
-            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.teamId, bugBashItemViewModel.originalBugBashItem.teamId)
-            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.description, bugBashItemViewModel.originalBugBashItem.description)
-            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.rejectReason, bugBashItemViewModel.originalBugBashItem.rejectReason)
-            || Boolean(bugBashItemViewModel.bugBashItem.rejected) !== Boolean(bugBashItemViewModel.originalBugBashItem.rejected)
+        let isDirty = !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.title, bugBashItemViewModel.originalBugBashItem.title)
+            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.teamId, bugBashItemViewModel.originalBugBashItem.teamId)
+            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.description, bugBashItemViewModel.originalBugBashItem.description)
+            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.rejectReason, bugBashItemViewModel.originalBugBashItem.rejectReason)
+            || Boolean(bugBashItemViewModel.updatedBugBashItem.rejected) !== Boolean(bugBashItemViewModel.originalBugBashItem.rejected)
             || (bugBashItemViewModel.newComment != null && bugBashItemViewModel.newComment.trim() !== "");
 
         return isDirty;

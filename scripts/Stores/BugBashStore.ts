@@ -2,10 +2,10 @@ import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
 
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { IBugBash } from "../Interfaces";
+import { IBugBash, IBugBashViewModel } from "../Interfaces";
 import { BugBashActionsCreator } from "../Actions/ActionsCreator";
 
-export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
+export class BugBashStore extends BaseStore<IBugBashViewModel[], IBugBashViewModel, string> {
     private _allLoaded: boolean = false;
 
     public isLoaded(key?: string): boolean {
@@ -16,21 +16,31 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         return this._allLoaded && super.isLoaded();
     }
 
-    public getItem(id: string): IBugBash {
-         return Utils_Array.first(this.items || [], (bugBash: IBugBash) => Utils_String.equals(bugBash.id, id, true));
+    public getItem(id: string): IBugBashViewModel {
+         return Utils_Array.first(this.items || [], (bugBash: IBugBashViewModel) => Utils_String.equals(bugBash.originalBugBash.id, id, true));
     }
 
     protected initializeActionListeners() {
         BugBashActionsCreator.InitializeAllBugBashes.addListener((bugBashes: IBugBash[]) => {
             if (bugBashes) {
-                this.items = bugBashes;
+                this.items = bugBashes.map(b => {
+                    return {
+                        originalBugBash: {...b},
+                        updatedBugBash: {...b}
+                    }  
+                });
             }
             this._allLoaded = true;
             this.emitChanged();
         }); 
 
         BugBashActionsCreator.RefreshAllBugBashes.addListener((bugBashes: IBugBash[]) => {
-            this.items = bugBashes;
+            this.items = bugBashes.map(b => {
+                return {
+                    originalBugBash: {...b},
+                    updatedBugBash: {...b}
+                }  
+            });
             this.emitChanged();
         });
 
@@ -80,12 +90,18 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.items = [];
         }
 
-        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBash) => Utils_String.equals(bugBash.id, existingBugBash.id, true));
+        const viewModel = {
+            updatedBugBash: {...bugBash},
+            originalBugBash: {...bugBash},
+            newComment: ""
+        };
+
+        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBashViewModel) => Utils_String.equals(bugBash.id, existingBugBash.originalBugBash.id, true));
         if (existingBugBashIndex !== -1) {
-            this.items[existingBugBashIndex] = bugBash;
+            this.items[existingBugBashIndex] = viewModel;
         }
         else {
-            this.items.push(bugBash);
+            this.items.push(viewModel);
         }
     }
 
@@ -94,7 +110,7 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             return;
         }
 
-        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBash) => Utils_String.equals(bugBashId, existingBugBash.id, true));
+        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBashViewModel) => Utils_String.equals(bugBashId, existingBugBash.originalBugBash.id, true));
 
         if (existingBugBashIndex !== -1) {
             this.items.splice(existingBugBashIndex, 1);

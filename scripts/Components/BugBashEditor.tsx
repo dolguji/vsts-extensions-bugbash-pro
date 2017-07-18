@@ -3,15 +3,12 @@ import "../../css/BugBashEditor.scss";
 import * as React from "react";
 
 import { TextField } from "OfficeFabric/TextField";
-import { CommandBar } from "OfficeFabric/CommandBar";
 import { DatePicker } from "OfficeFabric/DatePicker";
 import { Label } from "OfficeFabric/Label";
 import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
-import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
 import { Checkbox } from "OfficeFabric/Checkbox";
 
-import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
@@ -20,23 +17,26 @@ import Utils_Core = require("VSS/Utils/Core");
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
+import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
+import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { WorkItemFieldActions } from "VSTS_Extension/Flux/Actions/WorkItemFieldActions";
+import { WorkItemTypeActions } from "VSTS_Extension/Flux/Actions/WorkItemTypeActions";
+import { WorkItemTemplateActions } from "VSTS_Extension/Flux/Actions/WorkItemTemplateActions";
 
-import { confirmAction } from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
-import { UrlActions } from "../Constants";
 import { IBugBash } from "../Interfaces";
 import { RichEditorComponent } from "./RichEditorComponent";
-import { BugBashActions } from "../Actions/BugBashActions";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
     bugBash: IBugBash;
+    error?: string;
+    onChange: (bugBash: IBugBash) => void;
+    save: () => void;
 }
 
 export interface IBugBashEditorState extends IBaseComponentState {
-    originalBugBash: IBugBash;
-    bugBash: IBugBash;
-    error?: string;
+    loading?: boolean;
 }
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
@@ -49,61 +49,50 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
     protected initializeState(): void {
         this.state = {
-            bugBash: {...this.props.bugBash},
-            originalBugBash: {...this.props.bugBash},
-            error: null
+            loading: true
         };
+    }
+
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.workItemFieldStore, StoresHub.workItemTemplateStore, StoresHub.workItemTypeStore];
+    }
+
+    protected getStoresState(): IBugBashEditorState {
+        return {
+            loading: StoresHub.workItemTypeStore.isLoading() || StoresHub.workItemFieldStore.isLoading() || StoresHub.workItemTemplateStore.isLoading()
+        } as IBugBashEditorState;
     }
 
     public componentDidMount(): void {
         super.componentDidMount();
-
         $(window).off("imagepasted", this._imagePastedHandler);
         $(window).on("imagepasted", this._imagePastedHandler);
-    }     
-    
+
+        WorkItemFieldActions.initializeWorkItemFields();
+        WorkItemTypeActions.initializeWorkItemTypes();
+        WorkItemTemplateActions.initializeWorkItemTemplates();
+    }  
+
     public componentWillUnmount() {
         super.componentWillUnmount();
         $(window).off("imagepasted", this._imagePastedHandler);
     }      
 
-    public componentWillReceiveProps(nextProps: Readonly<IBugBashEditorProps>): void {
-        if (nextProps.bugBash.id !== this.props.bugBash.id || nextProps.bugBash.__etag !== this.props.bugBash.__etag) {
-            this.updateState({
-                bugBash: {...nextProps.bugBash},
-                originalBugBash: {...nextProps.bugBash},
-                error: null
-            });
+    public render(): JSX.Element {
+        if (this.state.loading) {
+            return <Loading />;
         }
-        else {
-            this.updateState({
-                error: null
-            } as IBugBashEditorState);
-        }
-    }
 
-    public render(): JSX.Element {        
         return (
-            <div className="editor-view">
-                <CommandBar 
-                    className="editor-view-menu"
-                    items={this._getCommandBarItems()} 
-                    farItems={[{
-                        key: "Home", name: "Home", title: "Return to home view", iconProps: {iconName: "Home"}, 
-                        onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
-                        }
-                    }]} />
-
-                { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} /> }
+            <div className="bugbash-editor">                
+                { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} /> }
                 { this._renderEditor() }                
             </div>
         );
     }
 
     private _renderEditor(): JSX.Element {
-        const bugBash = this.state.bugBash;
+        const bugBash = this.props.bugBash;
 
         const workItemTypes: IDropdownOption[] = StoresHub.workItemTypeStore.getAll().map((workItemType: WorkItemType, index: number) => {
             return {
@@ -123,7 +112,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             }
         });
         
-        return <div className="editor-view-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
+        return <div className="bugbash-editor-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
             <div className="first-section">                        
                 <TextField 
                     label='Title' 
@@ -206,88 +195,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         </div>;
     }
 
-    private async _save() {
-        if (this._isNew() && this._isDirty() && this._isValid()) {
-            try {
-                const createdBugBash = await BugBashActions.createBugBash(this.state.bugBash);
-                let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, { id: createdBugBash.id }, true);
-            }
-            catch (e) {
-                this.updateState({error: e} as IBugBashEditorState);
-            }
-        }
-        else if (!this._isNew() && this._isDirty() && this._isValid()) {
-            try {
-                await BugBashActions.updateBugBash(this.state.bugBash);
-            }
-            catch (e) {
-                this.updateState({error: e} as IBugBashEditorState);
-            }
-        }
-    }
-
-    private _getCommandBarItems(): IContextualMenuItem[] {
-        const bugBash = this.state.bugBash;
-
-        return [
-            {
-                key: "save", name: "Save", title: "Save", iconProps: {iconName: "Save"}, disabled: !this._isDirty() || !this._isValid(),
-                onClick: (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    this._save();
-                }
-            },
-            {
-                key: "undo", name: "Undo", title: "Undo changes", iconProps: {iconName: "Undo"}, disabled: this._isNew() || !this._isDirty(),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this instance?");
-                    if (confirm) {
-                        this.updateState({bugBash: {...this.state.originalBugBash}, error: null} as IBugBashEditorState);
-                    }
-                }
-            },
-            {
-                key: "refresh", name: "Refresh", title: "Refresh", iconProps: {iconName: "Refresh"}, disabled: this._isNew(),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    const confirm = await confirmAction(this._isDirty(), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
-                    if (confirm) {
-                        try {
-                            await BugBashActions.refreshBugBash(this.state.bugBash.id);
-                        }
-                        catch (e) {
-                            this.updateState({error: e} as IBugBashEditorState);
-                        }                        
-                    }
-                }
-            },
-            {
-                key: "delete", name: "Delete", title: "Delete", iconProps: {iconName: "Cancel"}, disabled: this._isNew(),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    if (!this._isNew()) {
-                        const confirm = await confirmAction(true, "Are you sure you want to delete this instance?");
-                        if (confirm) {
-                            await BugBashActions.deleteBugBash(bugBash.id);
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
-                        }       
-                    }
-                }
-            },
-            {
-                key: "results", name: "Show results", title: "Show results", iconProps: {iconName: "ShowResults"}, disabled: this._isNew(),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    if (!this._isNew()) {
-                        const confirm = await confirmAction(this._isDirty(), "Are you sure you want to go back to results view? This action will reset your unsaved changes.");
-                        if (confirm) {
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_VIEW, {id: bugBash.id});
-                        }
-                    }
-                }
-            },
-        ];
-    }
-
     private _onImagePaste(event, args) {
         args.callback(null);
     }
@@ -296,7 +203,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
         if (e.ctrlKey && e.keyCode === 83) {
             e.preventDefault();
-            this._save();
+            this.props.save();
         }
     }
 
@@ -316,7 +223,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 selected: !selectedValue
             }
         ];
-        let filteredTemplates = StoresHub.workItemTemplateStore.getAll().filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.state.bugBash.workItemType));
+        let filteredTemplates = StoresHub.workItemTemplateStore.getAll().filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.workItemType));
         return emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference, index: number) => {
             return {
                 key: template.id,
@@ -338,76 +245,52 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         return "";
     }
 
-    private _isNew(): boolean {
-        return !this.state.bugBash.id;
-    }
-
-    private _isDirty(): boolean {        
-        return !Utils_String.equals(this.state.bugBash.title, this.state.originalBugBash.title)
-            || !Utils_String.equals(this.state.bugBash.workItemType, this.state.originalBugBash.workItemType, true)
-            || !Utils_String.equals(this.state.bugBash.description, this.state.originalBugBash.description)
-            || !Utils_Date.equals(this.state.bugBash.startTime, this.state.originalBugBash.startTime)
-            || !Utils_Date.equals(this.state.bugBash.endTime, this.state.originalBugBash.endTime)
-            || !Utils_String.equals(this.state.bugBash.itemDescriptionField, this.state.originalBugBash.itemDescriptionField, true)
-            || this.state.bugBash.autoAccept !== this.state.originalBugBash.autoAccept
-            || !Utils_String.equals(this.state.bugBash.acceptTemplate.team, this.state.originalBugBash.acceptTemplate.team)
-            || !Utils_String.equals(this.state.bugBash.acceptTemplate.templateId, this.state.originalBugBash.acceptTemplate.templateId)
-    }
-
-    private _isValid(): boolean {
-        return this.state.bugBash.title.trim().length > 0
-            && this.state.bugBash.title.length <= 256
-            && this.state.bugBash.workItemType.trim().length > 0
-            && this.state.bugBash.itemDescriptionField.trim().length > 0
-            && (!this.state.bugBash.startTime || !this.state.bugBash.endTime || Utils_Date.defaultComparer(this.state.bugBash.startTime, this.state.bugBash.endTime) < 0);
-    }
-
     private _updateTitle(newTitle: string) {
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.title = newTitle;
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateWorkItemType(newType: string) {
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.workItemType = newType;
         bugBash.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: ""};  // reset template
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateDescription(newDescription: string) {
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.description = newDescription;
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateDescriptionField(fieldRefName: string) {
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.itemDescriptionField = fieldRefName;
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateStartTime(newStartTime: Date) {
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.startTime = newStartTime;
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateEndTime(newEndTime: Date) {        
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.endTime = newEndTime;
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateAutoAccept(autoAccept: boolean) {        
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.autoAccept = autoAccept;
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 
     private _updateAcceptTemplate(templateId: string) {
-        let bugBash = {...this.state.bugBash};
+        let bugBash = {...this.props.bugBash};
         bugBash.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: templateId};
-        this.updateState({bugBash: bugBash} as IBugBashEditorState);
+        this.props.onChange(bugBash);
     }
 }

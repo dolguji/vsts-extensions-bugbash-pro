@@ -1,0 +1,22 @@
+.bugbash-view {
+    height: 100%;
+
+    .bugbash-hub {
+        .bugbash-hub-contents {
+            height: 100%;
+
+            .message-panel {
+                margin-top: 10px;
+            }
+
+            .bugbash-editor {
+                padding: 8px;
+            }
+        }
+
+        &.is-dirty .hub-header .hub-title {
+            font-weight: bold;
+            color: #000;
+        }
+    }
+}

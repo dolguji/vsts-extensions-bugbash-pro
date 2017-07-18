@@ -8,9 +8,9 @@ module.exports = {
     entry: {
         App: "./scripts/App.tsx",
         AllBugBashesView: "./scripts/Components/AllBugBashesView.tsx",
-        EditBugBashView: "./scripts/Components/EditBugBashView.tsx",
-        BugBashResultsView: "./scripts/Components/BugBashResultsView.tsx",
-        BugBashResultsAnalytics: "./scripts/Components/BugBashResultsAnalytics.tsx",
+        BugBashEditor: "./scripts/Components/BugBashEditor.tsx",
+        BugBashResults: "./scripts/Components/BugBashResults.tsx",
+        BugBashCharts: "./scripts/Components/BugBashCharts.tsx",
         SettingsPanel: "./scripts/Components/SettingsPanel.tsx"
     },
     output: {

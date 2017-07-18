@@ -1,87 +1,13 @@
 .all-view {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: auto;
+    height: 100%;
 
-    .all-view-menu-toolbar {
-        margin-bottom: 20px;
+    .instance-list {
+        .message-panel {
+            margin-top: 10px;
+        }
+        
+        .bugbash-grid-cell {
+            padding: 0;
+        }
     }
-
-    .instance-list-container {
-        .instance-list-section {
-            margin-bottom: 20px;
-
-            .header {
-                font-size: 18px;
-                font-weight: 100;
-                color: #212121;
-            }
-
-            .instance-list-content {
-                margin: 0 30px;
-
-                .instance-list {
-                    .instance-row {
-                        padding: 10px;
-                        border-bottom: 1px solid #eaeaea;
-
-                        &:hover {
-                            background: #EEE;
-                        }
-
-                        .instance-title {
-                            font-size: 21px;
-                            font-weight: 100;
-                            line-height: 30px;
-                            margin-bottom: 5px;
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            word-wrap: normal;
-                            width: 100%;
-                            cursor: pointer;
-                            color: #106ebe;
-
-                            &:hover {                    
-                                text-decoration: underline;                    
-                            }
-                        }
-
-                        .instance-info {
-                            font-size: 12px;
-                            
-                            .instance-info-cell-container {
-                                width: 300px;
-                                display: inline-block;
-                                margin-right: 10px;
-
-                                .instance-info-cell {
-                                    font-weight: 400;
-                                    float: left;
-                                    width: auto;
-                                    overflow: hidden;
-                                    display: block;
-                                    margin-right: 5px;
-                                }
-
-                                .instance-info-cell-info {
-                                    color: #a6a6a6;
-                                    white-space: nowrap;
-                                    word-wrap: normal;
-                                    text-overflow: ellipsis;
-                                    overflow: hidden;
-                                    width: auto;
-                                    overflow: hidden;
-                                    display: block;
-                                }
-                            }
-                        }
-                    }
-                }
-            }            
-        }        
-    }    
 }
