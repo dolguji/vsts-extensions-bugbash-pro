@@ -167,7 +167,7 @@ export module BugBashItemActions {
     async function acceptItem(bugBashItem: IBugBashItem): Promise<IAcceptedBugBashItemViewModel> {
         let updatedBugBashItem: IBugBashItem;
         let savedWorkItem: WorkItem;
-        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId).originalBugBash;
 
         // read bug bash wit template
         try {
@@ -234,7 +234,7 @@ export module BugBashItemActions {
         let fieldValues: IDictionaryStringTo<string> = {};
         const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
-        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItem);
+        fieldValues["System.History"] = getAcceptedItemComment(bugBash.originalBugBash, bugBashItem);
 
         updateWorkItem(workItemId, fieldValues);
     }

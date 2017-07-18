@@ -121,7 +121,7 @@ export class BugBashHelpers {
 export class BugBashItemHelpers {
     public static getNewBugBashItemViewModel(bugBashId: string): IBugBashItemViewModel {        
         return {
-            bugBashItem: this.getNewBugBashItem(bugBashId),
+            updatedBugBashItem: this.getNewBugBashItem(bugBashId),
             originalBugBashItem: this.getNewBugBashItem(bugBashId),
             newComment: ""
         }
@@ -150,7 +150,7 @@ export class BugBashItemHelpers {
         }
 
         return {
-            bugBashItem: {...bugBashItem},
+            updatedBugBashItem: {...bugBashItem},
             originalBugBashItem: {...bugBashItem},
             newComment: ""
         }
@@ -161,11 +161,11 @@ export class BugBashItemHelpers {
     }
 
     public static isDirty(bugBashItemViewModel: IBugBashItemViewModel): boolean {        
-        let isDirty = !Utils_String.equals(bugBashItemViewModel.bugBashItem.title, bugBashItemViewModel.originalBugBashItem.title)
-            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.teamId, bugBashItemViewModel.originalBugBashItem.teamId)
-            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.description, bugBashItemViewModel.originalBugBashItem.description)
-            || !Utils_String.equals(bugBashItemViewModel.bugBashItem.rejectReason, bugBashItemViewModel.originalBugBashItem.rejectReason)
-            || Boolean(bugBashItemViewModel.bugBashItem.rejected) !== Boolean(bugBashItemViewModel.originalBugBashItem.rejected)
+        let isDirty = !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.title, bugBashItemViewModel.originalBugBashItem.title)
+            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.teamId, bugBashItemViewModel.originalBugBashItem.teamId)
+            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.description, bugBashItemViewModel.originalBugBashItem.description)
+            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.rejectReason, bugBashItemViewModel.originalBugBashItem.rejectReason)
+            || Boolean(bugBashItemViewModel.updatedBugBashItem.rejected) !== Boolean(bugBashItemViewModel.originalBugBashItem.rejected)
             || (bugBashItemViewModel.newComment != null && bugBashItemViewModel.newComment.trim() !== "");
 
         return isDirty;

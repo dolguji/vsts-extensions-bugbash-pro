@@ -14,6 +14,11 @@ export interface IBugBash {
     acceptTemplate?: {team: string, templateId: string};
 }
 
+export interface IBugBashViewModel {
+    updatedBugBash: IBugBash;
+    originalBugBash: IBugBash;
+}
+
 export interface IBugBashItem {
     id: string;
     bugBashId: string;
@@ -38,7 +43,7 @@ export interface IBugBashItemComment {
 }
 
 export interface IBugBashItemViewModel {
-    bugBashItem: IBugBashItem;
+    updatedBugBashItem: IBugBashItem;
     originalBugBashItem: IBugBashItem;
     newComment: string;
 }
