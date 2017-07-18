@@ -34,9 +34,9 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
     }
 
     protected initializeActionListeners() {
-        BugBashItemActionsCreator.InitializeBugBashItems.addListener((bugBashItems: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
-            if (bugBashItems) {
-                this.items[bugBashItems.bugBashId.toLowerCase()] = bugBashItems.bugBashItems.map(b => {
+        BugBashItemActionsCreator.InitializeBugBashItems.addListener((data: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
+            if (data) {
+                this.items[data.bugBashId.toLowerCase()] = data.bugBashItems.map(b => {
                     return {
                         updatedBugBashItem: {...b},
                         originalBugBashItem: {...b},
@@ -48,8 +48,8 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.RefreshBugBashItems.addListener((bugBashItems: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
-            this.items[bugBashItems.bugBashId.toLowerCase()] = bugBashItems.bugBashItems.map(b => {
+        BugBashItemActionsCreator.RefreshBugBashItems.addListener((data: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
+            this.items[data.bugBashId.toLowerCase()] = data.bugBashItems.map(b => {
                 return {
                     updatedBugBashItem: {...b},
                     originalBugBashItem: {...b},
@@ -60,28 +60,64 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.RefreshBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.RefreshBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.CreateBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.CreateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.UpdateBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.UpdateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.DeleteBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItemId: string}) => {
-            this._removeBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItemId);
+        BugBashItemActionsCreator.DeleteBugBashItem.addListener((data: {bugBashId: string, bugBashItemId: string}) => {
+            this._removeBugBashItem(data.bugBashId, data.bugBashItemId);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.AcceptBugBashItem.addListener((bugBashItem: {bugBashId: string, bugBashItem: IBugBashItem}) => {
-            this._addBugBashItem(bugBashItem.bugBashId, bugBashItem.bugBashItem);
+        BugBashItemActionsCreator.AcceptBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+            this._addBugBashItem(data.bugBashId, data.bugBashItem);
+            this.emitChanged();
+        });
+
+        BugBashItemActionsCreator.DirtyUpdateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem, newComment: string}) => {
+            const bugBashId = data.bugBashId;
+            const bugBashItem = data.bugBashItem;
+            if (bugBashItem) {
+                const existingItem = this.getBugBashItemViewModel(bugBashId, bugBashItem.id);
+                if (existingItem) {                    
+                    existingItem.updatedBugBashItem = {...data.bugBashItem};
+                    existingItem.newComment = data.newComment;
+                }
+            }
+
+            this.emitChanged();
+        });
+
+        BugBashItemActionsCreator.UndoUpdateBugBashItem.addListener((data: {bugBashId: string, bugBashItemId?: string}) => {
+            const bugBashId = data.bugBashId;
+            const bugBashItemId = data.bugBashItemId;
+            if (bugBashItemId) {
+                const existingItem = this.getBugBashItemViewModel(bugBashId, bugBashItemId);
+                if (existingItem) {                    
+                    existingItem.updatedBugBashItem = {...existingItem.originalBugBashItem};
+                    existingItem.newComment = "";
+                }
+            }
+            else {
+                // undo all bug bash items in given bug bash
+                const allItems = this.items[data.bugBashId.toLowerCase()] || [];
+                for (const item of allItems) {
+                    item.updatedBugBashItem = {...item.originalBugBashItem};
+                    item.newComment = "";
+                }
+            }
+
             this.emitChanged();
         });
     } 

@@ -14,7 +14,7 @@ import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
 import { Overlay } from "OfficeFabric/Overlay";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
-import { IBugBash } from "../Interfaces";
+import { IBugBash, IBugBashViewModel } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, BugBashHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
@@ -26,8 +26,7 @@ export interface IBugBashViewProps extends IBaseComponentProps {
 }
 
 export interface IBugBashViewState extends IBaseComponentState {
-    originalBugBash: IBugBash;
-    updatedBugBash: IBugBash;
+    bugBashViewModel: IBugBashViewModel;
     loading: boolean;
     selectedPivot?: string;
     bugBashEditorError?: string;
@@ -35,14 +34,13 @@ export interface IBugBashViewState extends IBaseComponentState {
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
     protected initializeState() {
-        let bugBash = null;
+        let bugBashViewModel = null;
         if (!this.props.bugBashId) {
-            bugBash = BugBashHelpers.getNewBugBash();
+            bugBashViewModel = BugBashHelpers.getNewBugBashViewModel();
         }
         
         this.state = {
-            updatedBugBash: bugBash && {...bugBash},
-            originalBugBash: bugBash && {...bugBash},
+            bugBashViewModel: bugBashViewModel && {...bugBashViewModel},
             loading: this.props.bugBashId ? true : false,
             selectedPivot: this.props.pivotKey
         };
@@ -54,7 +52,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     protected getStoresState(): IBugBashViewState {
         if (this.props.bugBashId) {
-            const bugBash = StoresHub.bugBashStore.getItem(this.props.bugBashId);
+            const bugBashViewModel = StoresHub.bugBashStore.getItem(this.props.bugBashId);
             const loading = StoresHub.bugBashStore.isLoading(this.props.bugBashId);
             let newState = {
                 loading: loading,
@@ -62,7 +60,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             } as IBugBashViewState;
             
             if (!loading) {
-                newState = {...newState, updatedBugBash: bugBash && {...bugBash}, originalBugBash: bugBash && {...bugBash}};
+                newState = {...newState, bugBashViewModel: bugBashViewModel && {...bugBashViewModel}};
             }
 
             return newState;
@@ -82,23 +80,22 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }  
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>): void {
-        let bugBash = null;
+        let bugBashViewModel = null;
         if (!nextProps.bugBashId) {
-            bugBash = BugBashHelpers.getNewBugBash();
-        } 
+            bugBashViewModel = BugBashHelpers.getNewBugBashViewModel();
+        }
         else {
-            bugBash = StoresHub.bugBashStore.getItem(nextProps.bugBashId);
+            bugBashViewModel = StoresHub.bugBashStore.getItem(nextProps.bugBashId);
         }          
 
         if (nextProps.bugBashId !== this.props.bugBashId) {
             this.updateState({
-                updatedBugBash: bugBash && {...bugBash},
-                originalBugBash: bugBash && {...bugBash},
-                loading: bugBash == null ? true : false,
+                bugBashViewModel: bugBashViewModel && {...bugBashViewModel},
+                loading: bugBashViewModel == null ? true : false,
                 selectedPivot: nextProps.pivotKey
             });
             
-            if (bugBash == null && nextProps.bugBashId) {
+            if (bugBashViewModel == null && nextProps.bugBashId) {
                 this._initializeBugBash(nextProps.bugBashId);
             }
         }
@@ -119,10 +116,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     public render(): JSX.Element {
-        if (!this.state.loading && !this.state.originalBugBash) {
+        if (!this.state.loading && !this.state.bugBashViewModel) {
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
         }
-        else if(!this.state.loading && this.state.originalBugBash && !Utils_String.equals(VSS.getWebContext().project.id, this.state.originalBugBash.projectId, true)) {
+        else if(!this.state.loading && this.state.bugBashViewModel && !Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashViewModel.originalBugBash.projectId, true)) {
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
         }
         else {
@@ -134,10 +131,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _renderHub(): React.ReactNode {
-        if (this.state.originalBugBash) {
-            let title = this.state.updatedBugBash.title;
+        if (this.state.bugBashViewModel.originalBugBash) {
+            let title = this.state.bugBashViewModel.updatedBugBash.title;
             let className = "bugbash-hub";
-            if (BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash)) {
+            if (BugBashHelpers.isDirty(this.state.bugBashViewModel)) {
                 className += " is-dirty";
                 title = "* " + title;
             }
@@ -207,7 +204,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         return <LazyLoad module="scripts/BugBashEditor">
             {(BugBashEditor) => (
                 <BugBashEditor.BugBashEditor 
-                    bugBash={this.state.updatedBugBash}
+                    bugBash={this.state.bugBashViewModel.updatedBugBash}
                     error={this.state.bugBashEditorError} 
                     save={() => this._saveBugBash()}
                     onChange={(updatedBugBash: IBugBash) => {

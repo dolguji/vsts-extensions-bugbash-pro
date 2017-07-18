@@ -70,7 +70,35 @@ export class BugBashStore extends BaseStore<IBugBashViewModel[], IBugBashViewMod
         BugBashActionsCreator.UpdateBugBash.addListener((bugBash: IBugBash) => {
             this._addBugBash(bugBash);
             this.emitChanged();
-        });   
+        });  
+
+        BugBashActionsCreator.DirtyUpdateBugBash.addListener((bugBash: IBugBash) => {
+            if (bugBash) {
+                const existingBugBash = this.getItem(bugBash.id);                
+                if (existingBugBash) {
+                    existingBugBash.updatedBugBash = {...bugBash};
+                }
+            }
+
+            this.emitChanged();
+        });
+
+        BugBashActionsCreator.UndoUpdateBugBash.addListener((bugBashId?: string) => {
+            if (bugBashId) {
+                const existingItem = this.getItem(bugBashId);
+                if (existingItem) {                    
+                    existingItem.updatedBugBash = {...existingItem.originalBugBash};
+                }
+            }
+            else {
+                // undo all bug bash items in given bug bash
+                for (const item of (this.items || [])) {
+                    item.updatedBugBash = {...item.originalBugBash};
+                }
+            }
+
+            this.emitChanged();
+        }); 
     }
 
     public getKey(): string {
@@ -92,8 +120,7 @@ export class BugBashStore extends BaseStore<IBugBashViewModel[], IBugBashViewMod
 
         const viewModel = {
             updatedBugBash: {...bugBash},
-            originalBugBash: {...bugBash},
-            newComment: ""
+            originalBugBash: {...bugBash}
         };
 
         const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBashViewModel) => Utils_String.equals(bugBash.id, existingBugBash.originalBugBash.id, true));

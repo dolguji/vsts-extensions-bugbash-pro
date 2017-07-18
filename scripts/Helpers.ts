@@ -8,7 +8,7 @@ import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionC
 import { StoreFactory } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
 
-import { IBugBash, IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
+import { IBugBash, IBugBashItem, IBugBashViewModel, IBugBashItemViewModel } from "./Interfaces";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {
@@ -76,6 +76,13 @@ export async function updateWorkItem(workItemId: number, fieldValues: IDictionar
 }
 
 export class BugBashHelpers {
+    public static getNewBugBashViewModel(): IBugBashViewModel {        
+        return {
+            updatedBugBash: this.getNewBugBash(),
+            originalBugBash: this.getNewBugBash()
+        }
+    }
+
     public static getNewBugBash(): IBugBash {
         return {
             id: "",
@@ -93,20 +100,34 @@ export class BugBashHelpers {
         };
     }
 
+    public static getBugBashViewModel(bugBash: IBugBash): IBugBashViewModel {
+        if (!bugBash) {
+            return null;
+        }
+
+        return {
+            updatedBugBash: {...bugBash},
+            originalBugBash: {...bugBash}
+        }
+    }
+
     public static isNew(bugBash: IBugBash): boolean {
         return bugBash.id == null || bugBash.id.trim() === "";
     }
 
-    public static isDirty(bugBash: IBugBash, originalBugBash: IBugBash): boolean {        
-        return !Utils_String.equals(bugBash.title, originalBugBash.title)
-            || !Utils_String.equals(bugBash.workItemType, originalBugBash.workItemType, true)
-            || !Utils_String.equals(bugBash.description, originalBugBash.description)
-            || !Utils_Date.equals(bugBash.startTime, originalBugBash.startTime)
-            || !Utils_Date.equals(bugBash.endTime, originalBugBash.endTime)
-            || !Utils_String.equals(bugBash.itemDescriptionField, originalBugBash.itemDescriptionField, true)
-            || bugBash.autoAccept !== originalBugBash.autoAccept
-            || !Utils_String.equals(bugBash.acceptTemplate.team, originalBugBash.acceptTemplate.team)
-            || !Utils_String.equals(bugBash.acceptTemplate.templateId, originalBugBash.acceptTemplate.templateId)
+    public static isDirty(bugBashViewModel: IBugBashViewModel): boolean {
+        const updatedBugBash = bugBashViewModel.updatedBugBash;
+        const originalBugBash = bugBashViewModel.originalBugBash;
+
+        return !Utils_String.equals(updatedBugBash.title, originalBugBash.title)
+            || !Utils_String.equals(updatedBugBash.workItemType, originalBugBash.workItemType, true)
+            || !Utils_String.equals(updatedBugBash.description, originalBugBash.description)
+            || !Utils_Date.equals(updatedBugBash.startTime, originalBugBash.startTime)
+            || !Utils_Date.equals(updatedBugBash.endTime, originalBugBash.endTime)
+            || !Utils_String.equals(updatedBugBash.itemDescriptionField, originalBugBash.itemDescriptionField, true)
+            || updatedBugBash.autoAccept !== originalBugBash.autoAccept
+            || !Utils_String.equals(updatedBugBash.acceptTemplate.team, originalBugBash.acceptTemplate.team)
+            || !Utils_String.equals(updatedBugBash.acceptTemplate.templateId, originalBugBash.acceptTemplate.templateId)
     }
 
     public static isValid(bugBash: IBugBash): boolean {
@@ -157,7 +178,7 @@ export class BugBashItemHelpers {
     }
 
     public static isNew(bugBashItem: IBugBashItem): boolean {
-        return !bugBashItem.id;
+        return bugBashItem.id == null || bugBashItem.id.trim() === "";
     }
 
     public static isDirty(bugBashItemViewModel: IBugBashItemViewModel): boolean {        

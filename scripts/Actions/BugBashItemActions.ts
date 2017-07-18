@@ -147,6 +147,14 @@ export module BugBashItemActions {
         }
     }
 
+    export function dirtyUpdateBugBashItem(bugBashId: string, bugBashItem: IBugBashItem, newComment: string) {
+        BugBashItemActionsCreator.DirtyUpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: bugBashItem, newComment: newComment});
+    }
+
+    export function undoUpdateBugBashItem(bugBashId: string, bugBashItemId?: string) {
+        BugBashItemActionsCreator.UndoUpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItemId: bugBashItemId});
+    }
+
     function getBugBashCollectionKey(bugBashId: string): string {
         return `BugBashCollection_${bugBashId}`;
     }
