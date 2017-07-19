@@ -5,10 +5,7 @@ import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 
-import { StoreFactory } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
-
-import { IBugBash, IBugBashItem, IBugBashViewModel, IBugBashItemViewModel } from "./Interfaces";
+import { IBugBash, IBugBashItem } from "./Interfaces";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {
@@ -98,15 +95,7 @@ export class BugBashHelpers {
     }
 }
 
-export class BugBashItemHelpers {
-    public static getNewBugBashItemViewModel(bugBashId: string): IBugBashItemViewModel {        
-        return {
-            updatedBugBashItem: this.getNewBugBashItem(bugBashId),
-            originalBugBashItem: this.getNewBugBashItem(bugBashId),
-            newComment: ""
-        }
-    }
-
+export class BugBashItemHelpers {    
     public static getNewBugBashItem(bugBashId: string): IBugBashItem {
         return {
             id: "",
@@ -124,46 +113,10 @@ export class BugBashItemHelpers {
         };
     }
 
-    public static getBugBashItemViewModel(bugBashItem: IBugBashItem): IBugBashItemViewModel {
-        if (!bugBashItem) {
-            return null;
-        }
-
-        return {
-            updatedBugBashItem: {...bugBashItem},
-            originalBugBashItem: {...bugBashItem},
-            newComment: ""
-        }
-    }
-
     public static isNew(bugBashItem: IBugBashItem): boolean {
         return bugBashItem.id == null || bugBashItem.id.trim() === "";
     }
-
-    public static isDirty(bugBashItemViewModel: IBugBashItemViewModel): boolean {        
-        let isDirty = !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.title, bugBashItemViewModel.originalBugBashItem.title)
-            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.teamId, bugBashItemViewModel.originalBugBashItem.teamId)
-            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.description, bugBashItemViewModel.originalBugBashItem.description)
-            || !Utils_String.equals(bugBashItemViewModel.updatedBugBashItem.rejectReason, bugBashItemViewModel.originalBugBashItem.rejectReason)
-            || Boolean(bugBashItemViewModel.updatedBugBashItem.rejected) !== Boolean(bugBashItemViewModel.originalBugBashItem.rejected)
-            || (bugBashItemViewModel.newComment != null && bugBashItemViewModel.newComment.trim() !== "");
-
-        return isDirty;
-    }
-
-    public static isValid(bugBashItem: IBugBashItem): boolean {
-        let dataValid = bugBashItem.title.trim().length > 0 
-            && bugBashItem.title.trim().length <= 256 
-            && bugBashItem.teamId.trim().length > 0
-            && (!bugBashItem.rejected || (bugBashItem.rejectReason != null && bugBashItem.rejectReason.trim().length > 0 && bugBashItem.rejectReason.trim().length <= 128));
-
-        if (dataValid) {
-            dataValid = dataValid && StoreFactory.getInstance<TeamStore>(TeamStore).getItem(bugBashItem.teamId) != null;
-        }
-
-        return dataValid;
-    }
-
+    
     public static isAccepted(bugBashItem: IBugBashItem): boolean {
         return bugBashItem.workItemId != null && bugBashItem.workItemId > 0;
     }

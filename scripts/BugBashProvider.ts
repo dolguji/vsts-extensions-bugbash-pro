@@ -1,4 +1,4 @@
-import { IBugBash, IBugBashItem, IBugBashViewModel, IBugBashItemViewModel } from "./Interfaces";
+import { IBugBash } from "./Interfaces";
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 import { EventHandlerList, NamedEventCollection } from "VSS/Events/Handlers";
@@ -9,12 +9,7 @@ export class BugBashProvider {
     private _changedHandlers = new EventHandlerList();
     private _namedEventCollection = new NamedEventCollection<any, any>();
 
-    constructor(bugBash?: IBugBash) {
-        if (bugBash) {
-            this.originalBugBash = {...bugBash};
-            this.updatedBugBash = {...bugBash};
-        }
-    }
+    constructor() {}
 
     public initialize(bugBash: IBugBash) {
         this.originalBugBash = {...bugBash};
@@ -40,8 +35,16 @@ export class BugBashProvider {
         this._changedHandlers.invokeHandlers(this);
     }
 
+    public isInitialized(): boolean {
+        return this.originalBugBash != null && this.updatedBugBash != null;
+
+    }
+    
     public update(bugBash: IBugBash) {
-        this.updatedBugBash = {...bugBash};
+        if (this.isInitialized()) {
+            this.updatedBugBash = {...bugBash};
+        }
+        
         this._emitChanged();
     }    
 
@@ -52,7 +55,10 @@ export class BugBashProvider {
     } 
     
     public undo() {
-        this.updatedBugBash = {...this.originalBugBash};
+        if (this.isInitialized()) {
+            this.updatedBugBash = {...this.originalBugBash};
+        }
+
         this._emitChanged();
     } 
 
@@ -64,7 +70,7 @@ export class BugBashProvider {
     }
 
     public isDirty(): boolean {
-        if (this.updatedBugBash && this.originalBugBash) {
+        if (this.isInitialized()) {
             const updatedBugBash = this.updatedBugBash;
             const originalBugBash = this.originalBugBash;
 
@@ -83,7 +89,7 @@ export class BugBashProvider {
     }
 
     public isValid(): boolean {
-        if (this.updatedBugBash) {
+        if (this.isInitialized()) {
             const bugBash = this.updatedBugBash;
 
             return bugBash.title.trim().length > 0

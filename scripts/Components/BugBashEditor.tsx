@@ -24,6 +24,7 @@ import { WorkItemFieldActions } from "VSTS_Extension/Flux/Actions/WorkItemFieldA
 import { WorkItemTypeActions } from "VSTS_Extension/Flux/Actions/WorkItemTypeActions";
 import { WorkItemTemplateActions } from "VSTS_Extension/Flux/Actions/WorkItemTemplateActions";
 
+import { BugBashProvider } from "../BugBashProvider";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBash } from "../Interfaces";
 import { RichEditorComponent } from "./RichEditorComponent";
@@ -31,7 +32,7 @@ import { RichEditorComponent } from "./RichEditorComponent";
 export interface IBugBashEditorProps extends IBaseComponentProps {
     bugBash: IBugBash;
     error?: string;
-    onChange: (bugBash: IBugBash) => void;
+    provider: BugBashProvider;
     save: () => void;
 }
 
@@ -245,52 +246,56 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         return "";
     }
 
+    private _onChange(updatedBugBash: IBugBash) {
+        this.props.provider.update(updatedBugBash);
+    }
+
     private _updateTitle(newTitle: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.title = newTitle;
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateWorkItemType(newType: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.workItemType = newType;
         bugBash.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: ""};  // reset template
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateDescription(newDescription: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.description = newDescription;
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateDescriptionField(fieldRefName: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.itemDescriptionField = fieldRefName;
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateStartTime(newStartTime: Date) {
         let bugBash = {...this.props.bugBash};
         bugBash.startTime = newStartTime;
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateEndTime(newEndTime: Date) {        
         let bugBash = {...this.props.bugBash};
         bugBash.endTime = newEndTime;
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateAutoAccept(autoAccept: boolean) {        
         let bugBash = {...this.props.bugBash};
         bugBash.autoAccept = autoAccept;
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 
     private _updateAcceptTemplate(templateId: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: templateId};
-        this.props.onChange(bugBash);
+        this._onChange(bugBash);
     }
 }

@@ -20,8 +20,10 @@ import { IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, BugBashHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
+import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { UrlActions } from "../Constants";
 import { BugBashProvider } from "../BugBashProvider";
+import { BugBashItemProvider } from "../BugBashItemProvider";
 
 export interface IBugBashViewProps extends IBaseComponentProps {    
     bugBashId?: string;
@@ -34,14 +36,18 @@ export interface IBugBashViewState extends IBaseComponentState {
     selectedPivot?: string;
     isBugBashDirty?: boolean;
     isBugBashValid?: boolean;
+    isAnyBugBashItemDirty?: boolean;
     bugBashEditorError?: string;
+    filterText?: string;
 }
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
-    private _provider: BugBashProvider;
+    private _bugBashProvider: BugBashProvider;
+    private _bugBashItemProvider: BugBashItemProvider;
 
     protected initializeState() {
-        this._provider = new BugBashProvider();
+        this._bugBashProvider = new BugBashProvider();
+        this._bugBashItemProvider = new BugBashItemProvider();
 
         this.state = {
             bugBash: null,
@@ -65,7 +71,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             
             if (!loading) {
                 if (bugBash) {
-                    this._provider.initialize(bugBash);
+                    this._bugBashProvider.initialize(bugBash);
                 }
                 newState = {...newState, bugBash: bugBash && {...bugBash}};
             }
@@ -82,12 +88,13 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     public componentDidMount(): void {
         super.componentDidMount();
 
-        this._provider.addChangedListener(this._onProviderChange);
+        this._bugBashProvider.addChangedListener(this._onProviderChange);
+        this._bugBashItemProvider.addChangedListener(this._onProviderChange);
 
         let bugBash: IBugBash = null;
         if (!this.props.bugBashId) {
             bugBash = BugBashHelpers.getNewBugBash();
-            this._provider.initialize(bugBash);
+            this._bugBashProvider.initialize(bugBash);
             this.updateState({
                 bugBash: bugBash,
                 loading: false
@@ -99,8 +106,12 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }  
 
     public componentWillUnmount() {
-        this._provider.removeChangedListener(this._onProviderChange);
-        this._provider.dispose();
+        super.componentWillUnmount();
+
+        this._bugBashProvider.removeChangedListener(this._onProviderChange);
+        this._bugBashItemProvider.removeChangedListener(this._onProviderChange);
+        this._bugBashProvider.dispose();
+        this._bugBashItemProvider.dispose();
     }
     
     public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>): void {
@@ -121,7 +132,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             });
             
             if (bugBash) {
-                this._provider.initialize(bugBash);                
+                this._bugBashProvider.initialize(bugBash);                
             }
             else {
                 this._initializeBugBash(nextProps.bugBashId);            
@@ -136,13 +147,12 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     @autobind
     private _onProviderChange() {
-        if (this._provider) {
-            this.updateState({
-                isBugBashDirty: this._provider.isDirty(),
-                isBugBashValid: this._provider.isValid(),
-                bugBash: this._provider.updatedBugBash
-            } as IBugBashViewState);
-        }
+        this.updateState({
+            isBugBashDirty: this._bugBashProvider.isDirty(),
+            isBugBashValid: this._bugBashProvider.isValid(),
+            isAnyBugBashItemDirty: this._bugBashItemProvider.isAnyItemDirty(),
+            bugBash: this._bugBashProvider.updatedBugBash
+        } as IBugBashViewState);
     }
 
     private async _initializeBugBash(bugBashId: string) {        
@@ -233,7 +243,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             commands: this._getResultViewCommands(),
                             filterProps: {
                                 showFilter: true,
-                                onFilterChange: (filterText) => console.log(filterText),
+                                onFilterChange: (filterText) => {
+                                    this.updateState({filterText: filterText} as IBugBashViewState);
+                                },
                                 filterPosition: FilterPosition.Left
                             }
                         },
@@ -262,9 +274,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 <BugBashEditor.BugBashEditor 
                     bugBash={this.state.bugBash}
                     error={this.state.bugBashEditorError} 
-                    onChange={(updatedBugBash: IBugBash) => {
-                        this._provider.update(updatedBugBash);
-                    }}
+                    provider={this._bugBashProvider}
                     save={() => this._saveBugBash()}
                 />
             )}
@@ -275,7 +285,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         if (BugBashHelpers.isNew(this.state.bugBash)) {
             return <LazyLoad module="scripts/BugBashResults">
                 {(BugBashResults) => (
-                    <BugBashResults.BugBashResults bugBash={StoresHub.bugBashStore.getItem(this.state.bugBash.id)} />
+                    <BugBashResults.BugBashResults 
+                        filterText={this.state.filterText || ""}
+                        bugBash={StoresHub.bugBashStore.getItem(this.state.bugBash.id)}
+                        provider={this._bugBashItemProvider} />
                 )}
             </LazyLoad>;
         }
@@ -310,7 +323,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this instance?");
                     if (confirm) {
-                        this._provider.undo();
+                        this._bugBashProvider.undo();
                     }
                 }
             },
@@ -320,7 +333,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     const confirm = await confirmAction(this.state.isBugBashDirty, "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
                     if (confirm) {
                         try {
-                            await BugBashActions.refreshBugBash(this.state.bugBash.id);
+                            await BugBashActions.refreshBugBash(this.props.bugBashId);
                         }
                         catch (e) {
                             this.updateState({bugBashEditorError: e} as IBugBashViewState);
@@ -336,10 +349,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.bugBash),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    // const confirm = await confirmAction(this._isAnyBugBashItemViewModelDirty(), "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
-                    // if (confirm) {
-                    //     BugBashItemActions.refreshItems(this.props.originalBugBash.id);
-                    // }
+                    const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
+                    if (confirm) {
+                        BugBashItemActions.refreshItems(this.props.bugBashId);
+                    }
                 }
             }
         ];
