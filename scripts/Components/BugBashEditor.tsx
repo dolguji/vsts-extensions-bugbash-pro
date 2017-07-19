@@ -66,8 +66,8 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     public componentDidMount(): void {
         super.componentDidMount();
         $(window).off("imagepasted", this._imagePastedHandler);
-        $(window).on("imagepasted", this._imagePastedHandler);
-
+        $(window).on("imagepasted", this._imagePastedHandler);    
+    
         WorkItemFieldActions.initializeWorkItemFields();
         WorkItemTypeActions.initializeWorkItemTypes();
         WorkItemTemplateActions.initializeWorkItemTemplates();

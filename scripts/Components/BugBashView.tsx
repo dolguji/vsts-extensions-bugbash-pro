@@ -11,14 +11,17 @@ import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
 
+import { CommandButton } from "OfficeFabric/Button";
+import { autobind } from "OfficeFabric/Utilities";
 import { Overlay } from "OfficeFabric/Overlay";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
-import { IBugBash, IBugBashViewModel } from "../Interfaces";
+import { IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, BugBashHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { UrlActions } from "../Constants";
+import { BugBashProvider } from "../BugBashProvider";
 
 export interface IBugBashViewProps extends IBaseComponentProps {    
     bugBashId?: string;
@@ -26,22 +29,23 @@ export interface IBugBashViewProps extends IBaseComponentProps {
 }
 
 export interface IBugBashViewState extends IBaseComponentState {
-    bugBashViewModel: IBugBashViewModel;
+    bugBash: IBugBash;
     loading: boolean;
     selectedPivot?: string;
+    isBugBashDirty?: boolean;
+    isBugBashValid?: boolean;
     bugBashEditorError?: string;
 }
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
+    private _provider: BugBashProvider;
+
     protected initializeState() {
-        let bugBashViewModel = null;
-        if (!this.props.bugBashId) {
-            bugBashViewModel = BugBashHelpers.getNewBugBashViewModel();
-        }
-        
+        this._provider = new BugBashProvider();
+
         this.state = {
-            bugBashViewModel: bugBashViewModel && {...bugBashViewModel},
-            loading: this.props.bugBashId ? true : false,
+            bugBash: null,
+            loading: true,
             selectedPivot: this.props.pivotKey
         };
     }
@@ -52,7 +56,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     protected getStoresState(): IBugBashViewState {
         if (this.props.bugBashId) {
-            const bugBashViewModel = StoresHub.bugBashStore.getItem(this.props.bugBashId);
+            const bugBash = StoresHub.bugBashStore.getItem(this.props.bugBashId);
             const loading = StoresHub.bugBashStore.isLoading(this.props.bugBashId);
             let newState = {
                 loading: loading,
@@ -60,7 +64,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             } as IBugBashViewState;
             
             if (!loading) {
-                newState = {...newState, bugBashViewModel: bugBashViewModel && {...bugBashViewModel}};
+                if (bugBash) {
+                    this._provider.initialize(bugBash);
+                }
+                newState = {...newState, bugBash: bugBash && {...bugBash}};
             }
 
             return newState;
@@ -74,34 +81,66 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     public componentDidMount(): void {
         super.componentDidMount();
-        if (this.props.bugBashId) {
-            this._initializeBugBash(this.props.bugBashId);
-        }        
-    }  
 
-    public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>): void {
-        let bugBashViewModel = null;
-        if (!nextProps.bugBashId) {
-            bugBashViewModel = BugBashHelpers.getNewBugBashViewModel();
+        this._provider.addChangedListener(this._onProviderChange);
+
+        let bugBash: IBugBash = null;
+        if (!this.props.bugBashId) {
+            bugBash = BugBashHelpers.getNewBugBash();
+            this._provider.initialize(bugBash);
+            this.updateState({
+                bugBash: bugBash,
+                loading: false
+            } as IBugBashViewState);
         }
         else {
-            bugBashViewModel = StoresHub.bugBashStore.getItem(nextProps.bugBashId);
-        }          
+            this._initializeBugBash(this.props.bugBashId);
+        }
+    }  
 
+    public componentWillUnmount() {
+        this._provider.removeChangedListener(this._onProviderChange);
+        this._provider.dispose();
+    }
+    
+    public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>): void {
         if (nextProps.bugBashId !== this.props.bugBashId) {
+            let bugBash: IBugBash = null;
+
+            if (!nextProps.bugBashId) {
+                bugBash = BugBashHelpers.getNewBugBash();
+            }
+            else {
+                bugBash = StoresHub.bugBashStore.getItem(nextProps.bugBashId);
+            } 
+            
             this.updateState({
-                bugBashViewModel: bugBashViewModel && {...bugBashViewModel},
-                loading: bugBashViewModel == null ? true : false,
+                bugBash: bugBash && {...bugBash},
+                loading: bugBash == null ? true : false,
                 selectedPivot: nextProps.pivotKey
             });
             
-            if (bugBashViewModel == null && nextProps.bugBashId) {
-                this._initializeBugBash(nextProps.bugBashId);
+            if (bugBash) {
+                this._provider.initialize(bugBash);                
+            }
+            else {
+                this._initializeBugBash(nextProps.bugBashId);            
             }
         }
         else {
             this.updateState({
                 selectedPivot: nextProps.pivotKey
+            } as IBugBashViewState);
+        }
+    }
+
+    @autobind
+    private _onProviderChange() {
+        if (this._provider) {
+            this.updateState({
+                isBugBashDirty: this._provider.isDirty(),
+                isBugBashValid: this._provider.isValid(),
+                bugBash: this._provider.updatedBugBash
             } as IBugBashViewState);
         }
     }
@@ -116,10 +155,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     public render(): JSX.Element {
-        if (!this.state.loading && !this.state.bugBashViewModel) {
+        if (!this.state.loading && !this.state.bugBash) {
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
         }
-        else if(!this.state.loading && this.state.bugBashViewModel && !Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashViewModel.originalBugBash.projectId, true)) {
+        else if(!this.state.loading && this.state.bugBash && !Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBash.projectId, true)) {
             return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
         }
         else {
@@ -130,18 +169,38 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         }            
     }
 
+    private _onTitleRender(title: string): React.ReactNode {
+        return (
+            <div className="bugbash-hub-title">
+                <CommandButton 
+                    text="Bug Bashes" 
+                    onClick={async () => {
+                        const confirm = await confirmAction(this.state.isBugBashDirty, "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
+
+                        if (confirm) {
+                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                        } 
+                    }}
+                    className="bugbashes-button" />
+                <span className="divider">></span>
+                <span className="bugbash-title">{title}</span>
+            </div>
+        )
+    }
+
     private _renderHub(): React.ReactNode {
-        if (this.state.bugBashViewModel.originalBugBash) {
-            let title = this.state.bugBashViewModel.updatedBugBash.title;
+        if (this.state.bugBash) {
+            let title = this.state.bugBash.title;
             let className = "bugbash-hub";
-            if (BugBashHelpers.isDirty(this.state.bugBashViewModel)) {
+            if (this.state.isBugBashDirty) {
                 className += " is-dirty";
                 title = "* " + title;
             }
 
             return <Hub 
                 className={className}
-                title={title}
+                onTitleRender={() => this._onTitleRender(title)}
                 pivotProps={{
                     onPivotClick: async (selectedPivotKey: string, ev?: React.MouseEvent<HTMLElement>) => {
                         this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
@@ -172,7 +231,6 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             key: "results",
                             text: "Results",
                             commands: this._getResultViewCommands(),
-                            farCommands: this._getFarCommands(),
                             filterProps: {
                                 showFilter: true,
                                 onFilterChange: (filterText) => console.log(filterText),
@@ -183,13 +241,11 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             key: "edit",
                             text: "Editor",
                             commands: this._getEditorViewCommands(),
-                            farCommands: this._getFarCommands()
                         },
                         {
                             key: "charts",
                             text: "Charts",
                             commands: this._getResultViewCommands(),
-                            farCommands: this._getFarCommands()
                         }
                     ]
                 }}
@@ -204,21 +260,22 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         return <LazyLoad module="scripts/BugBashEditor">
             {(BugBashEditor) => (
                 <BugBashEditor.BugBashEditor 
-                    bugBash={this.state.bugBashViewModel.updatedBugBash}
+                    bugBash={this.state.bugBash}
                     error={this.state.bugBashEditorError} 
-                    save={() => this._saveBugBash()}
                     onChange={(updatedBugBash: IBugBash) => {
-                        this.updateState({updatedBugBash: updatedBugBash} as IBugBashViewState);
-                    }} />
+                        this._provider.update(updatedBugBash);
+                    }}
+                    save={() => this._saveBugBash()}
+                />
             )}
         </LazyLoad>;
     }
     
     private _renderResults(): JSX.Element {
-        if (this.state.originalBugBash.id) {
+        if (BugBashHelpers.isNew(this.state.bugBash)) {
             return <LazyLoad module="scripts/BugBashResults">
                 {(BugBashResults) => (
-                    <BugBashResults.BugBashResults bugBash={this.state.originalBugBash} />
+                    <BugBashResults.BugBashResults bugBash={StoresHub.bugBashStore.getItem(this.state.bugBash.id)} />
                 )}
             </LazyLoad>;
         }
@@ -228,10 +285,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _renderCharts(): JSX.Element {
-        if (this.state.originalBugBash.id) {
+        if (BugBashHelpers.isNew(this.state.bugBash)) {
             return <LazyLoad module="scripts/BugBashCharts">
                 {(BugBashCharts) => (
-                    <BugBashCharts.BugBashCharts bugBash={this.state.originalBugBash} />
+                    <BugBashCharts.BugBashCharts bugBash={StoresHub.bugBashStore.getItem(this.state.bugBash.id)} />
                 )}
             </LazyLoad>;
         }
@@ -240,46 +297,30 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         }
     }
 
-    private _getFarCommands(): IContextualMenuItem[] {
-        return [{
-            key: "Home", name: "Home", iconProps: {iconName: "Home"}, 
-            onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
-                const confirm = await confirmAction(
-                    BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash), 
-                    "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
-
-                if (confirm) {
-                    let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                    navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
-                }                
-            }
-        }];
-    }
-
     private _getEditorViewCommands(): IContextualMenuItem[] {
         return [
             {
-                key: "save", name: "Save", iconProps: {iconName: "Save"}, disabled: !BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash) || !BugBashHelpers.isValid(this.state.updatedBugBash),
+                key: "save", name: "Save", iconProps: {iconName: "Save"}, disabled: !this.state.isBugBashDirty || !this.state.isBugBashValid,
                 onClick: (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     this._saveBugBash();
                 }
             },
             {
-                key: "undo", name: "Undo", iconProps: {iconName: "Undo"}, disabled: BugBashHelpers.isNew(this.state.originalBugBash) || !BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash),
+                key: "undo", name: "Undo", iconProps: {iconName: "Undo"}, disabled: BugBashHelpers.isNew(this.state.bugBash) || !this.state.isBugBashDirty,
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this instance?");
                     if (confirm) {
-                        this.updateState({updatedBugBash: {...this.state.originalBugBash}} as IBugBashViewState);
+                        this._provider.undo();
                     }
                 }
             },
             {
-                key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.originalBugBash),
+                key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.bugBash),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
-                    const confirm = await confirmAction(BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+                    const confirm = await confirmAction(this.state.isBugBashDirty, "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
                     if (confirm) {
                         try {
-                            await BugBashActions.refreshBugBash(this.state.originalBugBash.id);
+                            await BugBashActions.refreshBugBash(this.state.bugBash.id);
                         }
                         catch (e) {
                             this.updateState({bugBashEditorError: e} as IBugBashViewState);
@@ -293,7 +334,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     private _getResultViewCommands(): IContextualMenuItem[] {
         return [
             {
-                key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.originalBugBash),
+                key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.bugBash),
                 onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
                     // const confirm = await confirmAction(this._isAnyBugBashItemViewModelDirty(), "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
                     // if (confirm) {
@@ -305,9 +346,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private async _saveBugBash() {
-        if (BugBashHelpers.isNew(this.state.originalBugBash) && BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash) && BugBashHelpers.isValid(this.state.updatedBugBash)) {
+        if (BugBashHelpers.isNew(this.state.bugBash) && this.state.isBugBashDirty && this.state.isBugBashValid) {
             try {
-                const createdBugBash = await BugBashActions.createBugBash(this.state.updatedBugBash);
+                const createdBugBash = await BugBashActions.createBugBash(this.state.bugBash);
                 let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                 navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, { id: createdBugBash.id }, true);
             }
@@ -315,9 +356,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 this.updateState({bugBashEditorError: e} as IBugBashViewState);
             }
         }
-        else if (!BugBashHelpers.isNew(this.state.originalBugBash) && BugBashHelpers.isDirty(this.state.updatedBugBash, this.state.originalBugBash) && BugBashHelpers.isValid(this.state.updatedBugBash)) {
+        else if (!BugBashHelpers.isNew(this.state.bugBash) && this.state.isBugBashDirty && this.state.isBugBashValid) {
             try {
-                await BugBashActions.updateBugBash(this.state.updatedBugBash);
+                await BugBashActions.updateBugBash(this.state.bugBash);
             }
             catch (e) {
                 this.updateState({bugBashEditorError: e} as IBugBashViewState);

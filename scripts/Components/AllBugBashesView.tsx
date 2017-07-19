@@ -60,9 +60,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     }
 
     protected getStoresState(): IAllBugBashesViewState {        
-        const allBugBashes = (StoresHub.bugBashStore.getAll() || [])
-            .map(b => b.originalBugBash)
-            .filter((bugBash: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
+        const allBugBashes = (StoresHub.bugBashStore.getAll() || []).filter((bugBash: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
         const currentTime = new Date();
         
         return {

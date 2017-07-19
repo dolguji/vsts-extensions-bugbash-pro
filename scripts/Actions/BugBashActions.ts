@@ -131,14 +131,6 @@ export module BugBashActions {
         }
     }
 
-    export function dirtyUpdateBugBash(bugBash: IBugBash) {
-        BugBashActionsCreator.DirtyUpdateBugBash.invoke(bugBash);
-    }
-
-    export function undoUpdateBugBash(bugBashId?: string) {
-        BugBashActionsCreator.UndoUpdateBugBash.invoke(bugBashId);
-    }
-
     function translateDates(bugBash: IBugBash) {
         if (typeof bugBash.startTime === "string") {
             if ((bugBash.startTime as string).trim() === "") {

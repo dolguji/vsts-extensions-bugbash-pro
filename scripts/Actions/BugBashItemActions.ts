@@ -147,14 +147,6 @@ export module BugBashItemActions {
         }
     }
 
-    export function dirtyUpdateBugBashItem(bugBashId: string, bugBashItem: IBugBashItem, newComment: string) {
-        BugBashItemActionsCreator.DirtyUpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: bugBashItem, newComment: newComment});
-    }
-
-    export function undoUpdateBugBashItem(bugBashId: string, bugBashItemId?: string) {
-        BugBashItemActionsCreator.UndoUpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItemId: bugBashItemId});
-    }
-
     function getBugBashCollectionKey(bugBashId: string): string {
         return `BugBashCollection_${bugBashId}`;
     }
@@ -175,7 +167,7 @@ export module BugBashItemActions {
     async function acceptItem(bugBashItem: IBugBashItem): Promise<IAcceptedBugBashItemViewModel> {
         let updatedBugBashItem: IBugBashItem;
         let savedWorkItem: WorkItem;
-        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId).originalBugBash;
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
         // read bug bash wit template
         try {
@@ -242,7 +234,7 @@ export module BugBashItemActions {
         let fieldValues: IDictionaryStringTo<string> = {};
         const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
-        fieldValues["System.History"] = getAcceptedItemComment(bugBash.originalBugBash, bugBashItem);
+        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItem);
 
         updateWorkItem(workItemId, fieldValues);
     }

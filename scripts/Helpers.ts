@@ -76,13 +76,6 @@ export async function updateWorkItem(workItemId: number, fieldValues: IDictionar
 }
 
 export class BugBashHelpers {
-    public static getNewBugBashViewModel(): IBugBashViewModel {        
-        return {
-            updatedBugBash: this.getNewBugBash(),
-            originalBugBash: this.getNewBugBash()
-        }
-    }
-
     public static getNewBugBash(): IBugBash {
         return {
             id: "",
@@ -100,42 +93,8 @@ export class BugBashHelpers {
         };
     }
 
-    public static getBugBashViewModel(bugBash: IBugBash): IBugBashViewModel {
-        if (!bugBash) {
-            return null;
-        }
-
-        return {
-            updatedBugBash: {...bugBash},
-            originalBugBash: {...bugBash}
-        }
-    }
-
     public static isNew(bugBash: IBugBash): boolean {
         return bugBash.id == null || bugBash.id.trim() === "";
-    }
-
-    public static isDirty(bugBashViewModel: IBugBashViewModel): boolean {
-        const updatedBugBash = bugBashViewModel.updatedBugBash;
-        const originalBugBash = bugBashViewModel.originalBugBash;
-
-        return !Utils_String.equals(updatedBugBash.title, originalBugBash.title)
-            || !Utils_String.equals(updatedBugBash.workItemType, originalBugBash.workItemType, true)
-            || !Utils_String.equals(updatedBugBash.description, originalBugBash.description)
-            || !Utils_Date.equals(updatedBugBash.startTime, originalBugBash.startTime)
-            || !Utils_Date.equals(updatedBugBash.endTime, originalBugBash.endTime)
-            || !Utils_String.equals(updatedBugBash.itemDescriptionField, originalBugBash.itemDescriptionField, true)
-            || updatedBugBash.autoAccept !== originalBugBash.autoAccept
-            || !Utils_String.equals(updatedBugBash.acceptTemplate.team, originalBugBash.acceptTemplate.team)
-            || !Utils_String.equals(updatedBugBash.acceptTemplate.templateId, originalBugBash.acceptTemplate.templateId)
-    }
-
-    public static isValid(bugBash: IBugBash): boolean {
-        return bugBash.title.trim().length > 0
-            && bugBash.title.length <= 256
-            && bugBash.workItemType.trim().length > 0
-            && bugBash.itemDescriptionField.trim().length > 0
-            && (!bugBash.startTime || !bugBash.endTime || Utils_Date.defaultComparer(bugBash.startTime, bugBash.endTime) < 0);
     }
 }
 

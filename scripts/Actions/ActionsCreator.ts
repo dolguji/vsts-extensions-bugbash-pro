@@ -15,9 +15,6 @@ export module BugBashActionsCreator {
     export var UpdateBugBash = new Action<IBugBash>();
     export var DeleteBugBash = new Action<string>();
     export var CreateBugBash = new Action<IBugBash>();
-
-    export var DirtyUpdateBugBash = new Action<IBugBash>();
-    export var UndoUpdateBugBash = new Action<string>();
 }
 
 export module BugBashItemCommentActionsCreator {
@@ -34,7 +31,4 @@ export module BugBashItemActionsCreator {
     export var UpdateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
     export var DeleteBugBashItem = new Action<{bugBashId: string, bugBashItemId: string}>();
     export var AcceptBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-
-    export var DirtyUpdateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem, newComment: string}>();
-    export var UndoUpdateBugBashItem = new Action<{bugBashId: string, bugBashItemId?: string}>();
 }

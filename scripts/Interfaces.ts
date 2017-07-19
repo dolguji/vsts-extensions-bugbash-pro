@@ -14,11 +14,6 @@ export interface IBugBash {
     acceptTemplate?: {team: string, templateId: string};
 }
 
-export interface IBugBashViewModel {
-    updatedBugBash: IBugBash;
-    originalBugBash: IBugBash;
-}
-
 export interface IBugBashItem {
     id: string;
     bugBashId: string;

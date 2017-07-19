@@ -2,6 +2,27 @@
     height: 100%;
 
     .bugbash-hub {
+        .hub-title {
+            display: block;
+
+            .bugbashes-button {
+                background: none;
+                font-size: 21px;
+                padding: 0;
+                border: 0;
+                font-weight: 100;
+                height: 28px;
+
+                .ms-Button-label {
+                    margin: 0;
+                }
+            }
+
+            .divider {
+                margin: 0 5px;
+            }
+        }
+
         .bugbash-hub-contents {
             height: 100%;
 
@@ -15,7 +36,6 @@
         }
 
         &.is-dirty .hub-header .hub-title {
-            font-weight: bold;
             color: #000;
         }
     }
