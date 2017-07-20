@@ -8,7 +8,7 @@ import Utils_Date = require("VSS/Utils/Date");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import { UrlActions } from "../Constants";
 
-import { BugBashItemActionsCreator } from "./ActionsCreator";
+import { BugBashItemActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemStore } from "../Stores/BugBashItemStore";
 import { BugBashStore } from "../Stores/BugBashStore";
@@ -19,7 +19,7 @@ import { createWorkItem, updateWorkItem, BugBashItemHelpers } from "../Helpers";
 export module BugBashItemActions {
     export async function initializeItems(bugBashId: string) {
         if (StoresHub.bugBashItemStore.isLoaded(bugBashId)) {
-            BugBashItemActionsCreator.InitializeBugBashItems.invoke(null);
+            BugBashItemActionsHub.InitializeBugBashItems.invoke(null);
         }
         else if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashId);
@@ -29,7 +29,7 @@ export module BugBashItemActions {
                 translateDates(bugBashItem);
             }
             
-            BugBashItemActionsCreator.InitializeBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
+            BugBashItemActionsHub.InitializeBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
         }
     } 
@@ -43,7 +43,7 @@ export module BugBashItemActions {
                 translateDates(bugBashItem);
             }
             
-            BugBashItemActionsCreator.RefreshBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
+            BugBashItemActionsHub.RefreshBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
         }
     } 
@@ -56,7 +56,7 @@ export module BugBashItemActions {
             if (bugBashItem) {
                 translateDates(bugBashItem);
                 
-                BugBashItemActionsCreator.RefreshBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: bugBashItem});
+                BugBashItemActionsHub.RefreshBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: bugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
             }
             else {
@@ -85,7 +85,7 @@ export module BugBashItemActions {
                 let savedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashId), bugBashItem, false);
                 translateDates(savedBugBashItem);
                 
-                BugBashItemActionsCreator.UpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
+                BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
             }
             catch (e) {
@@ -106,7 +106,7 @@ export module BugBashItemActions {
                 let savedBugBashItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(bugBashId), bugBashItem, false);
                 translateDates(savedBugBashItem);         
                 
-                BugBashItemActionsCreator.CreateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
+                BugBashItemActionsHub.CreateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
             }
             catch (e) {
                 throw e.message;
@@ -125,7 +125,7 @@ export module BugBashItemActions {
                 // eat exception
             }
 
-            BugBashItemActionsCreator.DeleteBugBashItem.invoke({bugBashId: bugBashId, bugBashItemId: bugBashItemId});
+            BugBashItemActionsHub.DeleteBugBashItem.invoke({bugBashId: bugBashId, bugBashItemId: bugBashItemId});
             StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
         }
     }
@@ -137,7 +137,7 @@ export module BugBashItemActions {
             try {
                 let acceptedBugBashItemViewModel = await acceptItem(bugBashItem);
                 
-                BugBashItemActionsCreator.AcceptBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: acceptedBugBashItemViewModel.bugBashItem});
+                BugBashItemActionsHub.AcceptBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: acceptedBugBashItemViewModel.bugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
             }
             catch (e) {
@@ -211,7 +211,7 @@ export module BugBashItemActions {
             savedWorkItem = await createWorkItem(bugBash.workItemType, fieldValues);
         }
         catch (e) {
-            BugBashItemActionsCreator.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
+            BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
             throw e.message;
         }
         

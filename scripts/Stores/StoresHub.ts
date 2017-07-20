@@ -12,8 +12,10 @@ import { BugBashStore } from "./BugBashStore";
 import { BugBashItemStore } from "./BugBashItemStore";
 import { BugBashItemCommentStore } from "./BugBashItemCommentStore";
 import { SettingsStore } from "./SettingsStore";
+import { WorkItemStore } from "./WorkItemStore";
 
 export module StoresHub {
+    export var workItemStore: WorkItemStore = StoreFactory.getInstance<WorkItemStore>(WorkItemStore);
     export var settingsStore: SettingsStore = StoreFactory.getInstance<SettingsStore>(SettingsStore);
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
     export var bugBashItemStore: BugBashItemStore = StoreFactory.getInstance<BugBashItemStore>(BugBashItemStore);

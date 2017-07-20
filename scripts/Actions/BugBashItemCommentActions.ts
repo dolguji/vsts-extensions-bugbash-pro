@@ -1,6 +1,6 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
-import { BugBashItemCommentActionsCreator } from "./ActionsCreator";
+import { BugBashItemCommentActionsHub } from "./ActionsHub";
 import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
@@ -8,7 +8,7 @@ import { StoresHub } from "../Stores/StoresHub";
 export module BugBashItemCommentActions {
     export async function initializeComments(bugBashItemId: string) {
         if (StoresHub.bugBashItemCommentStore.isLoaded(bugBashItemId)) {
-            BugBashItemCommentActionsCreator.InitializeComments.invoke(null);
+            BugBashItemCommentActionsHub.InitializeComments.invoke(null);
         }
         else if (!StoresHub.bugBashItemCommentStore.isLoading(bugBashItemId)) {
             StoresHub.bugBashItemCommentStore.setLoading(true, bugBashItemId);
@@ -18,7 +18,7 @@ export module BugBashItemCommentActions {
                 translateDates(comment);
             }
             
-            BugBashItemCommentActionsCreator.InitializeComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
+            BugBashItemCommentActionsHub.InitializeComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
             StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
         }
     } 
@@ -32,7 +32,7 @@ export module BugBashItemCommentActions {
                 translateDates(comment);
             }
             
-            BugBashItemCommentActionsCreator.RefreshComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
+            BugBashItemCommentActionsHub.RefreshComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
             StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
         }
     }
@@ -53,7 +53,7 @@ export module BugBashItemCommentActions {
                 const savedComment = await ExtensionDataManager.createDocument<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), bugBashItemComment, false);
                 translateDates(savedComment);
                                 
-                BugBashItemCommentActionsCreator.CreateComment.invoke({bugBashItemId: bugBashItemId, comment: savedComment});
+                BugBashItemCommentActionsHub.CreateComment.invoke({bugBashItemId: bugBashItemId, comment: savedComment});
                 StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
             }
             catch (e) {

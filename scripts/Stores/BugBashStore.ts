@@ -3,7 +3,7 @@ import Utils_Array = require("VSS/Utils/Array");
 
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBash } from "../Interfaces";
-import { BugBashActionsCreator } from "../Actions/ActionsCreator";
+import { BugBashActionsHub } from "../Actions/ActionsHub";
 
 export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     private _allLoaded: boolean = false;
@@ -21,7 +21,7 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
     }
 
     protected initializeActionListeners() {
-        BugBashActionsCreator.InitializeAllBugBashes.addListener((bugBashes: IBugBash[]) => {
+        BugBashActionsHub.InitializeAllBugBashes.addListener((bugBashes: IBugBash[]) => {
             if (bugBashes) {
                 this.items = bugBashes;
             }
@@ -29,12 +29,12 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.emitChanged();
         }); 
 
-        BugBashActionsCreator.RefreshAllBugBashes.addListener((bugBashes: IBugBash[]) => {
+        BugBashActionsHub.RefreshAllBugBashes.addListener((bugBashes: IBugBash[]) => {
             this.items = bugBashes;
             this.emitChanged();
         });
 
-        BugBashActionsCreator.InitializeBugBash.addListener((bugBash: IBugBash) => {
+        BugBashActionsHub.InitializeBugBash.addListener((bugBash: IBugBash) => {
             if (bugBash) {
                 this._addBugBash(bugBash);
             }
@@ -42,22 +42,22 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.emitChanged();
         }); 
         
-        BugBashActionsCreator.RefreshBugBash.addListener((bugBash: IBugBash) => {
+        BugBashActionsHub.RefreshBugBash.addListener((bugBash: IBugBash) => {
             this._addBugBash(bugBash);
             this.emitChanged();
         }); 
 
-        BugBashActionsCreator.CreateBugBash.addListener((bugBash: IBugBash) => {
+        BugBashActionsHub.CreateBugBash.addListener((bugBash: IBugBash) => {
             this._addBugBash(bugBash);
             this.emitChanged();
         });  
 
-        BugBashActionsCreator.DeleteBugBash.addListener((bugBashId: string) => {
+        BugBashActionsHub.DeleteBugBash.addListener((bugBashId: string) => {
             this._removeBugBash(bugBashId);
             this.emitChanged();
         });
 
-        BugBashActionsCreator.UpdateBugBash.addListener((bugBash: IBugBash) => {
+        BugBashActionsHub.UpdateBugBash.addListener((bugBash: IBugBash) => {
             this._addBugBash(bugBash);
             this.emitChanged();
         });  

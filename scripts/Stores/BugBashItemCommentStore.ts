@@ -1,6 +1,6 @@
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBashItemComment } from "../Interfaces";
-import { BugBashItemCommentActionsCreator } from "../Actions/ActionsCreator";
+import { BugBashItemCommentActionsHub } from "../Actions/ActionsHub";
 
 export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugBashItemComment[]>, IBugBashItemComment[], string> {
     constructor() {
@@ -13,7 +13,7 @@ export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugB
     }
 
     protected initializeActionListeners() {
-        BugBashItemCommentActionsCreator.InitializeComments.addListener((commentItems: {bugBashItemId: string, comments: IBugBashItemComment[]}) => {
+        BugBashItemCommentActionsHub.InitializeComments.addListener((commentItems: {bugBashItemId: string, comments: IBugBashItemComment[]}) => {
             if (commentItems) {
                 this.items[commentItems.bugBashItemId.toLowerCase()] = commentItems.comments;
             }
@@ -21,7 +21,7 @@ export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugB
             this.emitChanged();
         });
 
-        BugBashItemCommentActionsCreator.RefreshComments.addListener((commentItems: {bugBashItemId: string, comments: IBugBashItemComment[]}) => {
+        BugBashItemCommentActionsHub.RefreshComments.addListener((commentItems: {bugBashItemId: string, comments: IBugBashItemComment[]}) => {
             if (commentItems) {
                 this.items[commentItems.bugBashItemId.toLowerCase()] = commentItems.comments;
             }
@@ -29,7 +29,7 @@ export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugB
             this.emitChanged();
         });
 
-        BugBashItemCommentActionsCreator.CreateComment.addListener((commentItem: {bugBashItemId: string, comment: IBugBashItemComment}) => {
+        BugBashItemCommentActionsHub.CreateComment.addListener((commentItem: {bugBashItemId: string, comment: IBugBashItemComment}) => {
             if (commentItem) {
                 if (this.items[commentItem.bugBashItemId.toLowerCase()] == null) {
                     this.items[commentItem.bugBashItemId.toLowerCase()] = [];

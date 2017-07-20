@@ -1,6 +1,6 @@
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 
-import { SettingsActionsCreator } from "../Actions/ActionsCreator";
+import { SettingsActionsHub } from "../Actions/ActionsHub";
 import { Settings } from "../Interfaces";
 
 export class SettingsStore extends BaseStore<Settings, Settings, void> {
@@ -9,7 +9,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
     }
 
     protected initializeActionListeners() {
-        SettingsActionsCreator.InitializeBugBashSettings.addListener((settings: Settings) => {
+        SettingsActionsHub.InitializeBugBashSettings.addListener((settings: Settings) => {
             if (settings) {
                 this.items = settings;
             }
@@ -17,7 +17,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
             this.emitChanged();
         });
 
-        SettingsActionsCreator.UpdateBugBashSettings.addListener((settings: Settings) => {
+        SettingsActionsHub.UpdateBugBashSettings.addListener((settings: Settings) => {
             if (settings) {
                 this.items = settings;
             }

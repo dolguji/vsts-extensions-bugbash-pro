@@ -46,32 +46,6 @@ export function buildGitPush(path: string, oldObjectId: string, changeType: Vers
     } as GitPush;
 }
 
-export async function createWorkItem(workItemType: string, fieldValues: IDictionaryStringTo<string>): Promise<WorkItem> {
-    let patchDocument: JsonPatchDocument & JsonPatchOperation[] = [];
-    for (let fieldRefName in fieldValues) {
-        patchDocument.push({
-            op: Operation.Add,
-            path: `/fields/${fieldRefName}`,
-            value: fieldValues[fieldRefName]
-        } as JsonPatchOperation);
-    }
-
-    return await WitClient.getClient().createWorkItem(patchDocument, VSS.getWebContext().project.id, workItemType);
-}
-
-export async function updateWorkItem(workItemId: number, fieldValues: IDictionaryStringTo<string>): Promise<WorkItem> {
-    let patchDocument: JsonPatchDocument & JsonPatchOperation[] = [];
-    for (let fieldRefName in fieldValues) {
-        patchDocument.push({
-            op: Operation.Add,
-            path: `/fields/${fieldRefName}`,
-            value: fieldValues[fieldRefName]
-        } as JsonPatchOperation);
-    }
-
-    return await WitClient.getClient().updateWorkItem(patchDocument, workItemId);
-}
-
 export class BugBashHelpers {
     public static getNewBugBash(): IBugBash {
         return {

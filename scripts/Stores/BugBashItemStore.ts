@@ -3,7 +3,7 @@ import Utils_Array = require("VSS/Utils/Array");
 
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBashItem } from "../Interfaces";
-import { BugBashItemActionsCreator } from "../Actions/ActionsCreator";
+import { BugBashItemActionsHub } from "../Actions/ActionsHub";
 
 export interface BugBashItemStoreKey {
     bugBashId: string;
@@ -34,7 +34,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
     }
 
     protected initializeActionListeners() {
-        BugBashItemActionsCreator.InitializeBugBashItems.addListener((data: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
+        BugBashItemActionsHub.InitializeBugBashItems.addListener((data: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
             if (data) {
                 this.items[data.bugBashId.toLowerCase()] = data.bugBashItems;
             }
@@ -42,33 +42,33 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.RefreshBugBashItems.addListener((data: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
+        BugBashItemActionsHub.RefreshBugBashItems.addListener((data: {bugBashId: string, bugBashItems: IBugBashItem[]}) => {
             this.items[data.bugBashId.toLowerCase()] = data.bugBashItems;
 
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.RefreshBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+        BugBashItemActionsHub.RefreshBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
             this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.CreateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+        BugBashItemActionsHub.CreateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
             this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.UpdateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+        BugBashItemActionsHub.UpdateBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
             this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.DeleteBugBashItem.addListener((data: {bugBashId: string, bugBashItemId: string}) => {
+        BugBashItemActionsHub.DeleteBugBashItem.addListener((data: {bugBashId: string, bugBashItemId: string}) => {
             this._removeBugBashItem(data.bugBashId, data.bugBashItemId);
             this.emitChanged();
         });
 
-        BugBashItemActionsCreator.AcceptBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
+        BugBashItemActionsHub.AcceptBugBashItem.addListener((data: {bugBashId: string, bugBashItem: IBugBashItem}) => {
             this._addBugBashItem(data.bugBashId, data.bugBashItem);
             this.emitChanged();
         });        

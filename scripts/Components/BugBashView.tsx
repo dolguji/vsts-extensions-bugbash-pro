@@ -57,7 +57,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashStore];
+        return [StoresHub.bugBashStore, StoresHub.bugBashItemStore];
     }
 
     protected getStoresState(): IBugBashViewState {
@@ -158,6 +158,8 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     private async _initializeBugBash(bugBashId: string) {        
         try {
             await BugBashActions.initializeBugBash(bugBashId);
+            await BugBashItemActions.refreshItems(bugBashId);
+            
         }
         catch (e) {
             // no-op

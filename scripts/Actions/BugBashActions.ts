@@ -1,14 +1,14 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashActionsCreator } from "./ActionsCreator";
+import { BugBashActionsHub } from "./ActionsHub";
 import { BugBashStore } from "../Stores/BugBashStore";
 import { IBugBash } from "../Interfaces";
 
 export module BugBashActions {
     export async function initializeAllBugBashes() {
         if (StoresHub.bugBashStore.isLoaded()) {
-            BugBashActionsCreator.InitializeAllBugBashes.invoke(null);
+            BugBashActionsHub.InitializeAllBugBashes.invoke(null);
         }
         else if (!StoresHub.bugBashStore.isLoading()) {
             StoresHub.bugBashStore.setLoading(true);
@@ -17,21 +17,21 @@ export module BugBashActions {
                 translateDates(bugBash);
             }
 
-            BugBashActionsCreator.InitializeAllBugBashes.invoke(bugBashes);
+            BugBashActionsHub.InitializeAllBugBashes.invoke(bugBashes);
             StoresHub.bugBashStore.setLoading(false);
         }
     } 
 
     export async function initializeBugBash(bugBashId: string) {
         if (StoresHub.bugBashStore.isLoaded(bugBashId)) {
-            BugBashActionsCreator.InitializeBugBash.invoke(null);
+            BugBashActionsHub.InitializeBugBash.invoke(null);
         }
         else if (!StoresHub.bugBashStore.isLoading(bugBashId)) {
             StoresHub.bugBashStore.setLoading(true, bugBashId);
             let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
             if (bugBash) {
                 translateDates(bugBash);
-                BugBashActionsCreator.InitializeBugBash.invoke(bugBash);
+                BugBashActionsHub.InitializeBugBash.invoke(bugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
             }
             else {
@@ -48,11 +48,11 @@ export module BugBashActions {
             let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
             if (bugBash) {
                 translateDates(bugBash);
-                BugBashActionsCreator.RefreshBugBash.invoke(bugBash);
+                BugBashActionsHub.RefreshBugBash.invoke(bugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
             }
             else {
-                BugBashActionsCreator.DeleteBugBash.invoke(bugBashId);
+                BugBashActionsHub.DeleteBugBash.invoke(bugBashId);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
                 throw "This instance of bug bash does not exist.";
             }
@@ -68,7 +68,7 @@ export module BugBashActions {
                 translateDates(bugBash);
             }
             
-            BugBashActionsCreator.RefreshAllBugBashes.invoke(bugBashes);
+            BugBashActionsHub.RefreshAllBugBashes.invoke(bugBashes);
             StoresHub.bugBashStore.setLoading(false);
         }
     }
@@ -81,7 +81,7 @@ export module BugBashActions {
                 let savedBugBash = await ExtensionDataManager.updateDocument<IBugBash>("bugbashes", bugBash, false);
                 translateDates(savedBugBash);
                 
-                BugBashActionsCreator.UpdateBugBash.invoke(savedBugBash);
+                BugBashActionsHub.UpdateBugBash.invoke(savedBugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBash.id);
 
                 return savedBugBash;
@@ -104,7 +104,7 @@ export module BugBashActions {
                 const savedBugBash = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", cloneBugBash, false);
                 translateDates(savedBugBash);            
                 
-                BugBashActionsCreator.CreateBugBash.invoke(savedBugBash);
+                BugBashActionsHub.CreateBugBash.invoke(savedBugBash);
                 StoresHub.bugBashStore.setLoading(false);
                 return savedBugBash;
             }
@@ -126,7 +126,7 @@ export module BugBashActions {
                 // eat exception
             }
 
-            BugBashActionsCreator.DeleteBugBash.invoke(bugBashId);
+            BugBashActionsHub.DeleteBugBash.invoke(bugBashId);
             StoresHub.bugBashStore.setLoading(false, bugBashId);
         }
     }
