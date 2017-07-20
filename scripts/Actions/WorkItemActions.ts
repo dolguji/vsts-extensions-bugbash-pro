@@ -11,12 +11,17 @@ export module WorkItemActions {
         const idsToFetch: number[] = [];
         for (const id of ids) {
             if (!StoresHub.workItemStore.itemExists(id)) {
+                StoresHub.workItemStore.setLoading(true, id);
                 idsToFetch.push(id);
             }
         }
-
+        
         const workItems = await WitClient.getClient().getWorkItems(idsToFetch, fields);
-        StoresHub.workItemStore.
+        WorkItemActionsHub.AddOrUpdateWorkItems.invoke(workItems);
+
+        for (const id of idsToFetch) {
+            StoresHub.workItemStore.setLoading(false, id);
+        }
     }
 
     async function createWorkItem(workItemType: string, fieldValues: IDictionaryStringTo<string>): Promise<WorkItem> {
