@@ -7,12 +7,12 @@ import { WorkItemStateItemStore } from "VSTS_Extension/Flux/Stores/WorkItemState
 import { GitRepoStore } from "VSTS_Extension/Flux/Stores/GitRepoStore";
 import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
 import { TeamFieldStore } from "VSTS_Extension/Flux/Stores/TeamFieldStore";
+import { WorkItemStore } from "VSTS_Extension/Flux/Stores/WorkItemStore";
 
 import { BugBashStore } from "./BugBashStore";
 import { BugBashItemStore } from "./BugBashItemStore";
 import { BugBashItemCommentStore } from "./BugBashItemCommentStore";
 import { SettingsStore } from "./SettingsStore";
-import { WorkItemStore } from "./WorkItemStore";
 
 export module StoresHub {
     export var workItemStore: WorkItemStore = StoreFactory.getInstance<WorkItemStore>(WorkItemStore);

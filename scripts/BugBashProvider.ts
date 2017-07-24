@@ -1,13 +1,12 @@
 import { IBugBash } from "./Interfaces";
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
-import { EventHandlerList, NamedEventCollection } from "VSS/Events/Handlers";
+import { EventHandlerList } from "VSS/Events/Handlers";
 
 export class BugBashProvider {
     public originalBugBash: IBugBash;
     public updatedBugBash: IBugBash;
     private _changedHandlers = new EventHandlerList();
-    private _namedEventCollection = new NamedEventCollection<any, any>();
 
     constructor() {}
 

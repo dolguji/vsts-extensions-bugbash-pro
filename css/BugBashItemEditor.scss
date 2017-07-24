@@ -20,6 +20,10 @@
     }
     
     .item-team-container {
+        .combo {
+            width: inherit;
+        }
+
         .input-error {
             margin-top: 5px;
         }

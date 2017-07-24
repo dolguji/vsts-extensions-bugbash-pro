@@ -97,11 +97,9 @@
         .right-content {
             height: 100%;
 
-            .item-editor-container {
-                margin-left: 10px;
-                padding-right: 10px;
-                height: 100%;
-                padding-bottom: 10px;
+            .item-editor-container {                                
+                height: 100%;                
+                padding: 0 10px 10px 10px;
 
                 .item-editor-container-header {
                     display: flex;

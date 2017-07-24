@@ -10,11 +10,8 @@ import { UrlActions } from "../Constants";
 
 import { BugBashItemActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashItemStore } from "../Stores/BugBashItemStore";
-import { BugBashStore } from "../Stores/BugBashStore";
-import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { IBugBashItem, IBugBash, IBugBashItemComment, IAcceptedBugBashItemViewModel } from "../Interfaces";
-import { createWorkItem, updateWorkItem, BugBashItemHelpers } from "../Helpers";
+import { BugBashItemHelpers } from "../Helpers";
 
 export module BugBashItemActions {
     export async function initializeItems(bugBashId: string) {
@@ -208,7 +205,7 @@ export module BugBashItemActions {
 
         try {
             // create work item
-            savedWorkItem = await createWorkItem(bugBash.workItemType, fieldValues);
+            //savedWorkItem = await createWorkItem(bugBash.workItemType, fieldValues);
         }
         catch (e) {
             BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
@@ -230,13 +227,13 @@ export module BugBashItemActions {
         };
     }
 
-    function addExtraFieldsToWorkitem(workItemId: number, bugBashItem: IBugBashItem) {
+    function addExtraFieldsToWorkitem(_workItemId: number, bugBashItem: IBugBashItem) {
         let fieldValues: IDictionaryStringTo<string> = {};
         const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
 
         fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItem);
 
-        updateWorkItem(workItemId, fieldValues);
+        //updateWorkItem(workItemId, fieldValues);
     }
 
     function getAcceptedItemComment(bugBash: IBugBash, bugBashItem: IBugBashItem): string {

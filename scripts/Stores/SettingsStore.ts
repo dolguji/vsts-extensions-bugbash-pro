@@ -4,7 +4,7 @@ import { SettingsActionsHub } from "../Actions/ActionsHub";
 import { Settings } from "../Interfaces";
 
 export class SettingsStore extends BaseStore<Settings, Settings, void> {
-    public getItem(id: void): Settings {
+    public getItem(_id: void): Settings {
          return this.items;
     }
 
@@ -30,7 +30,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
         return "SettingsStore";
     }
 
-    protected convertItemKeyToString(key: void): string {
+    protected convertItemKeyToString(_key: void): string {
         return null;
     }
 }

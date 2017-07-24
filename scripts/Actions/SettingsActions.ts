@@ -1,7 +1,6 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
 import { SettingsActionsHub } from "./ActionsHub";
-import { SettingsStore } from "../Stores/SettingsStore";
 import { Settings } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 

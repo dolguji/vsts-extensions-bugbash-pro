@@ -1,8 +1,3 @@
-import { JsonPatchDocument, JsonPatchOperation, Operation } from "VSS/WebApi/Contracts";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
-import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-import Utils_String = require("VSS/Utils/String");
-import Utils_Date = require("VSS/Utils/Date");
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 
 import { IBugBash, IBugBashItem } from "./Interfaces";

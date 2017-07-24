@@ -145,7 +145,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         className="auto-accept"
                         label=""
                         checked={bugBash.autoAccept}
-                        onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._updateAutoAccept(isChecked) } />
+                        onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._updateAutoAccept(isChecked) } />
 
                     <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
                 </div>
@@ -196,7 +196,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         </div>;
     }
 
-    private _onImagePaste(event, args) {
+    private _onImagePaste(_event, args) {
         args.callback(null);
     }
 

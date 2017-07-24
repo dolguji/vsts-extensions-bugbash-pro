@@ -57,7 +57,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashStore, StoresHub.bugBashItemStore];
+        return [StoresHub.bugBashStore];
     }
 
     protected getStoresState(): IBugBashViewState {
@@ -159,7 +159,6 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         try {
             await BugBashActions.initializeBugBash(bugBashId);
             await BugBashItemActions.refreshItems(bugBashId);
-            
         }
         catch (e) {
             // no-op
@@ -214,7 +213,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 className={className}
                 onTitleRender={() => this._onTitleRender(title)}
                 pivotProps={{
-                    onPivotClick: async (selectedPivotKey: string, ev?: React.MouseEvent<HTMLElement>) => {
+                    onPivotClick: async (selectedPivotKey: string) => {
                         this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
                         let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                         navigationService.updateHistoryEntry(selectedPivotKey, null, false, true, null, true);
@@ -284,7 +283,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
     
     private _renderResults(): JSX.Element {
-        if (BugBashHelpers.isNew(this.state.bugBash)) {
+        if (!BugBashHelpers.isNew(this.state.bugBash)) {
             return <LazyLoad module="scripts/BugBashResults">
                 {(BugBashResults) => (
                     <BugBashResults.BugBashResults 
@@ -300,7 +299,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _renderCharts(): JSX.Element {
-        if (BugBashHelpers.isNew(this.state.bugBash)) {
+        if (!BugBashHelpers.isNew(this.state.bugBash)) {
             return <LazyLoad module="scripts/BugBashCharts">
                 {(BugBashCharts) => (
                     <BugBashCharts.BugBashCharts bugBash={StoresHub.bugBashStore.getItem(this.state.bugBash.id)} />
@@ -316,13 +315,13 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         return [
             {
                 key: "save", name: "Save", iconProps: {iconName: "Save"}, disabled: !this.state.isBugBashDirty || !this.state.isBugBashValid,
-                onClick: (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                onClick: () => {
                     this._saveBugBash();
                 }
             },
             {
                 key: "undo", name: "Undo", iconProps: {iconName: "Undo"}, disabled: BugBashHelpers.isNew(this.state.bugBash) || !this.state.isBugBashDirty,
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                onClick: async () => {
                     const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this instance?");
                     if (confirm) {
                         this._bugBashProvider.undo();
@@ -331,7 +330,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             },
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.bugBash),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                onClick: async () => {
                     const confirm = await confirmAction(this.state.isBugBashDirty, "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
                     if (confirm) {
                         try {
@@ -350,7 +349,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         return [
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, disabled: BugBashHelpers.isNew(this.state.bugBash),
-                onClick: async (event?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) => {
+                onClick: async () => {
                     const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
                     if (confirm) {
                         BugBashItemActions.refreshItems(this.props.bugBashId);

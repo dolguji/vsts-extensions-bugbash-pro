@@ -2,7 +2,6 @@ import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataMana
 
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActionsHub } from "./ActionsHub";
-import { BugBashStore } from "../Stores/BugBashStore";
 import { IBugBash } from "../Interfaces";
 
 export module BugBashActions {

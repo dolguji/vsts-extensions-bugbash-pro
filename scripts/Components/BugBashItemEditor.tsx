@@ -20,28 +20,23 @@ import { VersionControlChangeType, ItemContentType } from "TFS/VersionControl/Co
 import * as GitClient from "TFS/VersionControl/GitRestClient";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_Core = require("VSS/Utils/Core");
-import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import { WebApiTeam } from "TFS/Core/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
-import { confirmAction, buildGitPush, BugBashItemHelpers } from "../Helpers";
-import { IBugBashItem, IBugBashItemComment, IBugBashItemViewModel, IAcceptedBugBashItemViewModel } from "../Interfaces";
+import { buildGitPush, BugBashItemHelpers } from "../Helpers";
+import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
+import { BugBashItemProvider } from "../BugBashItemProvider";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
-    bugBashItemViewModel: IBugBashItemViewModel;
-    onDelete: (bugBashItem: IBugBashItem) => void;
-    onItemUpdate: (bugBashItem: IBugBashItem) => void;
-    onItemAccept: (bugBashItem: IBugBashItem, workItem: WorkItem) => void;
-    onChange: (changedBugBashItem: IBugBashItem, newComment: string) => void;
+    bugBashItem: IBugBashItem;
+    provider: BugBashItemProvider;  
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
     loadError?: string;
-    bugBashItemViewModel?: IBugBashItemViewModel;
     error?: string;
-    disableToolbar?: boolean;
     comments?: IBugBashItemComment[];
 }
 
@@ -64,43 +59,41 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         $(window).off("imagepasted", this._imagePastedHandler);
         $(window).on("imagepasted", this._imagePastedHandler);
 
-        if (this.props.bugBashItemViewModel.updatedBugBashItem.id) {
-            //StoresHub.bugBashItemCommentStore.ensureComments(this.props.viewModel.model.id);
-            BugBashItemCommentActions.initializeComments(this.props.bugBashItemViewModel.updatedBugBashItem.id);
+        if (!BugBashItemHelpers.isNew(this.props.bugBashItem)) {
+             BugBashItemCommentActions.initializeComments(this.props.bugBashItem.id);
         } 
     }
 
     protected getStatesStore(): IBugBashItemEditorState {
         return {
-            comments: StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItemViewModel.updatedBugBashItem.id)
+            comments: StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItem.id)
         };
     }  
 
     protected initializeState() {
         this.state = {            
-            comments: this.props.bugBashItemViewModel.updatedBugBashItem.id ? null : [],
-            bugBashItemViewModel: {
-                updatedBugBashItem: {...this.props.bugBashItemViewModel.updatedBugBashItem},
-                originalBugBashItem: {...this.props.bugBashItemViewModel.originalBugBashItem},
-                newComment: this.props.bugBashItemViewModel.newComment
-            }
+            comments: BugBashItemHelpers.isNew(this.props.bugBashItem) ? null : []            
         };
     }
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
-        if (this.state.bugBashItemViewModel.updatedBugBashItem.id !== nextProps.bugBashItemViewModel.updatedBugBashItem.id) {
-            this.updateState({
-                comments: nextProps.bugBashItemViewModel.updatedBugBashItem.id ? null : [],
-                bugBashItemViewModel: {
-                    newComment: nextProps.bugBashItemViewModel.newComment,
-                    updatedBugBashItem: {...nextProps.bugBashItemViewModel.updatedBugBashItem},
-                    originalBugBashItem: {...nextProps.bugBashItemViewModel.originalBugBashItem}
-                }
-            }, () => {
-                if (nextProps.bugBashItemViewModel.updatedBugBashItem.id) {
-                    BugBashItemCommentActions.initializeComments(this.props.bugBashItemViewModel.updatedBugBashItem.id);
-                }
-            });
+        if (this.props.bugBashItem.id !== nextProps.bugBashItem.id) {
+            if (!BugBashItemHelpers.isNew(nextProps.bugBashItem) && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
+                this.updateState({
+                    comments: StoresHub.bugBashItemCommentStore.getItem(nextProps.bugBashItem.id)
+                });
+            }
+            else if (!BugBashItemHelpers.isNew(nextProps.bugBashItem)) {
+                this.updateState({
+                    comments: []
+                });
+            }
+            else {
+                this.updateState({
+                    comments: null
+                });
+                BugBashItemCommentActions.initializeComments(this.props.bugBashItem.id);
+            }
         }
     }
 
@@ -108,84 +101,104 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         $(window).off("imagepasted", this._imagePastedHandler);
     } 
 
+    private _onChange(updatedBugBashItem: IBugBashItem, newComment?: string) {
+        this.props.provider.update(updatedBugBashItem, newComment);
+    }
+
+    @autobind
+    private _onTitleChange(newValue: string) {
+        let bugBashItem = {...this.props.bugBashItem};
+        bugBashItem.title = newValue;
+        this._onChange(bugBashItem);
+    }
+
+    @autobind
+    private _onDescriptionChange(newValue: string) {
+        let bugBashItem = {...this.props.bugBashItem};
+        bugBashItem.description = newValue;
+        this._onChange(bugBashItem);
+    }
+
+    @autobind
+    private _onRejectionReasonChange(newValue: string) {
+        let bugBashItem = {...this.props.bugBashItem};
+        bugBashItem.rejectReason = newValue;
+        this._onChange(bugBashItem);
+    }
+
+    @autobind
+    private _onTeamChange(newValue: string) {
+        let bugBashItem = {...this.props.bugBashItem};
+        const newTeam = StoresHub.teamStore.getItem(newValue);
+        bugBashItem.teamId = newTeam ? newTeam.id : newValue;
+        this._onChange(bugBashItem);
+    }
+
+    @autobind
+    private _onCommentChange(newValue: string) {
+        let bugBashItem = {...this.props.bugBashItem};
+        this._onChange(bugBashItem, newValue);
+    }
+
     public render(): JSX.Element {
         if (this.state.loadError) {
             return <MessagePanel messageType={MessageType.Error} message={this.state.loadError} />;
         }
-        else if (!this.state.bugBashItemViewModel) {
-            return <Loading />;
-        }
-        else if (BugBashItemHelpers.isAccepted(this.state.bugBashItemViewModel.updatedBugBashItem)) {
+        else if (BugBashItemHelpers.isAccepted(this.props.bugBashItem)) {
             return <MessagePanel 
                 messageType={MessageType.Info} 
                 message={"This item has been accepted. You can view or edit this item's work item from the \"Accepted items\" tab. Please refresh the list to clear this message."} />;
         }
         else {
-            const item = this.state.bugBashItemViewModel;
+            const item = this.props.bugBashItem;
             const allTeams = StoresHub.teamStore.getAll();
-            const team = StoresHub.teamStore.getItem(item.updatedBugBashItem.teamId);
+            const team = StoresHub.teamStore.getItem(item.teamId);
 
             return (
-                <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
+                <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>    
                     <CommandBar 
                         className="item-editor-menu"
                         items={this._getToolbarItems()}                         
                     />
-
+                                    
                     { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} />}
                     
                     <TextField label="Title" 
-                            value={item.updatedBugBashItem.title}
+                            value={item.title}
                             required={true} 
                             onGetErrorMessage={this._getTitleError}
-                            onChanged={(newValue: string) => {
-                                let newModel = {...this.state.bugBashItemViewModel};
-                                newModel.updatedBugBashItem.title = newValue;
-                                this.updateState({bugBashItemViewModel: newModel});
-                                this._onChange(newModel);
-                            }} />
+                            onChanged={this._onTitleChange} />
 
                     <div className="item-team-container">
                         <Label required={true}>Team</Label>
 
                         <ComboBox                             
-                            value={team ? team.name : item.updatedBugBashItem.teamId} 
+                            value={team ? team.name : item.teamId} 
                             options={{
                                 type: "list",
                                 mode: "drop",
                                 allowEdit: true,
                                 source: allTeams.map(t => t.name)
                             }} 
-                            onChange={(newTeamName: string) => {
-                                let newModel = {...this.state.bugBashItemViewModel};
-                                const newTeam = StoresHub.teamStore.getItem(newTeamName);
-                                newModel.updatedBugBashItem.teamId = newTeam ? newTeam.id : newTeamName;
-                                this.updateState({bugBashItemViewModel: newModel});
-                                this._onChange(newModel);
-                            }}/>
+                            onChange={this._onTeamChange}/>
                         
-                        { this._renderTeamError(item.updatedBugBashItem.teamId, team) }
+                        { this._renderTeamError(item.teamId, team) }
                     </div>
 
-                    { item.updatedBugBashItem.rejected && 
+                    { item.rejected && 
                         <TextField label="Reject reason" 
                                 className="reject-reason-input"
-                                value={item.updatedBugBashItem.rejectReason}
+                                value={item.rejectReason}
                                 required={true} 
                                 onGetErrorMessage={this._getRejectReasonError}
-                                onChanged={(newValue: string) => {
-                                    let newModel = {...this.state.bugBashItemViewModel};
-                                    newModel.updatedBugBashItem.rejectReason = newValue;
-                                    this.updateState({bugBashItemViewModel: newModel});
-                                    this._onChange(newModel);
-                                }} />
+                                onChanged={this._onRejectionReasonChange} />
                     }
 
                     <div className="item-description-container">
                         <Label>Description</Label>
                         <RichEditorComponent 
                             containerId="description-editor" 
-                            data={item.updatedBugBashItem.description} 
+                            data={item.description} 
                             editorOptions={{
                                 svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
                                 btns: [
@@ -198,29 +211,19 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                     ['fullscreen']
                                 ]
                             }}
-                            onChange={(newValue: string) => {
-                                let newViewModel = {...this.state.bugBashItemViewModel};
-                                newViewModel.updatedBugBashItem.description = newValue;
-                                this.updateState({bugBashItemViewModel: newViewModel});
-                                this._onChange(newViewModel);
-                            }} />
+                            onChange={this._onDescriptionChange} />
                     </div>
 
                     <div className="item-comments-editor-container">
                         <Label>Discussion</Label>
                         <RichEditorComponent 
                             containerId="comment-editor" 
-                            data={this.state.bugBashItemViewModel.newComment || ""} 
+                            data={this.props.provider.bugBashItemNewComments[item.id] || ""} 
                             editorOptions={{
                                 svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
                                 btns: []
                             }}
-                            onChange={(newComment: string) => {     
-                                let newViewModel = {...this.state.bugBashItemViewModel};   
-                                newViewModel.newComment = newComment;                        
-                                this.updateState({bugBashItemViewModel: newViewModel});
-                                this._onChange(newViewModel);
-                            }} />
+                            onChange={this._onCommentChange} />
                     </div>
 
                     <div className="item-comments-container">
@@ -231,13 +234,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }        
     }
 
-    private _onChange(newViewModel: IBugBashItemViewModel) {
-        this.props.onChange(newViewModel.updatedBugBashItem, newViewModel.newComment);
-    }    
-
     private _renderComments(): React.ReactNode {
-        if (!this._isNew()) {
-            let comments = StoresHub.bugBashItemCommentStore.getItem(this.state.bugBashItemViewModel.updatedBugBashItem.id)
+        if (!BugBashItemHelpers.isNew(this.props.bugBashItem)) {
+            let comments = StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItem.id);
             if (!comments) {
                 return <Loading />;
             }
@@ -269,61 +268,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
         if (e.ctrlKey && e.keyCode === 83) {
             e.preventDefault();
-            this._saveItem();
-        }
-    }
-
-    private _isNew(): boolean {
-        return !this.state.bugBashItemViewModel.updatedBugBashItem.id;
-    }
-
-    private async _saveItem() {
-        const newComment = this.state.bugBashItemViewModel.newComment;
-        const isNew = this._isNew();
-
-        if (!this.state.disableToolbar && BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) && BugBashItemHelpers.isValid(this.state.bugBashItemViewModel.updatedBugBashItem)) {
-            const bugBash = StoresHub.bugBashStore.getItem(this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId);
-            if (isNew && bugBash.autoAccept && !BugBashItemHelpers.isAccepted(this.state.bugBashItemViewModel.updatedBugBashItem)) {
-                this._acceptItem();
-            }
-            else {
-                this.updateState({disableToolbar: true, error: null});
-                let updatedModel: IBugBashItem;
-
-                try {
-                    // updatedModel = await BugBashItemManager.saveItem(this.state.viewModel.model);
-
-                    // if (newComment && newComment.trim() !== "") {
-                    //     // add comment
-                    //     StoresHub.bugBashItemCommentStore.addCommentItem(updatedModel.id, newComment);
-                    // }
-                    // else if (isNew) {
-                    //     StoresHub.bugBashItemCommentStore.ensureComments(updatedModel.id);
-                    // }
-                    
-                    // this.updateState({error: null, disableToolbar: false,
-                    //     viewModel: BugBashItemHelpers.getItemViewModel(updatedModel)
-                    // });
-                    // this.props.onItemUpdate(updatedModel);
-                }
-                catch (e) {
-                    this.updateState({error: "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.", disableToolbar: false});
-                } 
-            }
-        }
-    }
-
-    private async _acceptItem() {
-        this.updateState({disableToolbar: true});
-        
-        try {
-            //const result = await BugBashItemManager.acceptItem(this.state.viewModel.model);                        
-            //this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(result.model), error: result.workItem ? null : result.error || "Could not create work item. Please refresh the page and try again.", disableToolbar: false});
-
-            //this.props.onItemAccept(result.model, result.workItem);
-        }
-        catch (e) {
-            this.updateState({disableToolbar: false, error: e.message || e});
+            //this._saveItem();
         }
     }
 
@@ -334,7 +279,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 title: "Save", iconProps: {iconName: "Save"}, 
                 disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) || !BugBashItemHelpers.isValid(this.state.bugBashItemViewModel.updatedBugBashItem),
                 onClick: async () => {
-                    this._saveItem();
+                    //this._saveItem();
                 }
             },
             {
@@ -463,7 +408,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         return "";
     }
 
-    private async _onImagePaste(event, args) {
+    private async _onImagePaste(_event, args) {
         const data = args.data;
         const callback = args.callback;
 
@@ -475,7 +420,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
             const extension = metaPart.split(";")[0].split("/").pop();
             const fileName = `pastedImage_${Date.now().toString()}.${extension}`;
-            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId).title.replace(" ", "_")}/pastedImages/${fileName}`;
+            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.props.bugBashItem.bugBashId).title.replace(" ", "_")}/pastedImages/${fileName}`;
             const projectId = VSS.getWebContext().project.id;
 
             try {

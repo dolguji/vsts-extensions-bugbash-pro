@@ -1,5 +1,4 @@
 import { Action } from "VSS/Flux/Action";
-import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 
 import { Settings, IBugBash, IBugBashItemComment, IBugBashItem } from "../Interfaces";
 
@@ -32,9 +31,4 @@ export module BugBashItemActionsHub {
     export var UpdateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
     export var DeleteBugBashItem = new Action<{bugBashId: string, bugBashItemId: string}>();
     export var AcceptBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-}
-
-export module WorkItemActionsHub {
-    export var AddOrUpdateWorkItems = new Action<WorkItem[]>();
-    export var DeleteWorkItems = new Action<number[]>();
 }

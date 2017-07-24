@@ -1,6 +1,5 @@
 import Utils_String = require("VSS/Utils/String");
-import Utils_Date = require("VSS/Utils/Date");
-import { EventHandlerList, NamedEventCollection } from "VSS/Events/Handlers";
+import { EventHandlerList } from "VSS/Events/Handlers";
 
 import { IBugBashItem } from "./Interfaces";
 import { StoresHub } from "./Stores/StoresHub";
@@ -11,7 +10,6 @@ export class BugBashItemProvider {
     public bugBashItemNewComments: IDictionaryStringTo<string>;
 
     private _changedHandlers = new EventHandlerList();
-    private _namedEventCollection = new NamedEventCollection<any, any>();
 
     constructor() {
         this.originalBugBashItems = {};
@@ -54,7 +52,10 @@ export class BugBashItemProvider {
     public update(bugBashItem: IBugBashItem, newComment?: string) {
         if (bugBashItem && this._itemExists(bugBashItem.id)) {
             this.updatedBugBashItems[bugBashItem.id] = {...bugBashItem};
-            this.bugBashItemNewComments[bugBashItem.id] = newComment || "";
+
+            if (newComment) {
+                this.bugBashItemNewComments[bugBashItem.id] = newComment;
+            }            
         }
 
         this._emitChanged();

@@ -1,7 +1,6 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
 import { BugBashItemCommentActionsHub } from "./ActionsHub";
-import { BugBashItemCommentStore } from "../Stores/BugBashItemCommentStore";
 import { IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 

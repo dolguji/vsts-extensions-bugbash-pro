@@ -10,7 +10,6 @@ import { Label } from "OfficeFabric/Label";
 import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 
 import { IBugBashItem, IBugBash } from "../Interfaces";
-import { BugBashItemHelpers } from "../Helpers";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 
@@ -25,7 +24,7 @@ interface IBugBashChartsProps extends IBaseComponentProps {
 
 const CustomizedAxisTick: React.StatelessComponent<any> =
     (props: any): JSX.Element => {
-        const {x, y, stroke, payload} = props;
+        const {x, y, payload} = props;
         const value = (payload.value.length > 9) ? payload.value.substr(0, 9) + "..." : payload.value;
         return (
             <g transform={`translate(${x-4},${y+2})`}>

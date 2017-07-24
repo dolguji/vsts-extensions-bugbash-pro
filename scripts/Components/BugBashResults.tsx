@@ -2,29 +2,19 @@ import "../../css/BugBashResults.scss";
 
 import * as React from "react";
 
-import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-import * as WitClient from "TFS/WorkItemTracking/RestClient";
 
-import { PrimaryButton } from "OfficeFabric/Button";
 import { Label } from "OfficeFabric/Label";
-import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { autobind } from "OfficeFabric/Utilities";
-import { Nav, INavLink, INavProps } from "OfficeFabric/Nav";
+import { Nav, INavLink } from "OfficeFabric/Nav";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
-import { CommandBar } from "OfficeFabric/CommandBar";
-import { Overlay } from "OfficeFabric/Overlay";
+import { PrimaryButton } from "OfficeFabric/Button";
 
-import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { WorkItemFieldStore } from "VSTS_Extension/Flux/Stores/WorkItemFieldStore";
-import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
-import { WorkItemFieldActions } from "VSTS_Extension/Flux/Actions/WorkItemFieldActions";
 import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
@@ -34,29 +24,25 @@ import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Prop
 import { ColumnPosition, IExtraWorkItemGridColumn } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid.Props";
 import SplitterLayout from "rc-split-layout";
 
-import { UrlActions } from "../Constants";
 import { IBugBash, IBugBashItem } from "../Interfaces";
-import { confirmAction, BugBashItemHelpers } from "../Helpers";
+import { BugBashItemHelpers } from "../Helpers";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { BugBashProvider } from "../BugBashProvider";
+import { BugBashItemProvider } from "../BugBashItemProvider";
 
 interface IBugBashResultsState extends IBaseComponentState {
     bugBashItems: IBugBashItem[];
-    workItemsMap: IDictionaryNumberTo<WorkItem>;
     selectedPivot: SelectedPivot;
     selectedBugBashItem?: IBugBashItem;
     loading?: boolean;
-    needsRefresh?: boolean;
     dirtyItemsMap?: IDictionaryStringTo<boolean>;
     invalidItemsMap?: IDictionaryStringTo<boolean>;
 }
 
 interface IBugBashResultsProps extends IBaseComponentProps {
     bugBash: IBugBash;
-    provider: BugBashProvider;
+    provider: BugBashItemProvider;
     filterText?: string;
 }
 
@@ -73,49 +59,37 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         this.state = {
             bugBashItems: null,
             selectedBugBashItem: null,
-            workItemsMap: null,
             selectedPivot: this.props.bugBash.autoAccept ? SelectedPivot.Accepted : SelectedPivot.Pending,
             loading: true,
-            needsRefresh: true,
             dirtyItemsMap: {},
             invalidItemsMap: {}
         };
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashItemStore, StoresHub.workItemFieldStore, StoresHub.teamStore];
+        return [StoresHub.bugBashItemStore, StoresHub.teamStore];
     }
 
     protected getStoresState(): IBugBashResultsState {
         const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id);
-        let workItemIds: number[];
-        const isLoading = StoresHub.workItemFieldStore.isLoading() || StoresHub.teamStore.isLoading() || StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id) || this.state.needsRefresh;
+        const isLoading = StoresHub.teamStore.isLoading() || StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id);
 
-        let newState = {
-            bugBashItems: bugBashItems,
-            loading: isLoading
-        } as IBugBashResultsState
-
-        if (this.state.needsRefresh && bugBashItems && !StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id)) {
-            workItemIds = bugBashItems.filter(bugBashItem => BugBashItemHelpers.isAccepted(bugBashItem)).map(bugBashItem => bugBashItem.workItemId);
-            if (workItemIds.length > 0) {
-                newState = {...newState, workItemsMap: null, selectedBugBashItem: null}
-                this._refreshWorkItems(workItemIds);
-            }
-            else {
-                newState = {...newState, workItemsMap: {}, needsRefresh: false, selectedBugBashItem: null, loading: false}
-            }
+        if (bugBashItems && !StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id)) {
+            this.props.provider.initialize(bugBashItems);
         }
 
-        return newState;
+        return {
+            bugBashItems: bugBashItems,
+            loading: isLoading
+        } as IBugBashResultsState;
     }
 
     public componentDidMount() {
         super.componentDidMount();
         this.props.provider.addChangedListener(this._onProviderChange);
-        BugBashItemActions.initializeItems(this.props.bugBash.id);
-        WorkItemFieldActions.initializeWorkItemFields();
+        
         TeamActions.initializeTeams();
+        BugBashItemActions.initializeItems(this.props.bugBash.id);
     }
 
     public componentWillUnmount() {
@@ -131,20 +105,20 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
     @autobind
     private _onProviderChange() {
-
-    }
-
-    private async _refreshWorkItems(workItemIds: number[]) {
-        if (workItemIds.length > 0) {
-            let workItems = await WitClient.getClient().getWorkItems(workItemIds, ["System.Id", "System.Title", "System.WorkItemType", "System.State", "System.AssignedTo", "System.AreaPath"]);
-            let map: IDictionaryNumberTo<WorkItem> = {};
-            for (const workItem of workItems) {
-                if (workItem) {
-                    map[workItem.id] = workItem;
+        let dirtyMap: IDictionaryStringTo<boolean> = {};
+        let invalidMap: IDictionaryStringTo<boolean> = {};
+        if (this.state.bugBashItems) {
+            for (const bugBashItem of this.state.bugBashItems) {
+                if (this.props.provider.isDirty(bugBashItem.id)) {
+                    dirtyMap[bugBashItem.id] = true;
+                }
+                if (!this.props.provider.isValid(bugBashItem.id)) {
+                    invalidMap[bugBashItem.id] = true;
                 }
             }
-            this.updateState({workItemsMap: map, needsRefresh: false, loading: false} as IBugBashResultsState);
         }
+
+        this.updateState({dirtyItemsMap: dirtyMap, invalidItemsMap: invalidMap} as IBugBashResultsState);
     }
 
     private _getSelectedPivotKey(): string {
@@ -174,9 +148,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     
     public render(): JSX.Element {        
         return (
-            <div className="bugbash-results">
-                { this.state.loading && <Overlay><Loading /></Overlay> }
-                { this.state.bugBashItems && this.state.workItemsMap && 
+            <div className="bugbash-results">                
+                { this.state.bugBashItems &&
                     <SplitterLayout 
                         primaryIndex={0}
                         primaryMinSize={700}
@@ -187,7 +160,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             evt.initUIEvent('resize', true, false, window, 0);
                             window.dispatchEvent(evt);
                         }} >
-                        
+                        { this.state.loading && <Loading /> }
                         { this._renderPivots() }
                         { this._renderItemEditor() }
                     </SplitterLayout>
@@ -197,25 +170,11 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }
 
     private _renderPivots(): JSX.Element {
-        const allBugBashItemViewModels = this.state.bugBashItems.filter(bugBashItem => !BugBashItemHelpers.isAccepted(bugBashItem) || this.state.workItemsMap[bugBashItem.workItemId] != null);
+        const allBugBashItemViewModels = this.state.bugBashItems.filter(bugBashItem => !BugBashItemHelpers.isAccepted(bugBashItem));
         const pendingBugBashItemViewModels = allBugBashItemViewModels.filter(bugBashItem => !BugBashItemHelpers.isAccepted(bugBashItem) && !bugBashItem.rejected);
         const rejectedBugBashItemViewModels = allBugBashItemViewModels.filter(bugBash => bugBash.rejected);
         const acceptedWorkItemIds = allBugBashItemViewModels.filter(bugBash => BugBashItemHelpers.isAccepted(bugBash)).map(viewModel => viewModel.workItemId);
 
-        let workItems: WorkItem[] = [];
-        for (let id of acceptedWorkItemIds) {
-            if (this.state.workItemsMap[id]) {
-                workItems.push(this.state.workItemsMap[id]);
-            }
-        }
-
-        const fields = [
-            StoresHub.workItemFieldStore.getItem("System.Id"),
-            StoresHub.workItemFieldStore.getItem("System.Title"),
-            StoresHub.workItemFieldStore.getItem("System.State"),
-            StoresHub.workItemFieldStore.getItem("System.AreaPath")
-        ];
-        
         let pivots: JSX.Element;
         let pivotContent: JSX.Element;
 
@@ -225,7 +184,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 initialSelectedKey="Accepted"
                 groups={ [{
                     links: [
-                        { name: `Accepted Items (${workItems.length})`, key:"Accepted", url: "" },
+                        { name: `Accepted Items (${acceptedWorkItemIds.length})`, key:"Accepted", url: "" },
                     ]
                 }] }
             />;
@@ -234,11 +193,11 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             pivots = <Nav
                 className="nav-panel"
                 initialSelectedKey={this._getSelectedPivotKey()}
-                onLinkClick={(ev?: React.MouseEvent<HTMLElement>, item?: INavLink) => this._updateSelectedPivot(item.key)}
+                onLinkClick={(_ev?: React.MouseEvent<HTMLElement>, item?: INavLink) => this._updateSelectedPivot(item.key)}
                 groups={ [{
                     links: [
                         { name: `Pending Items (${pendingBugBashItemViewModels.length})`, key: "Pending", url: "" },
-                        { name: `Accepted Items (${workItems.length})`, key:"Accepted", url: "" },
+                        { name: `Accepted Items (${acceptedWorkItemIds.length})`, key:"Accepted", url: "" },
                         { name: `Rejected Items (${rejectedBugBashItemViewModels.length})`, key:"Rejected", url: "" }
                     ]
                 }] }
@@ -265,18 +224,13 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     selectionPreservedOnEmptyClick={true}
                     setKey="bugbash-work-item-grid"
                     className="bugbash-item-grid"
-                    workItems={workItems}
-                    fields={fields}
+                    workItemIds={acceptedWorkItemIds}
+                    fieldRefNames={["System.Id", "System.State", "System.AreaPath", "System.AssignedTo"]}
                     noResultsText="No Accepted items"
                     extraColumns={this._getExtraWorkItemGridColumns()}
                     commandBarProps={{
                         hideSearchBox: true,
                         hideCommandBar: true
-                    }}
-                    onWorkItemUpdated={(updatedWorkItem: WorkItem) => {
-                        let map = {...this.state.workItemsMap};
-                        map[updatedWorkItem.id] = updatedWorkItem;
-                        this.updateState({workItemsMap: map} as IBugBashResultsState);
                     }}
                 />;                
                 break;
@@ -305,91 +259,30 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }
 
     private _renderItemEditor(): JSX.Element {
-        return (
-            <div className="right-content">
-                <div className="item-editor-container">
-                    <div className="item-editor-container-header">
-                        <Label className="item-editor-header overflow-ellipsis">{this.state.selectedBugBashItem ? "Edit Item" : "Add Item"}</Label>
-                        <PrimaryButton    
-                            className="add-new-item-button"                    
-                            disabled={this.state.selectedBugBashItem == null}
-                            text="New"
-                            iconProps={ { iconName: "Add" } }
-                            onClick={ () => this.updateState({selectedBugBashItem: null} as IBugBashResultsState) }
-                            />
-                    </div>
-                    <BugBashItemEditor 
-                        bugBashItemViewModel={this.state.selectedBugBashItem || BugBashItemHelpers.getNewBugBashItem(this.props.bugBash.id)}
-                        onItemAccept={(bugBashItem: IBugBashItem, workItem: WorkItem) => {
-                            let newViewModels = this.state.bugBashItems.slice();
-                            let newViewModel = BugBashItemHelpers.getBugBashItemViewModel(bugBashItem);
-                            let newWorkItemsMap = {...this.state.workItemsMap};
-
-                            let index = Utils_Array.findIndex(newViewModels, v => v.updatedBugBashItem.id === bugBashItem.id);
-                            if (index !== -1) {
-                                newViewModels[index] = newViewModel;
-                            }
-                            else {
-                                newViewModels.push(newViewModel);
-                            }
-
-                            if (workItem) {
-                                newWorkItemsMap[workItem.id] = workItem;
-                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: null, workItemsMap: newWorkItemsMap} as IBugBashResultsState);
-                            }
-                            else {
-                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newViewModel} as IBugBashResultsState);
-                            }
-                        }}
-                        onItemUpdate={(bugBashItem: IBugBashItem) => {
-                            if (bugBashItem.id) {
-                                let newViewModels = this.state.bugBashItemViewModels.slice();
-                                let newVideModel = BugBashItemHelpers.getBugBashItemViewModel(bugBashItem);
-
-                                let index = Utils_Array.findIndex(newViewModels, v => v.updatedBugBashItem.id === bugBashItem.id);
-                                if (index !== -1) {
-                                    newViewModels[index] = newVideModel;
-                                }
-                                else {
-                                    newViewModels.push(newVideModel);
-                                }
-                                this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newVideModel} as IBugBashResultsState);
-                            }
-                        }}
-                        onDelete={(bugBashItem: IBugBashItem) => {
-                            if (bugBashItem.id) {
-                                let newViewModels = this.state.bugBashItemViewModels.slice();
-                                let index = Utils_Array.findIndex(newViewModels, v => v.updatedBugBashItem.id === bugBashItem.id);
-                                if (index !== -1) {
-                                    newViewModels.splice(index, 1);
-                                    this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: null} as IBugBashResultsState);
-                                }
-                                else {
-                                    this.updateState({selectedBugBashItemViewModel: null} as IBugBashResultsState);
-                                }
-                            }
-                        }} 
-                        onChange={(changedBugBashItem: IBugBashItem, newComment: string) => {
-                            if (changedBugBashItem.id) {
-                                let newViewModels = this.state.bugBashItemViewModels.slice();
-                                let index = Utils_Array.findIndex(newViewModels, viewModel => viewModel.updatedBugBashItem.id === changedBugBashItem.id);
-                                if (index !== -1) {
-                                    newViewModels[index].updatedBugBashItem = {...changedBugBashItem};
-                                    newViewModels[index].newComment = newComment;
-                                    this.updateState({bugBashItemViewModels: newViewModels, selectedBugBashItemViewModel: newViewModels[index]} as IBugBashResultsState);
-                                }
-                            }
-                        }} />
+        return <div className="right-content">
+            <div className="item-editor-container">
+                <div className="item-editor-container-header">
+                    <Label className="item-editor-header overflow-ellipsis">{this.state.selectedBugBashItem ? "Edit Item" : "Add Item"}</Label>
+                    <PrimaryButton    
+                        className="add-new-item-button"                    
+                        disabled={this.state.selectedBugBashItem == null}
+                        text="New"
+                        iconProps={ { iconName: "Add" } }
+                        onClick={ () => this.updateState({selectedBugBashItem: null} as IBugBashResultsState) }
+                        />
                 </div>
+                <BugBashItemEditor 
+                    bugBashItem={this.state.selectedBugBashItem || BugBashItemHelpers.getNewBugBashItem(this.props.bugBash.id)}
+                    provider={this.props.provider} />
             </div>
-        );
+        </div>;
     }
 
     private _getExtraWorkItemGridColumns(): IExtraWorkItemGridColumn[] {
         let workItemIdToItemMap: IDictionaryNumberTo<IBugBashItem> = {};
-        for (const viewModel of this.state.bugBashItemViewModels) {
-            if (BugBashItemHelpers.isAccepted(viewModel.updatedBugBashItem)) {
-                workItemIdToItemMap[viewModel.updatedBugBashItem.workItemId] = viewModel.updatedBugBashItem;
+        for (const bugBashItem of this.state.bugBashItems) {
+            if (BugBashItemHelpers.isAccepted(bugBashItem)) {
+                workItemIdToItemMap[bugBashItem.workItemId] = bugBashItem;
             }
         }
 
@@ -402,11 +295,11 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     minWidth: 100,
                     maxWidth: 250,
                     resizable: true,
-                    onRenderCell: (workItem: WorkItem) => {
-                        return <IdentityView identityDistinctName={workItemIdToItemMap[workItem.id].createdBy} />;
+                    onRenderCell: (workItemId: number) => {
+                        return <IdentityView identityDistinctName={workItemIdToItemMap[workItemId].createdBy} />;
                     },
-                    sortFunction: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {                        
-                        let compareValue = Utils_String.ignoreCaseComparer(workItemIdToItemMap[workItem1.id].createdBy, workItemIdToItemMap[workItem2.id].createdBy);
+                    sortFunction: (workItemId1: number, workItemId2: number, sortOrder: SortOrder) => {                        
+                        let compareValue = Utils_String.ignoreCaseComparer(workItemIdToItemMap[workItemId1].createdBy, workItemIdToItemMap[workItemId2].createdBy);
                         return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                     },
                     filterFunction: (workItem: WorkItem, filterText: string) => Utils_String.caseInsensitiveContains(workItemIdToItemMap[workItem.id].createdBy, filterText)
@@ -416,18 +309,18 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }
     
     @autobind
-    private _onBugBashItemSelectionChanged(viewModels: IBugBashItemViewModel[]) {
+    private _onBugBashItemSelectionChanged(bugBashItems: IBugBashItem[]) {
         if (this._itemInvokedTimeout) {
             clearTimeout(this._itemInvokedTimeout);
             this._itemInvokedTimeout = null;
         }
 
         this._itemInvokedTimeout = setTimeout(() => {
-            if (viewModels == null || viewModels.length !== 1) {
-                this.updateState({selectedBugBashItemViewModel: null} as IBugBashResultsState);
+            if (bugBashItems == null || bugBashItems.length !== 1) {
+                this.updateState({selectedBugBashItem: null} as IBugBashResultsState);
             }
             else {
-                this.updateState({selectedBugBashItemViewModel: viewModels[0]} as IBugBashResultsState);
+                this.updateState({selectedBugBashItem: bugBashItems[0]} as IBugBashResultsState);
             }
 
             this._itemInvokedTimeout = null;
@@ -436,12 +329,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
     private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {
         const gridCellClassName = "item-grid-cell";
-        const getCellClassName = (viewModel: IBugBashItemViewModel) => {
+        const getCellClassName = (bugBashItem: IBugBashItem) => {
             let className = gridCellClassName;
-            if (BugBashItemHelpers.isDirty(viewModel)) {
+            if (this.state.dirtyItemsMap && this.state.dirtyItemsMap[bugBashItem.id]) {
                 className += " is-dirty";
             }
-            if (!BugBashItemHelpers.isValid(viewModel.updatedBugBashItem)) {
+            if (this.state.invalidItemsMap && this.state.invalidItemsMap[bugBashItem.id]) {
                 className += " is-invalid";
             }
 
@@ -455,25 +348,24 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 minWidth: 200,
                 maxWidth: isRejectedGrid ? 600 : 800,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {                 
+                onRenderCell: (bugBashItem: IBugBashItem) => {                 
                     return (
                         <TooltipHost 
-                            content={viewModel.updatedBugBashItem.title}
+                            content={bugBashItem.title}
                             delay={TooltipDelay.medium}
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(viewModel)}`}>
-                                {`${BugBashItemHelpers.isDirty(viewModel) ? "* " : ""}${viewModel.updatedBugBashItem.title}`}
+                            <Label className={`${getCellClassName(bugBashItem)}`}>
+                                {`${(this.state.dirtyItemsMap && this.state.dirtyItemsMap[bugBashItem.id]) ? "* " : ""}${bugBashItem.title}`}
                             </Label>
                         </TooltipHost>
                     )
                 },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.title, viewModel2.updatedBugBashItem.title);
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.title, item2.title);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.title, filterText)
+                }
             },
             {
                 key: "team",
@@ -481,33 +373,29 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 minWidth: isRejectedGrid ? 100 : 200,
                 maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {
-                    const team = StoresHub.teamStore.getItem(viewModel.updatedBugBashItem.teamId);
+                onRenderCell: (item: IBugBashItem) => {
+                    const team = StoresHub.teamStore.getItem(item.teamId);
                     return (
                         <TooltipHost 
-                            content={team ? team.name : viewModel.updatedBugBashItem.teamId}
+                            content={team ? team.name : item.teamId}
                             delay={TooltipDelay.medium}
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(viewModel)}`}>
-                                {team ? team.name : viewModel.updatedBugBashItem.teamId}
+                            <Label className={`${getCellClassName(item)}`}>
+                                {team ? team.name : item.teamId}
                             </Label>
                         </TooltipHost>
                     )
                 },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    const team1 = StoresHub.teamStore.getItem(viewModel1.updatedBugBashItem.teamId);
-                    const team2 = StoresHub.teamStore.getItem(viewModel2.updatedBugBashItem.teamId);
-                    const team1Name = team1 ? team1.name : viewModel1.updatedBugBashItem.teamId;
-                    const team2Name = team2 ? team2.name : viewModel2.updatedBugBashItem.teamId;
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
+                    const team1 = StoresHub.teamStore.getItem(item1.teamId);
+                    const team2 = StoresHub.teamStore.getItem(item2.teamId);
+                    const team1Name = team1 ? team1.name : item1.teamId;
+                    const team2Name = team2 ? team2.name : item2.teamId;
 
                     let compareValue = Utils_String.ignoreCaseComparer(team1Name, team2Name);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) =>  {
-                    const team = StoresHub.teamStore.getItem(viewModel.updatedBugBashItem.teamId);
-                    return Utils_String.caseInsensitiveContains(team ? team.name : viewModel.updatedBugBashItem.teamId, filterText);
                 }
             },
             {
@@ -516,24 +404,23 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 minWidth: isRejectedGrid ? 100 : 200,
                 maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                onRenderCell: (item: IBugBashItem) => {
                     return (
                         <TooltipHost 
-                            content={viewModel.updatedBugBashItem.createdBy}
+                            content={item.createdBy}
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <div className={getCellClassName(viewModel)}>
-                                <IdentityView identityDistinctName={viewModel.updatedBugBashItem.createdBy} />
+                            <div className={getCellClassName(item)}>
+                                <IdentityView identityDistinctName={item.createdBy} />
                             </div>
                         </TooltipHost>
                     )
                 },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.createdBy, viewModel2.updatedBugBashItem.createdBy);
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.createdBy, item2.createdBy);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.createdBy, filterText)
+                }
             },
             {
                 key: "createddate",
@@ -541,22 +428,22 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 minWidth: isRejectedGrid ? 100 : 200,
                 maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                onRenderCell: (item: IBugBashItem) => {
                     return (
                         <TooltipHost 
-                            content={Utils_Date.format(viewModel.updatedBugBashItem.createdDate, "M/d/yyyy h:mm tt")}
+                            content={Utils_Date.format(item.createdDate, "M/d/yyyy h:mm tt")}
                             delay={TooltipDelay.medium}
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(viewModel)}`}>
-                                {Utils_Date.friendly(viewModel.updatedBugBashItem.createdDate)}
+                            <Label className={`${getCellClassName(item)}`}>
+                                {Utils_Date.friendly(item.createdDate)}
                             </Label>
                         </TooltipHost>
                     )
                 },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_Date.defaultComparer(viewModel1.updatedBugBashItem.createdDate, viewModel2.updatedBugBashItem.createdDate);
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
+                    let compareValue = Utils_Date.defaultComparer(item1.createdDate, item2.createdDate);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                 }
             }
@@ -569,24 +456,23 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 minWidth: 100,
                 maxWidth: 200,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {
+                onRenderCell: (item: IBugBashItem) => {
                     return (
                         <TooltipHost 
-                            content={viewModel.updatedBugBashItem.rejectedBy}
+                            content={item.rejectedBy}
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <div className={getCellClassName(viewModel)}>
-                                <IdentityView identityDistinctName={viewModel.updatedBugBashItem.rejectedBy} />
+                            <div className={getCellClassName(item)}>
+                                <IdentityView identityDistinctName={item.rejectedBy} />
                             </div>
                         </TooltipHost>
                     )
                 },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.rejectedBy, viewModel2.updatedBugBashItem.rejectedBy);
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.rejectedBy, item2.rejectedBy);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.rejectedBy, filterText)
+                }
             }, 
             {
                 key: "rejectreason",
@@ -594,38 +480,27 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 minWidth: 200,
                 maxWidth: 800,
                 resizable: true,
-                onRenderCell: (viewModel: IBugBashItemViewModel) => {                 
+                onRenderCell: (item: IBugBashItem) => {                 
                     return (
                         <TooltipHost 
-                            content={viewModel.updatedBugBashItem.rejectReason}
+                            content={item.rejectReason}
                             delay={TooltipDelay.medium}
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(viewModel)}`}>
-                                {viewModel.updatedBugBashItem.rejectReason}
+                            <Label className={`${getCellClassName(item)}`}>
+                                {item.rejectReason}
                             </Label>
                         </TooltipHost>
                     )
                 },
-                sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
-                    let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.rejectReason, viewModel2.updatedBugBashItem.rejectReason);
+                sortFunction: (item1: IBugBashItem, item2: IBugBashItem, sortOrder: SortOrder) => {
+                    let compareValue = Utils_String.ignoreCaseComparer(item1.rejectReason, item2.rejectReason);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.rejectReason, filterText)
+                }
             });
         }
 
         return columns;
-    }
-
-    private _isAnyBugBashItemViewModelDirty(viewModels?: IBugBashItemViewModel[]): boolean {
-        for (let viewModel of viewModels || this.state.bugBashItemViewModels) {
-            if (BugBashItemHelpers.isDirty(viewModel)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

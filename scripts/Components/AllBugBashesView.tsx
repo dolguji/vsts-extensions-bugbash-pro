@@ -8,10 +8,8 @@ import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { Panel, PanelType } from "OfficeFabric/Panel";
 
-import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
-import { QueryResultGrid } from "VSTS_Extension/Components/Grids/WorkItemGrid/QueryResultGrid";
 import { IContextMenuProps, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
@@ -78,7 +76,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                     title="Bug Bashes"          
                     pivotProps={{
                         initialSelectedKey: this.state.selectedPivot,
-                        onPivotClick: (selectedPivotKey: string, ev?: React.MouseEvent<HTMLElement>) => {
+                        onPivotClick: (selectedPivotKey: string) => {
                             this.updateState({selectedPivot: selectedPivotKey} as IAllBugBashesViewState);
                         },
                         onRenderPivotContent: (key: string) => {
@@ -222,21 +220,21 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 return [
                     {
                         key: "open", name: "View results", iconProps: {iconName: "ShowResults"}, 
-                        onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {                    
+                        onClick: async () => {                    
                             let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                             navigationService.updateHistoryEntry(UrlActions.ACTION_RESULTS, {id: bugBash.id});
                         }
                     },
                     {
                         key: "edit", name: "Edit", iconProps: {iconName: "Edit"}, 
-                        onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {                    
+                        onClick: async () => {                    
                             let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                             navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, {id: bugBash.id});
                         }
                     },
                     {
                         key: "delete", name: "Delete", iconProps: {iconName: "Cancel", style: { color: "#da0a00", fontWeight: "bold" }}, 
-                        onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {                    
+                        onClick: async () => {                    
                             const confirm = await confirmAction(true, "Are you sure you want to delete this bug bash instance?");
                             if (confirm) {
                                 BugBashActions.deleteBugBash(bugBash.id);                                
@@ -252,20 +250,20 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
          return [
             {
                 key: "new", name: "New", iconProps: {iconName: "Add"},
-                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                onClick: async () => {
                     let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                     navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT);
                 }
             },            
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"},
-                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                onClick: async () => {
                     BugBashActions.refreshAllBugBashes();
                 }
             },
             {
                 key: "settings", name: "Settings", iconProps: {iconName: "Settings"},
-                onClick: async (event?: React.MouseEvent<HTMLElement>, menuItem?: IContextualMenuItem) => {
+                onClick: async () => {
                     this.updateState({settingsPanelOpen: !(this.state.settingsPanelOpen)} as IAllBugBashesViewState);
                 }
             }
