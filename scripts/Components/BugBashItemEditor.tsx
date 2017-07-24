@@ -7,12 +7,12 @@ import { TextField } from "OfficeFabric/TextField";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { CommandBar } from "OfficeFabric/CommandBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
+import { ComboBox, IComboBoxOption } from "OfficeFabric/ComboBox";
 
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
-import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
@@ -127,10 +127,16 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     @autobind
-    private _onTeamChange(newValue: string) {
+    private _onTeamChange(option: IComboBoxOption, _index: number, value: string) {
         let bugBashItem = {...this.props.bugBashItem};
-        const newTeam = StoresHub.teamStore.getItem(newValue);
-        bugBashItem.teamId = newTeam ? newTeam.id : newValue;
+        let newTeam: WebApiTeam = null;
+
+        if (option) {
+            const teamId = option.key as string;
+            newTeam = StoresHub.teamStore.getItem(teamId);
+        }
+        
+        bugBashItem.teamId = newTeam ? newTeam.id : value;
         this._onChange(bugBashItem);
     }
 
@@ -156,10 +162,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
             return (
                 <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>    
-                    <CommandBar 
+                    {/* <CommandBar 
                         className="item-editor-menu"
                         items={this._getToolbarItems()}                         
-                    />
+                    /> */}
                                     
                     { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} />}
                     
@@ -174,13 +180,15 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
                         <ComboBox                             
                             value={team ? team.name : item.teamId} 
-                            options={{
-                                type: "list",
-                                mode: "drop",
-                                allowEdit: true,
-                                source: allTeams.map(t => t.name)
-                            }} 
-                            onChange={this._onTeamChange}/>
+                            allowFreeform={true}
+                            autoComplete={"on"}
+                            options={allTeams.map(t => {
+                                return {
+                                    key: t.id,
+                                    text: t.name
+                                };
+                            })} 
+                            onChanged={this._onTeamChange}/>
                         
                         { this._renderTeamError(item.teamId, team) }
                     </div>
@@ -272,109 +280,109 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }
     }
 
-    private _getToolbarItems(): IContextualMenuItem[] {
-        let menuItems: IContextualMenuItem[] = [
-            {
-                key: "save", name: "", 
-                title: "Save", iconProps: {iconName: "Save"}, 
-                disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) || !BugBashItemHelpers.isValid(this.state.bugBashItemViewModel.updatedBugBashItem),
-                onClick: async () => {
-                    //this._saveItem();
-                }
-            },
-            {
-                key: "refresh", name: "", 
-                title: "Refresh", iconProps: {iconName: "Refresh"}, 
-                disabled: this.state.disableToolbar || this._isNew(),
-                onClick: async () => {
-                    this.updateState({disableToolbar: true, error: null});
-                    let newModel: IBugBashItem;
+    // private _getToolbarItems(): IContextualMenuItem[] {
+    //     let menuItems: IContextualMenuItem[] = [
+    //         {
+    //             key: "save", name: "", 
+    //             title: "Save", iconProps: {iconName: "Save"}, 
+    //             disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) || !BugBashItemHelpers.isValid(this.state.bugBashItemViewModel.updatedBugBashItem),
+    //             onClick: async () => {
+    //                 //this._saveItem();
+    //             }
+    //         },
+    //         {
+    //             key: "refresh", name: "", 
+    //             title: "Refresh", iconProps: {iconName: "Refresh"}, 
+    //             disabled: this.state.disableToolbar || this._isNew(),
+    //             onClick: async () => {
+    //                 this.updateState({disableToolbar: true, error: null});
+    //                 let newModel: IBugBashItem;
 
-                    const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
-                    if (confirm) {
-                        const id = this.state.bugBashItemViewModel.updatedBugBashItem.id;
-                        const bugBashId = this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId;
+    //                 const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+    //                 if (confirm) {
+    //                     const id = this.state.bugBashItemViewModel.updatedBugBashItem.id;
+    //                     const bugBashId = this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId;
 
-                        // this.updateState({viewModel: null});                        
-                        // newModel = await BugBashItemManager.getItem(id, bugBashId);
-                        // if (newModel) {
-                        //     this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
-                        //     this.props.onItemUpdate(newModel);
+    //                     // this.updateState({viewModel: null});                        
+    //                     // newModel = await BugBashItemManager.getItem(id, bugBashId);
+    //                     // if (newModel) {
+    //                     //     this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
+    //                     //     this.props.onItemUpdate(newModel);
 
-                        //     StoresHub.bugBashItemCommentStore.refreshComments(id);
-                        // }
-                        // else {
-                        //     this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
-                        // }
-                    }
-                    else {
-                        this.updateState({disableToolbar: false});                    
-                    }                
-                }
-            },
-            {
-                key: "undo", name: "", 
-                title: "Undo changes", iconProps: {iconName: "Undo"}, 
-                disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel),
-                onClick: async () => {
-                    this.updateState({disableToolbar: true});
+    //                     //     StoresHub.bugBashItemCommentStore.refreshComments(id);
+    //                     // }
+    //                     // else {
+    //                     //     this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
+    //                     // }
+    //                 }
+    //                 else {
+    //                     this.updateState({disableToolbar: false});                    
+    //                 }                
+    //             }
+    //         },
+    //         {
+    //             key: "undo", name: "", 
+    //             title: "Undo changes", iconProps: {iconName: "Undo"}, 
+    //             disabled: this.state.disableToolbar || !BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel),
+    //             onClick: async () => {
+    //                 this.updateState({disableToolbar: true});
 
-                    const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
-                    if (confirm) {
-                        let newViewModel = {...this.state.bugBashItemViewModel};
-                        newViewModel.updatedBugBashItem = {...newViewModel.originalBugBashItem};
-                        newViewModel.newComment = "";
-                        this.updateState({bugBashItemViewModel: newViewModel, disableToolbar: false, error: null});
-                        this.props.onItemUpdate(newViewModel.updatedBugBashItem);
-                    }
-                    else {
-                        this.updateState({disableToolbar: false});
-                    }
-                }
-            }
-        ]
+    //                 const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
+    //                 if (confirm) {
+    //                     let newViewModel = {...this.state.bugBashItemViewModel};
+    //                     newViewModel.updatedBugBashItem = {...newViewModel.originalBugBashItem};
+    //                     newViewModel.newComment = "";
+    //                     this.updateState({bugBashItemViewModel: newViewModel, disableToolbar: false, error: null});
+    //                     this.props.onItemUpdate(newViewModel.updatedBugBashItem);
+    //                 }
+    //                 else {
+    //                     this.updateState({disableToolbar: false});
+    //                 }
+    //             }
+    //         }
+    //     ]
 
-        let bugBash = StoresHub.bugBashStore.getItem(this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId);
+    //     let bugBash = StoresHub.bugBashStore.getItem(this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId);
 
-        if (!bugBash.autoAccept) {
-            const isMenuDisabled = this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) || this._isNew();
-            menuItems.push(
-                {
-                    key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
-                    disabled: isMenuDisabled,
-                    onClick: () => {
-                        this._acceptItem();
-                    }
-                },
-                {
-                    key: "Reject",
-                    onRender:(item) => {
-                        return <Checkbox
-                                    disabled={this.state.disableToolbar || this._isNew()} 
-                                    className="reject-menu-item-checkbox"
-                                    label="Reject"
-                                    checked={this.state.bugBashItemViewModel.updatedBugBashItem.rejected === true}
-                                    onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {
-                                        let newViewModel = {...this.state.bugBashItemViewModel};
-                                        newViewModel.updatedBugBashItem.rejected = !newViewModel.updatedBugBashItem.rejected;
-                                        newViewModel.updatedBugBashItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-                                        newViewModel.updatedBugBashItem.rejectReason = "";
-                                        this.updateState({bugBashItemViewModel: newViewModel});
-                                        this._onChange(newViewModel);
-                                    }} />;
-                    }
-                });
-        }
-        else {
-            menuItems.push({
-                key: "Accept", name: "Auto accept on", className: "auto-accept-menuitem",
-                title: "Auto accept is turned on for this bug bash. A work item would be created as soon as a bug bash item is created", 
-                iconProps: {iconName: "SkypeCircleCheck"}
-            });
-        }
+    //     if (!bugBash.autoAccept) {
+    //         const isMenuDisabled = this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) || this._isNew();
+    //         menuItems.push(
+    //             {
+    //                 key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
+    //                 disabled: isMenuDisabled,
+    //                 onClick: () => {
+    //                     this._acceptItem();
+    //                 }
+    //             },
+    //             {
+    //                 key: "Reject",
+    //                 onRender:(item) => {
+    //                     return <Checkbox
+    //                                 disabled={this.state.disableToolbar || this._isNew()} 
+    //                                 className="reject-menu-item-checkbox"
+    //                                 label="Reject"
+    //                                 checked={this.state.bugBashItemViewModel.updatedBugBashItem.rejected === true}
+    //                                 onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {
+    //                                     let newViewModel = {...this.state.bugBashItemViewModel};
+    //                                     newViewModel.updatedBugBashItem.rejected = !newViewModel.updatedBugBashItem.rejected;
+    //                                     newViewModel.updatedBugBashItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+    //                                     newViewModel.updatedBugBashItem.rejectReason = "";
+    //                                     this.updateState({bugBashItemViewModel: newViewModel});
+    //                                     this._onChange(newViewModel);
+    //                                 }} />;
+    //                 }
+    //             });
+    //     }
+    //     else {
+    //         menuItems.push({
+    //             key: "Accept", name: "Auto accept on", className: "auto-accept-menuitem",
+    //             title: "Auto accept is turned on for this bug bash. A work item would be created as soon as a bug bash item is created", 
+    //             iconProps: {iconName: "SkypeCircleCheck"}
+    //         });
+    //     }
 
-        return menuItems;
-    }
+    //     return menuItems;
+    // }
 
     private _renderTeamError(teamId: string, team: WebApiTeam): JSX.Element {
         if (teamId == null || teamId.trim() === "") {
