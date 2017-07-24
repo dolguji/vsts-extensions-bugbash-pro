@@ -11,7 +11,8 @@ import { autobind } from "OfficeFabric/Utilities";
 import { Nav, INavLink } from "OfficeFabric/Nav";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
-import { PrimaryButton } from "OfficeFabric/Button";
+import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
+import { Checkbox } from "OfficeFabric/Checkbox";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
@@ -22,6 +23,8 @@ import { WorkItemGrid } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkI
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { SortOrder, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 import { ColumnPosition, IExtraWorkItemGridColumn } from "VSTS_Extension/Components/Grids/WorkItemGrid/WorkItemGrid.Props";
+import { Hub } from "VSTS_Extension/Components/Common/Hub/Hub";
+
 import SplitterLayout from "rc-split-layout";
 
 import { IBugBash, IBugBashItem } from "../Interfaces";
@@ -100,7 +103,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     public componentWillReceiveProps(nextProps: Readonly<IBugBashResultsProps>): void {
         if (this.props.bugBash.id !== nextProps.bugBash.id) {
             BugBashItemActions.initializeItems(nextProps.bugBash.id);
-        }
+        }        
     }
 
     @autobind
@@ -260,22 +263,143 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
     private _renderItemEditor(): JSX.Element {
         return <div className="right-content">
-            <div className="item-editor-container">
-                <div className="item-editor-container-header">
-                    <Label className="item-editor-header overflow-ellipsis">{this.state.selectedBugBashItem ? "Edit Item" : "Add Item"}</Label>
-                    <PrimaryButton    
-                        className="add-new-item-button"                    
-                        disabled={this.state.selectedBugBashItem == null}
-                        text="New"
-                        iconProps={ { iconName: "Add" } }
-                        onClick={ () => this.updateState({selectedBugBashItem: null} as IBugBashResultsState) }
-                        />
-                </div>
-                <BugBashItemEditor 
-                    bugBashItem={this.state.selectedBugBashItem || BugBashItemHelpers.getNewBugBashItem(this.props.bugBash.id)}
-                    provider={this.props.provider} />
-            </div>
+            <Hub 
+                className="item-editor-container"
+                title=""
+                pivotProps={{
+                    initialSelectedKey: "addedititem",
+                    onRenderPivotContent: (key: string) => {
+                        return <BugBashItemEditor 
+                            bugBashItem={this.state.selectedBugBashItem || BugBashItemHelpers.getNewBugBashItem(this.props.bugBash.id)}
+                            provider={this.props.provider} />;
+                    },
+                    pivots: [
+                        {
+                            key: "addedititem",
+                            text: "Add item",
+                            commands: this._getItemEditorCommands(),
+                            farCommands: this._getItemEditorFarCommands()
+                        }
+                    ]
+                }}
+            />
         </div>;
+    }
+
+    private _getItemEditorFarCommands(): IContextualMenuItem[] {
+        let menuItems: IContextualMenuItem[] = [];
+        let bugBash = StoresHub.bugBashStore.getItem(this.props.bugBash.id);
+
+        if (!bugBash.autoAccept) {
+            const isMenuDisabled = false; //this.state.disableToolbar || BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel) || this._isNew();
+            menuItems.push(
+                {
+                    key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
+                    disabled: isMenuDisabled,
+                    onClick: () => {
+                        //this._acceptItem();
+                    }
+                },
+                {
+                    key: "Reject",
+                    onRender:(item) => {
+                        return <Checkbox
+                                    disabled={false} //{this.state.disableToolbar || this._isNew()} 
+                                    className="reject-menu-item-checkbox"
+                                    label="Reject"
+                                    checked={false} //{this.state.bugBashItemViewModel.updatedBugBashItem.rejected === true}
+                                    onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {
+                                        {/* let newViewModel = {...this.state.bugBashItemViewModel};
+                                        newViewModel.updatedBugBashItem.rejected = !newViewModel.updatedBugBashItem.rejected;
+                                        newViewModel.updatedBugBashItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+                                        newViewModel.updatedBugBashItem.rejectReason = "";
+                                        this.updateState({bugBashItemViewModel: newViewModel});
+                                        this._onChange(newViewModel); */}
+                                    }} />;
+                    }
+                });
+        }
+        else {
+            menuItems.push({
+                key: "Accept", name: "Auto accept on", className: "auto-accept-menuitem",
+                title: "Auto accept is turned on for this bug bash. A work item would be created as soon as a bug bash item is created", 
+                iconProps: {iconName: "SkypeCircleCheck"}
+            });
+        }
+
+        return menuItems;
+    }
+
+    private _isItemDirty(bugBashItemId: string) {
+        return this.state.dirtyItemsMap && this.state.dirtyItemsMap[bugBashItemId];
+    }
+
+    private _isItemInvalid(bugBashItemId: string) {
+        return this.state.invalidItemsMap && this.state.invalidItemsMap[bugBashItemId];
+    }
+
+    private _getItemEditorCommands(): IContextualMenuItem[] {
+        return [
+            {
+                key: "save", name: "", 
+                title: "Save", iconProps: {iconName: "Save"}, 
+                disabled: !this._isItemDirty(this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : "") 
+                    || this._isItemInvalid(this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : ""), 
+                onClick: async () => {
+                    //this._saveItem();
+                }
+            },
+            {
+                key: "refresh", name: "", 
+                title: "Refresh", iconProps: {iconName: "Refresh"}, 
+                disabled: this.state.selectedBugBashItem == null,
+                onClick: async () => {
+                    // this.updateState({disableToolbar: true, error: null});
+                    // let newModel: IBugBashItem;
+
+                    // const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+                    // if (confirm) {
+                    //     const id = this.state.bugBashItemViewModel.updatedBugBashItem.id;
+                    //     const bugBashId = this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId;
+
+                    //     // this.updateState({viewModel: null});                        
+                    //     // newModel = await BugBashItemManager.getItem(id, bugBashId);
+                    //     // if (newModel) {
+                    //     //     this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
+                    //     //     this.props.onItemUpdate(newModel);
+
+                    //     //     StoresHub.bugBashItemCommentStore.refreshComments(id);
+                    //     // }
+                    //     // else {
+                    //     //     this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
+                    //     // }
+                    // }
+                    // else {
+                    //     this.updateState({disableToolbar: false});                    
+                    // }                
+                }
+            },
+            {
+                key: "undo", name: "", 
+                title: "Undo changes", iconProps: {iconName: "Undo"}, 
+                disabled: !this._isItemDirty(this.state.selectedBugBashItem ? this.state.selectedBugBashItem.id : ""),
+                onClick: async () => {
+                    // this.updateState({disableToolbar: true});
+
+                    // const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
+                    // if (confirm) {
+                    //     let newViewModel = {...this.state.bugBashItemViewModel};
+                    //     newViewModel.updatedBugBashItem = {...newViewModel.originalBugBashItem};
+                    //     newViewModel.newComment = "";
+                    //     this.updateState({bugBashItemViewModel: newViewModel, disableToolbar: false, error: null});
+                    //     this.props.onItemUpdate(newViewModel.updatedBugBashItem);
+                    // }
+                    // else {
+                    //     this.updateState({disableToolbar: false});
+                    // }
+                }
+            }
+        ];
     }
 
     private _getExtraWorkItemGridColumns(): IExtraWorkItemGridColumn[] {
@@ -331,10 +455,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         const gridCellClassName = "item-grid-cell";
         const getCellClassName = (bugBashItem: IBugBashItem) => {
             let className = gridCellClassName;
-            if (this.state.dirtyItemsMap && this.state.dirtyItemsMap[bugBashItem.id]) {
+            if (this._isItemDirty(bugBashItem.id)) {
                 className += " is-dirty";
             }
-            if (this.state.invalidItemsMap && this.state.invalidItemsMap[bugBashItem.id]) {
+            if (this._isItemInvalid(bugBashItem.id)) {
                 className += " is-invalid";
             }
 
@@ -357,7 +481,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
                             <Label className={`${getCellClassName(bugBashItem)}`}>
-                                {`${(this.state.dirtyItemsMap && this.state.dirtyItemsMap[bugBashItem.id]) ? "* " : ""}${bugBashItem.title}`}
+                                {`${this._isItemDirty(bugBashItem.id) ? "* " : ""}${bugBashItem.title}`}
                             </Label>
                         </TooltipHost>
                     )

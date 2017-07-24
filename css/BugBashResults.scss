@@ -97,29 +97,29 @@
         .right-content {
             height: 100%;
 
-            .item-editor-container {                                
-                height: 100%;                
-                padding: 0 10px 10px 10px;
+            .hub.item-editor-container {                
+                .hub-header {
+                    display: none;
+                }
 
-                .item-editor-container-header {
-                    display: flex;
+                .seperator {
+                    margin: 0 5px;
+                }
 
-                    .item-editor-header {
-                        flex: 1;
-                        font-size: 14px;
-                        font-weight: 600;
-                        line-height: 40px;
-                    }
-
-                    .add-new-item-button {
-                        margin-top: 10px;
-                        font-size: 14px;
-
+                .hub-pivot-menu-bar {
+                    .auto-accept-menuitem, .acceptItemButton {
                         i {
-                            font-size: 14px;
-                            margin-left: 0;
+                            color: #107c10;
                         }
+                    }        
+
+                    .reject-menu-item-checkbox {
+                        padding: 10px;
                     }
+                }
+
+                .item-editor {
+                    margin: 10px 5px 0 8px;
                 }
             }  
         }

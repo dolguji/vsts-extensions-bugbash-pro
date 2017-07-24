@@ -355,6 +355,12 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                         BugBashItemActions.refreshItems(this.props.bugBashId);
                     }
                 }
+            },
+            {
+                key: "newitem", name: "New", iconProps: {iconName: "Add"}, disabled: BugBashHelpers.isNew(this.state.bugBash),
+                onClick: () => {
+                    
+                }
             }
         ];
     }
