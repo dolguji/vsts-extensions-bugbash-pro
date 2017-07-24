@@ -24,15 +24,14 @@ import { WorkItemFieldActions } from "VSTS_Extension/Flux/Actions/WorkItemFieldA
 import { WorkItemTypeActions } from "VSTS_Extension/Flux/Actions/WorkItemTypeActions";
 import { WorkItemTemplateActions } from "VSTS_Extension/Flux/Actions/WorkItemTemplateActions";
 
-import { BugBashProvider } from "../BugBashProvider";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBash } from "../Interfaces";
 import { RichEditorComponent } from "./RichEditorComponent";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
-    bugBash: IBugBash;
     error?: string;
-    provider: BugBashProvider;
+    bugBash: IBugBash;
+    onChange: (updatedBugBash: IBugBash) => void;
     save: () => void;
 }
 
@@ -224,7 +223,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 selected: !selectedValue
             }
         ];
-        let filteredTemplates = StoresHub.workItemTemplateStore.getAll().filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.workItemType));
+        let filteredTemplates = StoresHub.workItemTemplateStore
+            .getAll()
+            .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.workItemType || "", true));
+
         return emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference, index: number) => {
             return {
                 key: template.id,
@@ -247,7 +249,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     private _onChange(updatedBugBash: IBugBash) {
-        this.props.provider.update(updatedBugBash);
+        this.props.onChange(updatedBugBash);
     }
 
     private _updateTitle(newTitle: string) {

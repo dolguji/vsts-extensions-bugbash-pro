@@ -27,11 +27,12 @@ import { buildGitPush, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { BugBashItemProvider } from "../BugBashItemProvider";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     bugBashItem: IBugBashItem;
-    provider: BugBashItemProvider;  
+    newComment?: string;
+    onChange: (updatedBugBashItem: IBugBashItem, newComment?: string) => void;
+    save: () => void;
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {
@@ -59,7 +60,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         $(window).off("imagepasted", this._imagePastedHandler);
         $(window).on("imagepasted", this._imagePastedHandler);
 
-        if (!BugBashItemHelpers.isNew(this.props.bugBashItem)) {
+        if (this.props.bugBashItem.id) {
              BugBashItemCommentActions.initializeComments(this.props.bugBashItem.id);
         } 
     }
@@ -72,18 +73,18 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     protected initializeState() {
         this.state = {            
-            comments: BugBashItemHelpers.isNew(this.props.bugBashItem) ? null : []            
+            comments: this.props.bugBashItem.id ? null : []            
         };
     }
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
         if (this.props.bugBashItem.id !== nextProps.bugBashItem.id) {
-            if (!BugBashItemHelpers.isNew(nextProps.bugBashItem) && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
+            if (nextProps.bugBashItem.id && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
                 this.updateState({
                     comments: StoresHub.bugBashItemCommentStore.getItem(nextProps.bugBashItem.id)
                 });
             }
-            else if (!BugBashItemHelpers.isNew(nextProps.bugBashItem)) {
+            else if (!nextProps.bugBashItem.id) {
                 this.updateState({
                     comments: []
                 });
@@ -92,7 +93,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 this.updateState({
                     comments: null
                 });
-                BugBashItemCommentActions.initializeComments(this.props.bugBashItem.id);
+                BugBashItemCommentActions.initializeComments(nextProps.bugBashItem.id);
             }
         }
     }
@@ -102,7 +103,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     } 
 
     private _onChange(updatedBugBashItem: IBugBashItem, newComment?: string) {
-        this.props.provider.update(updatedBugBashItem, newComment);
+        this.props.onChange(updatedBugBashItem, newComment);
     }
 
     @autobind
@@ -147,16 +148,17 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     public render(): JSX.Element {
+        const item = {...this.props.bugBashItem};
+
         if (this.state.loadError) {
             return <MessagePanel messageType={MessageType.Error} message={this.state.loadError} />;
         }
-        else if (BugBashItemHelpers.isAccepted(this.props.bugBashItem)) {
+        else if (BugBashItemHelpers.isAccepted(item)) {
             return <MessagePanel 
                 messageType={MessageType.Info} 
                 message={"This item has been accepted. You can view or edit this item's work item from the \"Accepted items\" tab. Please refresh the list to clear this message."} />;
         }
         else {
-            const item = this.props.bugBashItem;
             const allTeams = StoresHub.teamStore.getAll();
             const team = StoresHub.teamStore.getItem(item.teamId);
 
@@ -220,7 +222,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         <Label>Discussion</Label>
                         <RichEditorComponent 
                             containerId="comment-editor" 
-                            data={this.props.provider.bugBashItemNewComments[item.id] || ""} 
+                            data={this.props.newComment || ""} 
                             editorOptions={{
                                 svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
                                 btns: []
@@ -237,7 +239,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     private _renderComments(): React.ReactNode {
-        if (!BugBashItemHelpers.isNew(this.props.bugBashItem)) {
+        if (this.props.bugBashItem.id) {
             let comments = StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItem.id);
             if (!comments) {
                 return <Loading />;
@@ -270,7 +272,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
         if (e.ctrlKey && e.keyCode === 83) {
             e.preventDefault();
-            //this._saveItem();
+            this.props.save();
         }
     }    
 

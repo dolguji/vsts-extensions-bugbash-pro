@@ -37,6 +37,17 @@ export interface IBugBashItemComment {
     createdBy: string;
 }
 
+export interface IBugBashViewModel {
+    originalBugBash: IBugBash;
+    updatedBugBash: IBugBash;
+}
+
+export interface IBugBashItemViewModel {
+    originalBugBashItem: IBugBashItem;
+    updatedBugBashItem: IBugBashItem;
+    newComment?: string;
+}
+
 export interface IAcceptedBugBashItemViewModel {
     bugBashItem: IBugBashItem;
     workItem: WorkItem;
