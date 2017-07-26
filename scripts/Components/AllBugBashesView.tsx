@@ -28,7 +28,6 @@ import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActions } from "../Actions/BugBashActions";
 
 interface IAllBugBashesViewState extends IBaseComponentState {
-    loading: boolean,    
     pastBugBashes: IBugBash[];
     currentBugBashes: IBugBash[];
     upcomingBugBashes: IBugBash[];

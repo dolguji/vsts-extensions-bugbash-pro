@@ -20,7 +20,6 @@ import { Settings } from "../Interfaces";
 import { SettingsActions } from "../Actions/SettingsActions";
 
 interface ISettingsPanelState extends IBaseComponentState {
-    loading?: boolean;
     origSettings?: Settings;
     newSettings?: Settings;
     gitRepos?: GitRepository[];

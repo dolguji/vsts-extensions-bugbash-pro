@@ -5,6 +5,7 @@ import * as React from "react";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
+import * as EventsService from "VSS/Events/Services";
 
 import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
@@ -13,6 +14,7 @@ import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from 
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { Checkbox } from "OfficeFabric/Checkbox";
+import { Overlay } from "OfficeFabric/Overlay";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
@@ -32,13 +34,16 @@ import { BugBashItemHelpers, confirmAction } from "../Helpers";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
+import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
+import { Events } from "../Constants";
 
 interface IBugBashResultsState extends IBaseComponentState {
     itemIdToIndexMap: IDictionaryStringTo<number>;
     bugBashItemViewModels: IBugBashItemViewModel[];
     selectedPivot: SelectedPivot;
     selectedBugBashItemViewModel?: IBugBashItemViewModel;
-    loading?: boolean;
+    bugBashItemEditorError?: string;
+    gridKeyCounter: number;
 }
 
 interface IBugBashResultsProps extends IBaseComponentProps {
@@ -61,7 +66,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             bugBashItemViewModels: null,
             selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id),
             selectedPivot: this.props.bugBash.autoAccept ? SelectedPivot.Accepted : SelectedPivot.Pending,
-            loading: true
+            loading: true,
+            gridKeyCounter: 0
         };
     }
 
@@ -82,8 +88,17 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     public componentDidMount() {
         super.componentDidMount();
         
+        EventsService.getService().attachEvent(Events.NewItem, this._clearSelectedItem);
+        EventsService.getService().attachEvent(Events.RefreshItems, this._clearSelectedItem);
         TeamActions.initializeTeams();
         BugBashItemActions.initializeItems(this.props.bugBash.id);
+    }
+
+    public componentWillUnmount() {
+        super.componentWillUnmount();
+
+        EventsService.getService().detachEvent(Events.NewItem, this._clearSelectedItem);
+        EventsService.getService().detachEvent(Events.RefreshItems, this._clearSelectedItem);
     }
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashResultsProps>): void {
@@ -94,7 +109,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     bugBashItemViewModels: bugBashItems.map(item => BugBashItemHelpers.getViewModel(item)),
                     itemIdToIndexMap: this._prepareIdToIndexMap(bugBashItems),
                     loading: false,
-                    selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id)
+                    selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id),
+                    gridKeyCounter: this.state.gridKeyCounter + 1
                 } as IBugBashResultsState);
             }
             else {
@@ -102,12 +118,45 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     loading: true,
                     bugBashItemViewModels: null,
                     itemIdToIndexMap: {},
-                    selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id)
+                    selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id),
+                    gridKeyCounter: this.state.gridKeyCounter + 1
                 } as IBugBashResultsState);
 
                 BugBashItemActions.initializeItems(nextProps.bugBash.id);
             }
         }        
+    }
+
+    public render(): JSX.Element {        
+        return (
+            <div className="bugbash-results">
+                { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay> }
+                { this.state.bugBashItemViewModels && StoresHub.teamStore.isLoaded() &&
+                    <SplitterLayout 
+                        primaryIndex={0}
+                        primaryMinSize={700}
+                        secondaryMinSize={400}
+                        secondaryInitialSize={500}
+                        onChange={() => {
+                            let evt = document.createEvent('UIEvents');
+                            evt.initUIEvent('resize', true, false, window, 0);
+                            window.dispatchEvent(evt);
+                        }} >                        
+                        { this._renderPivots() }
+                        { this._renderItemEditor() }
+                    </SplitterLayout>
+                }
+            </div>
+        );
+    }
+
+    @autobind
+    private _clearSelectedItem() {
+        this.updateState({
+            bugBashItemEditorError: null, 
+            selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id),
+            gridKeyCounter: this.state.gridKeyCounter + 1
+        } as IBugBashResultsState);
     }
 
     private _prepareIdToIndexMap(bugBashItems: IBugBashItem[]): IDictionaryStringTo<number> {
@@ -146,36 +195,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 this.updateState({selectedPivot: SelectedPivot.Rejected} as IBugBashResultsState);
                 break;
         }
-    }
-    
-    public render(): JSX.Element {        
-        return (
-            <div className="bugbash-results">
-                { this.state.loading && <Loading /> }
-                { this.state.bugBashItemViewModels && StoresHub.teamStore.isLoaded() &&
-                    <SplitterLayout 
-                        primaryIndex={0}
-                        primaryMinSize={700}
-                        secondaryMinSize={400}
-                        secondaryInitialSize={500}
-                        onChange={() => {
-                            let evt = document.createEvent('UIEvents');
-                            evt.initUIEvent('resize', true, false, window, 0);
-                            window.dispatchEvent(evt);
-                        }} >                        
-                        { this._renderPivots() }
-                        { this._renderItemEditor() }
-                    </SplitterLayout>
-                }
-            </div>
-        );
-    }
+    }    
 
     private _renderPivots(): JSX.Element {
-        const allBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem));
-        const pendingBugBashItemViewModels = allBugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && !viewModel.originalBugBashItem.rejected);
-        const rejectedBugBashItemViewModels = allBugBashItemViewModels.filter(viewModel => viewModel.originalBugBashItem.rejected);
-        const acceptedWorkItemIds = allBugBashItemViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem)).map(viewModel => viewModel.originalBugBashItem.workItemId);
+        const pendingBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && !viewModel.originalBugBashItem.rejected);
+        const rejectedBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => viewModel.originalBugBashItem.rejected);
+        const acceptedWorkItemIds = this.state.bugBashItemViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem)).map(viewModel => viewModel.originalBugBashItem.workItemId);
 
         let pivots: JSX.Element;
         let pivotContent: JSX.Element;
@@ -210,7 +235,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             case SelectedPivot.Pending:
                 pivotContent = <Grid
                     selectionPreservedOnEmptyClick={true}
-                    setKey="bugbash-pending-item-grid"
+                    setKey={`bugbash-pending-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
                     items={pendingBugBashItemViewModels}
                     selectionMode={SelectionMode.single}
@@ -224,10 +249,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             case SelectedPivot.Accepted:
                 pivotContent = <WorkItemGrid
                     selectionPreservedOnEmptyClick={true}
-                    setKey="bugbash-work-item-grid"
+                    setKey={`bugbash-work-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
                     workItemIds={acceptedWorkItemIds}
-                    fieldRefNames={["System.Id", "System.State", "System.AreaPath", "System.AssignedTo"]}
+                    fieldRefNames={["System.Id", "System.Title", "System.State", "System.AssignedTo", "System.AreaPath"]}
                     noResultsText="No Accepted items"
                     extraColumns={this._getExtraWorkItemGridColumns()}
                     commandBarProps={{
@@ -239,7 +264,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             default:
                 pivotContent = <Grid
                     selectionPreservedOnEmptyClick={true}
-                    setKey="bugbash-rejected-item-grid"
+                    setKey={`bugbash-rejected-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
                     noResultsText="No Rejected items"
                     items={rejectedBugBashItemViewModels}
@@ -267,19 +292,20 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 title=""
                 pivotProps={{
                     initialSelectedKey: "addedititem",
-                    onRenderPivotContent: (key: string) => {
+                    onRenderPivotContent: () => {
                         return <BugBashItemEditor 
                             bugBashItem={this.state.selectedBugBashItemViewModel.updatedBugBashItem}
+                            error={this.state.bugBashItemEditorError}
                             newComment={this.state.selectedBugBashItemViewModel.newComment}
                             save={() => {
-
+                                this._saveSelectedItem();
                             }}
                             onChange={this._onItemChange} />;
                     },
                     pivots: [
                         {
                             key: "addedititem",
-                            text: "Add item",
+                            text: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem) ? "New Item" : "Edit Item",
                             commands: this._getItemEditorCommands(),
                             farCommands: this._getItemEditorFarCommands()
                         }
@@ -301,19 +327,27 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 {
                     key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
                     disabled: isMenuDisabled,
-                    onClick: () => {
-                        //this._acceptItem();
+                    onClick: async () => {
+                        if (!BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)) {
+                            try {
+                                const updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem);                                               
+                                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+                            }
+                            catch (e) {
+                                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
+                            }
+                        }
                     }
                 },
                 {
                     key: "Reject",
-                    onRender:(item) => {
+                    onRender:() => {
                         return <Checkbox
                                     disabled={BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)}
                                     className="reject-menu-item-checkbox"
                                     label="Reject"
                                     checked={this.state.selectedBugBashItemViewModel.updatedBugBashItem.rejected === true}
-                                    onChange={(ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {                                        
+                                    onChange={() => {                                        
                                         let updatedItem = {...this.state.selectedBugBashItemViewModel.updatedBugBashItem};
                                         updatedItem.rejected = !updatedItem.rejected;
                                         updatedItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
@@ -363,45 +397,50 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         }
     }
 
+    private async _saveSelectedItem() {
+        if (BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel) && BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel)) {
+            try {
+                const updatedItem = await BugBashItemActions.saveItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.updatedBugBashItem);
+                if (this.state.selectedBugBashItemViewModel.newComment != null && this.state.selectedBugBashItemViewModel.newComment.trim() !== "") {
+                    BugBashItemCommentActions.createComment(updatedItem.id, this.state.selectedBugBashItemViewModel.newComment);
+                }                
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+            }
+            catch (e) {
+                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
+            }
+        }
+    }
+
     private _getItemEditorCommands(): IContextualMenuItem[] {
         return [
             {
                 key: "save", name: "", 
-                title: "Save", iconProps: {iconName: "Save"}, 
+                iconProps: {iconName: "Save"}, 
                 disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)
-                    || !BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel),
+                        || !BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel),
                 onClick: async () => {
-                    //this._saveItem();
+                    this._saveSelectedItem();
                 }
             },
             {
                 key: "refresh", name: "", 
-                title: "Refresh", iconProps: {iconName: "Refresh"}, 
+                iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem),
-                onClick: async () => {
-                    // this.updateState({disableToolbar: true, error: null});
-                    // let newModel: IBugBashItem;
-
-                    // const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.bugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
-                    // if (confirm) {
-                    //     const id = this.state.bugBashItemViewModel.updatedBugBashItem.id;
-                    //     const bugBashId = this.state.bugBashItemViewModel.updatedBugBashItem.bugBashId;
-
-                    //     // this.updateState({viewModel: null});                        
-                    //     // newModel = await BugBashItemManager.getItem(id, bugBashId);
-                    //     // if (newModel) {
-                    //     //     this.updateState({viewModel: BugBashItemHelpers.getItemViewModel(newModel), error: null, disableToolbar: false});
-                    //     //     this.props.onItemUpdate(newModel);
-
-                    //     //     StoresHub.bugBashItemCommentStore.refreshComments(id);
-                    //     // }
-                    //     // else {
-                    //     //     this.updateState({viewModel: null, error: null, loadError: "This item no longer exist. Please refresh the list and try again."});
-                    //     // }
-                    // }
-                    // else {
-                    //     this.updateState({disableToolbar: false});                    
-                    // }                
+                onClick: async () => {  
+                    if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)){
+                        const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+                        if (confirm) {
+                            try {
+                                const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
+                                BugBashItemCommentActions.refreshComments(this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
+                                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+                            }
+                            catch (e) {
+                                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
+                            }
+                        }
+                    }                                 
                 }
             },
             {
@@ -464,7 +503,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             }
 
             this._itemInvokedTimeout = null;
-        }, 200);
+        }, 100);
     }
 
     private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {

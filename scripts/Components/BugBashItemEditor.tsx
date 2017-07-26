@@ -4,11 +4,9 @@ import * as React from "react";
 import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
-import { Checkbox } from "OfficeFabric/Checkbox";
-import { CommandBar } from "OfficeFabric/CommandBar";
-import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
-import { ComboBox, IComboBoxOption } from "OfficeFabric/ComboBox";
+import { Overlay } from "OfficeFabric/Overlay";
 
+import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
@@ -31,14 +29,14 @@ import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions"
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     bugBashItem: IBugBashItem;
     newComment?: string;
+    error?: string;
     onChange: (updatedBugBashItem: IBugBashItem, newComment?: string) => void;
     save: () => void;
 }
 
-export interface IBugBashItemEditorState extends IBaseComponentState {
-    loadError?: string;
-    error?: string;
+export interface IBugBashItemEditorState extends IBaseComponentState {    
     comments?: IBugBashItemComment[];
+    commentsLoading?: boolean;
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
@@ -65,15 +63,18 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         } 
     }
 
-    protected getStatesStore(): IBugBashItemEditorState {
+    protected getStoresState(): IBugBashItemEditorState {
         return {
-            comments: StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItem.id)
+            comments: StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItem.id),
+            commentsLoading: StoresHub.bugBashItemCommentStore.isLoading(this.props.bugBashItem.id),
+            loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBashItem.id)
         };
     }  
 
     protected initializeState() {
         this.state = {            
-            comments: this.props.bugBashItem.id ? null : []            
+            comments: this.props.bugBashItem.id ? null : [],
+            commentsLoading: this.props.bugBashItem.id ? true : false
         };
     }
 
@@ -81,17 +82,20 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         if (this.props.bugBashItem.id !== nextProps.bugBashItem.id) {
             if (nextProps.bugBashItem.id && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
                 this.updateState({
-                    comments: StoresHub.bugBashItemCommentStore.getItem(nextProps.bugBashItem.id)
+                    comments: StoresHub.bugBashItemCommentStore.getItem(nextProps.bugBashItem.id),
+                    commentsLoading: false
                 });
             }
             else if (!nextProps.bugBashItem.id) {
                 this.updateState({
-                    comments: []
+                    comments: [],
+                    commentsLoading: false
                 });
             }
             else {
                 this.updateState({
-                    comments: null
+                    comments: null,
+                    commentsLoading: true
                 });
                 BugBashItemCommentActions.initializeComments(nextProps.bugBashItem.id);
             }
@@ -128,16 +132,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     @autobind
-    private _onTeamChange(option: IComboBoxOption, _index: number, value: string) {
+    private _onTeamChange(newTeamName: string) {
         let bugBashItem = {...this.props.bugBashItem};
-        let newTeam: WebApiTeam = null;
-
-        if (option) {
-            const teamId = option.key as string;
-            newTeam = StoresHub.teamStore.getItem(teamId);
-        }
-        
-        bugBashItem.teamId = newTeam ? newTeam.id : value;
+        const newTeam = StoresHub.teamStore.getItem(newTeamName);
+        bugBashItem.teamId = newTeam ? newTeam.id : newTeamName;
         this._onChange(bugBashItem);
     }
 
@@ -149,103 +147,97 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     public render(): JSX.Element {
         const item = {...this.props.bugBashItem};
+        
+        const allTeams = StoresHub.teamStore.getAll();
+        const team = StoresHub.teamStore.getItem(item.teamId);
 
-        if (this.state.loadError) {
-            return <MessagePanel messageType={MessageType.Error} message={this.state.loadError} />;
-        }
-        else if (BugBashItemHelpers.isAccepted(item)) {
-            return <MessagePanel 
-                messageType={MessageType.Info} 
-                message={"This item has been accepted. You can view or edit this item's work item from the \"Accepted items\" tab. Please refresh the list to clear this message."} />;
-        }
-        else {
-            const allTeams = StoresHub.teamStore.getAll();
-            const team = StoresHub.teamStore.getItem(item.teamId);
+        return (
+            <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>                    
+                { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay>}
+                { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} />}
+                { BugBashItemHelpers.isAccepted(item) && 
+                    <MessagePanel 
+                        messageType={MessageType.Info} 
+                        message={"This item has been accepted. You can view or edit this item's work item from the \"Accepted items\" tab. Please refresh the list to clear this message."} /> }
 
-            return (
-                <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>     
-                    { this.state.error && <MessagePanel messageType={MessageType.Error} message={this.state.error} />}
+                <TextField label="Title" 
+                        value={item.title}
+                        required={true} 
+                        onChanged={this._onTitleChange} />
+
+                { this._renderTitleError(item.title) }
+
+                <div className="item-team-container">
+                    <Label required={true}>Team</Label>
+
+                    <ComboBox                             
+                        value={team ? team.name : item.teamId} 
+                        options={{
+                            type: "list",
+                            mode: "drop",
+                            allowEdit: true,
+                            source: allTeams.map(t => t.name)
+                        }} 
+                        onChange={this._onTeamChange}/>
                     
-                    <TextField label="Title" 
-                            value={item.title}
-                            required={true} 
-                            onGetErrorMessage={this._getTitleError}
-                            onChanged={this._onTitleChange} />
-
-                    <div className="item-team-container">
-                        <Label required={true}>Team</Label>
-
-                        <ComboBox                             
-                            value={team ? team.name : item.teamId} 
-                            allowFreeform={true}
-                            autoComplete={"on"}
-                            options={allTeams.map(t => {
-                                return {
-                                    key: t.id,
-                                    text: t.name
-                                };
-                            })} 
-                            onChanged={this._onTeamChange}/>
-                        
-                        { this._renderTeamError(item.teamId, team) }
-                    </div>
-
-                    { item.rejected && 
-                        <TextField label="Reject reason" 
-                                className="reject-reason-input"
-                                value={item.rejectReason}
-                                required={true} 
-                                onGetErrorMessage={this._getRejectReasonError}
-                                onChanged={this._onRejectionReasonChange} />
-                    }
-
-                    <div className="item-description-container">
-                        <Label>Description</Label>
-                        <RichEditorComponent 
-                            containerId="description-editor" 
-                            data={item.description} 
-                            editorOptions={{
-                                svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
-                                btns: [
-                                    ['bold', 'italic'], 
-                                    ['link'],
-                                    ['insertImage'],
-                                    'btnGrp-lists',
-                                    ['removeformat'],
-                                    ['fullscreen']
-                                ]
-                            }}
-                            onChange={this._onDescriptionChange} />
-                    </div>
-
-                    <div className="item-comments-editor-container">
-                        <Label>Discussion</Label>
-                        <RichEditorComponent 
-                            containerId="comment-editor" 
-                            data={this.props.newComment || ""} 
-                            editorOptions={{
-                                svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
-                                btns: []
-                            }}
-                            onChange={this._onCommentChange} />
-                    </div>
-
-                    <div className="item-comments-container">
-                        {this._renderComments()}
-                    </div>
+                    { this._renderTeamError(item.teamId, team) }
                 </div>
-            );
-        }        
+
+                { item.rejected && 
+                    <TextField label="Reject reason" 
+                            className="reject-reason-input"
+                            value={item.rejectReason}
+                            required={true} 
+                            onChanged={this._onRejectionReasonChange} />                        
+                }
+
+                { item.rejected && this._renderRejectReasonError(item.rejectReason) }
+
+                <div className="item-description-container">
+                    <Label>Description</Label>
+                    <RichEditorComponent 
+                        containerId="description-editor" 
+                        data={item.description} 
+                        editorOptions={{
+                            svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                            btns: [
+                                ['bold', 'italic'], 
+                                ['link'],
+                                ['insertImage'],
+                                'btnGrp-lists',
+                                ['removeformat'],
+                                ['fullscreen']
+                            ]
+                        }}
+                        onChange={this._onDescriptionChange} />
+                </div>
+
+                <div className="item-comments-editor-container">
+                    <Label>Discussion</Label>
+                    <RichEditorComponent 
+                        containerId="comment-editor" 
+                        data={this.props.newComment || ""} 
+                        editorOptions={{
+                            svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                            btns: []
+                        }}
+                        onChange={this._onCommentChange} />
+                </div>
+
+                <div className="item-comments-container">
+                    {this._renderComments()}
+                </div>
+            </div>
+        );
     }
 
     private _renderComments(): React.ReactNode {
-        if (this.props.bugBashItem.id) {
-            let comments = StoresHub.bugBashItemCommentStore.getItem(this.props.bugBashItem.id);
-            if (!comments) {
+        if (this.props.bugBashItem.id) {            
+            if (this.state.commentsLoading || !this.state.comments) {
                 return <Loading />;
             }
             else {
-                comments = comments.slice();
+                let comments = this.state.comments.slice();
                 comments = comments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => {
                     return -1 * Utils_Date.defaultComparer(c1.createdDate, c2.createdDate);
                 });
@@ -283,29 +275,31 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         else if (team == null) {
             return <InputError error={`${teamId} team does not exist.`} />;
         }
+
+        return null;
+    }
+
+    private _renderTitleError(title: string): JSX.Element {
+        if (title == null || title.trim() === "") {
+            return <InputError error="Title is required." />;
+        }
+        else if (title.length > 256) {
+            return <InputError error={`The length of the title should be less than 257 characters, actual is ${title.length}.`} />;
+        }
+
+        return null;
     }
 
     @autobind
-    private _getTitleError(value: string): string | IPromise<string> {
-        if (value == null || value.trim() === "") {
-            return "Title is required";
-        }
-        if (value.length > 256) {
-            return `The length of the title should less than 256 characters, actual is ${value.length}.`;
-        }
-        return "";
-    }
-
-    @autobind
-    private _getRejectReasonError(value: string): string | IPromise<string> {
+    private _renderRejectReasonError(value: string): JSX.Element {
         if (value == null || value.trim().length == 0) {
-            return "Reject reason can not be empty";
+            return <InputError error="Reject reason can not be empty." />;
+        }
+        else if (value.length > 128) {
+            return <InputError error={`The length of the reject reason should less than 129 characters, actual is ${value.length}.`} />;
         }
 
-        if (value.length > 128) {
-            return `The length of the reject reason should less than 128 characters, actual is ${value.length}.`;
-        }
-        return "";
+        return null;
     }
 
     private async _onImagePaste(_event, args) {

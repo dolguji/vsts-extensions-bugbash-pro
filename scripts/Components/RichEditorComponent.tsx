@@ -10,11 +10,7 @@ import { SettingsActions } from "../Actions/SettingsActions";
 
 import "../PasteImagePlugin";
 
-interface IRichComponentState extends IBaseComponentState {
-    loading?: boolean;
-}
-
-export class RichEditorComponent extends BaseComponent<IRichEditorProps, IRichComponentState> {
+export class RichEditorComponent extends BaseComponent<IRichEditorProps, IBaseComponentState> {
     protected getStores(): BaseStore<any, any, any>[] {
         return [StoresHub.settingsStore];
     }
@@ -30,7 +26,7 @@ export class RichEditorComponent extends BaseComponent<IRichEditorProps, IRichCo
         SettingsActions.initializeBugBashSettings();
     }
 
-    protected getStoresState(): IRichComponentState {                
+    protected getStoresState(): IBaseComponentState {                
         return {
             loading: StoresHub.settingsStore.isLoading()
         };

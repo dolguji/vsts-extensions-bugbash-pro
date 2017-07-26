@@ -5,4 +5,8 @@ export module UrlActions {
     export var ACTION_CHARTS = "charts";
 }
 
+export module Events {
+    export var NewItem = "new-item";
+    export var RefreshItems = "refresh-items";
+}
 

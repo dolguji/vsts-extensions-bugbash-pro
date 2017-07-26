@@ -72,7 +72,7 @@ export module BugBashActions {
         }
     }
 
-    export async function updateBugBash(bugBash: IBugBash) {
+    export async function updateBugBash(bugBash: IBugBash): Promise<IBugBash> {
         if (!StoresHub.bugBashStore.isLoading(bugBash.id)) {
             StoresHub.bugBashStore.setLoading(true, bugBash.id);
 
@@ -119,7 +119,7 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true, bugBashId);
 
             try {            
-                await ExtensionDataManager.deleteDocument<IBugBash>("bugbashes", bugBashId, false);                
+                await ExtensionDataManager.deleteDocument("bugbashes", bugBashId, false);                
             }
             catch (e) {
                 // eat exception

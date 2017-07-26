@@ -21,6 +21,7 @@ export module BugBashItemCommentActionsHub {
     export var InitializeComments = new Action<{bugBashItemId: string, comments: IBugBashItemComment[]}>();
     export var RefreshComments = new Action<{bugBashItemId: string, comments: IBugBashItemComment[]}>();
     export var CreateComment = new Action<{bugBashItemId: string, comment: IBugBashItemComment}>();
+    export var ClearComments = new Action<void>();
 }
 
 export module BugBashItemActionsHub {

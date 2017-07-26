@@ -15,7 +15,6 @@ import { BugBashItemActions } from "../Actions/BugBashItemActions";
 
 interface IBugBashChartsState extends IBaseComponentState {
     bugBashItems: IBugBashItem[];
-    loading?: boolean;
 }
 
 interface IBugBashChartsProps extends IBaseComponentProps {

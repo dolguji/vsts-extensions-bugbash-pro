@@ -5,6 +5,10 @@ import { IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 
 export module BugBashItemCommentActions {
+    export function clearComments() {
+        BugBashItemCommentActionsHub.ClearComments.invoke(null);
+    }
+
     export async function initializeComments(bugBashItemId: string) {
         if (StoresHub.bugBashItemCommentStore.isLoaded(bugBashItemId)) {
             BugBashItemCommentActionsHub.InitializeComments.invoke(null);

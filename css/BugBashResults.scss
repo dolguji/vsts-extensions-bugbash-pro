@@ -97,7 +97,9 @@
         .right-content {
             height: 100%;
 
-            .hub.item-editor-container {                
+            .hub.item-editor-container {
+                position: relative;
+                
                 .hub-header {
                     display: none;
                 }

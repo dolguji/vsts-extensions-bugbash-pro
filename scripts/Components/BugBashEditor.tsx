@@ -35,11 +35,7 @@ export interface IBugBashEditorProps extends IBaseComponentProps {
     save: () => void;
 }
 
-export interface IBugBashEditorState extends IBaseComponentState {
-    loading?: boolean;
-}
-
-export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
+export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseComponentState>  {
     private _imagePastedHandler: (event, data) => void;    
 
     constructor(props: IBugBashEditorProps, context?: any) {
@@ -57,10 +53,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         return [StoresHub.workItemFieldStore, StoresHub.workItemTemplateStore, StoresHub.workItemTypeStore];
     }
 
-    protected getStoresState(): IBugBashEditorState {
+    protected getStoresState(): IBaseComponentState {
         return {
             loading: StoresHub.workItemTypeStore.isLoading() || StoresHub.workItemFieldStore.isLoading() || StoresHub.workItemTemplateStore.isLoading()
-        } as IBugBashEditorState;
+        } as IBaseComponentState;
     }
 
     public componentDidMount(): void {
@@ -117,8 +113,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 <TextField 
                     label='Title' 
                     value={bugBash.title} 
-                    onChanged={(newValue: string) => this._updateTitle(newValue)} 
-                    onGetErrorMessage={this._getTitleError} />
+                    onChanged={(newValue: string) => this._updateTitle(newValue)} />
+                
+                { (bugBash.title == null || bugBash.title.trim() === "") && <InputError error="Title is required." /> }
+                { bugBash.title && bugBash.title.length > 256 && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBash.title.length}.`} /> }
 
                 <Label>Description</Label>
                 <RichEditorComponent 
@@ -163,7 +161,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     value={bugBash.endTime} 
                     onSelectDate={(newValue: Date) => this._updateEndTime(newValue)} />
 
-                { bugBash.startTime && bugBash.endTime && Utils_Date.defaultComparer(bugBash.startTime, bugBash.endTime) >= 0 &&  (<InputError error="Bugbash end time cannot be a date before bugbash start time." />)}
+                { bugBash.startTime && bugBash.endTime && Utils_Date.defaultComparer(bugBash.startTime, bugBash.endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
                 <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
                 <Dropdown 
@@ -173,7 +171,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     options={workItemTypes}                            
                     onChanged={(option: IDropdownOption) => this._updateWorkItemType(option.key as string)} />
 
-                { !bugBash.workItemType && (<InputError error="A work item type is required." />) }
+                { !bugBash.workItemType && <InputError error="A work item type is required." /> }
 
                 <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
                 <Dropdown 
@@ -183,7 +181,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     options={htmlFields} 
                     onChanged={(option: IDropdownOption) => this._updateDescriptionField(option.key as string)} />
 
-                { !bugBash.itemDescriptionField && (<InputError error="A description field is required." />) }       
+                { !bugBash.itemDescriptionField && <InputError error="A description field is required." /> }       
 
                 <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
                 <Dropdown 
@@ -235,17 +233,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 selected: selectedValue ? Utils_String.equals(selectedValue, template.id, true) : false
             }
         }));
-    }
-    
-    @autobind
-    private _getTitleError(value: string): string | IPromise<string> {
-        if (!value) {
-            return "Title is required";
-        }
-        if (value.length > 256) {
-            return `The length of the title should less than 256 characters, actual is ${value.length}.`
-        }
-        return "";
     }
 
     private _onChange(updatedBugBash: IBugBash) {

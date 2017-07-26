@@ -39,6 +39,11 @@ export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugB
 
             this.emitChanged();
         });
+
+        BugBashItemCommentActionsHub.ClearComments.addListener(() => {
+            this.items = {};
+            this.emitChanged();
+        });
     } 
 
     public getKey(): string {

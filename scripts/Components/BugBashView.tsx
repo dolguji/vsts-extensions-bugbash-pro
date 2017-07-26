@@ -3,6 +3,7 @@ import "../../css/BugBashView.scss";
 import * as React from "react";
 import Utils_String = require("VSS/Utils/String");
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
+import * as EventsService from "VSS/Events/Services";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
@@ -12,16 +13,16 @@ import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/Mess
 import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
 
 import { CommandButton } from "OfficeFabric/Button";
-import { autobind } from "OfficeFabric/Utilities";
 import { Overlay } from "OfficeFabric/Overlay";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
-import { IBugBash, IBugBashViewModel } from "../Interfaces";
+import { IBugBashViewModel } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, BugBashHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { UrlActions } from "../Constants";
+import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
+import { UrlActions, Events } from "../Constants";
 
 export interface IBugBashViewProps extends IBaseComponentProps {
     bugBashId?: string;
@@ -30,7 +31,6 @@ export interface IBugBashViewProps extends IBaseComponentProps {
 
 export interface IBugBashViewState extends IBaseComponentState {
     bugBashViewModel: IBugBashViewModel;
-    loading: boolean;
     selectedPivot?: string;
     isAnyBugBashItemDirty?: boolean;
     bugBashEditorError?: string;
@@ -68,8 +68,6 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     
     public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>): void {
         if (nextProps.bugBashId !== this.props.bugBashId) {
-            let bugBash: IBugBash = null;
-
             if (!nextProps.bugBashId) {
                 this.updateState({
                     bugBashViewModel: BugBashHelpers.getNewViewModel(),
@@ -313,8 +311,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
                 onClick: async () => {
                     const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
-                    if (confirm) {
-                        BugBashItemActions.refreshItems(this.props.bugBashId);
+                    if (confirm) {                        
+                        await BugBashItemActions.refreshItems(this.props.bugBashId);
+                        BugBashItemCommentActions.clearComments();
+                        EventsService.getService().fire(Events.RefreshItems);
                     }
                 }
             },
@@ -322,7 +322,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 key: "newitem", name: "New", iconProps: {iconName: "Add"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
                 onClick: () => {
-                    
+                    EventsService.getService().fire(Events.RefreshItems);
                 }
             }
         ];

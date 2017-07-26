@@ -5,27 +5,40 @@
         .hub-title {
             display: block;
 
-            .bugbashes-button {
-                background: none;
-                font-size: 21px;
-                padding: 0;
-                border: 0;
-                font-weight: 100;
-                height: 28px;
-
-                .ms-Button-label {
-                    margin: 0;
+            .bugbash-hub-title {
+                display: flex;
+                
+                .bugbash-title {
+                    flex: 1;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    word-wrap: normal;
                 }
-            }
 
-            .divider {
-                margin: 0 5px;
-            }
+                .bugbashes-button {
+                    background: none;
+                    font-size: 21px;
+                    padding: 0;
+                    border: 0;
+                    font-weight: 100;
+                    height: 28px;
+
+                    .ms-Button-label {
+                        margin: 0;
+                    }
+                }
+
+                .divider {
+                    margin: 0 5px;
+                }
+            }            
         }
 
         .bugbash-hub-contents {
             height: 100%;
-
+            position: relative;
+            
             .message-panel {
                 margin-top: 10px;
             }

@@ -8,6 +8,20 @@
     .item-team-container {
         .combo {
             width: inherit;
+
+            .drop {
+                font-family: FabricMDL2Icons;
+                top: 0;
+                bottom: 0;
+                padding-top: 8px;
+                width: 25px;
+                transform: none;                
+                padding-left: 10px;
+                
+                &::before {
+                    content: "\E70D";
+                }
+            }
         }
 
         .input-error {
