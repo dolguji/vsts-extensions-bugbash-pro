@@ -5,6 +5,7 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 
 import { Label } from "OfficeFabric/Label";
 import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
@@ -41,18 +42,19 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashItemStore];
+        return [StoresHub.bugBashItemStore, StoresHub.teamStore];
     }
 
     protected getStoresState(): IBugBashChartsState {
         return {
-            loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id),
+            loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id) || StoresHub.teamStore.isLoading(),
             bugBashItems: StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id)
         } as IBugBashChartsState;
     }
 
     public componentDidMount(): void {
         super.componentDidMount();
+        TeamActions.initializeTeams();
         BugBashItemActions.initializeItems(this.props.bugBash.id);
     }  
 
@@ -95,13 +97,13 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
 
         return <div className="bugbash-analytics">
                 <div className="chart-view">
-                    <Label className="header">Team</Label>
+                    <Label className="header">Assigned to team</Label>
                     <BarChart layout={"vertical"} width={600} height={600} data={teamData} barSize={10}
                         margin={{top: 5, right: 30, left: 20, bottom: 5}}>
                         <XAxis type="number" allowDecimals={false} />
                         <YAxis type="category" dataKey="name" tick={<CustomizedAxisTick />} allowDecimals={false} />
                         <Tooltip />
-                        <Bar dataKey="value" fill="#8884d8" />
+                        <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
                     </BarChart>
                 </div>                
                 <div className="chart-view">
@@ -111,7 +113,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                         <XAxis type="number" allowDecimals={false} />
                         <YAxis type="category" dataKey="name" tick={<CustomizedAxisTick />} allowDecimals={false} />
                         <Tooltip />
-                        <Bar dataKey="value" fill="#8884d8" />
+                        <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
                     </BarChart>
                 </div>
             </div>

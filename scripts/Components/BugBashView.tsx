@@ -165,22 +165,22 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     },
                     initialSelectedKey: this.state.selectedPivot,
                     onRenderPivotContent: (key: string) => {
-                        let content: JSX.Element = null;
                         switch (key) {
                             case "edit":
-                                content = this._renderEditor();
-                                break;
+                                return <div className="bugbash-hub-contents bugbash-editor-hub-contents">
+                                    {this._renderEditor()}
+                                </div>;
                             case "results":
-                                content = this._renderResults();
-                                break;
+                                return <div className="bugbash-hub-contents bugbash-results-hub-contents">
+                                    {this._renderResults()}
+                                </div>;
                             case "charts":
-                                content = this._renderCharts();
-                                break;
+                                return <div className="bugbash-hub-contents bugbash-charts-hub-contents">
+                                    {this._renderCharts()}
+                                </div>;
                         }
 
-                        return <div className="bugbash-hub-contents">
-                            {content}
-                        </div>;
+                        
                     },
                     pivots: [
                         {
@@ -203,7 +203,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                         {
                             key: "charts",
                             text: "Charts",
-                            commands: this._getResultViewCommands(),
+                            commands: this._getChartsViewCommands(),
                         }
                     ]
                 }}
@@ -309,13 +309,8 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
-                onClick: async () => {
-                    const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
-                    if (confirm) {                        
-                        await BugBashItemActions.refreshItems(this.props.bugBashId);
-                        BugBashItemCommentActions.clearComments();
-                        EventsService.getService().fire(Events.RefreshItems);
-                    }
+                onClick: () => {
+                    this._refreshBugBashItems();
                 }
             },
             {
@@ -326,6 +321,27 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 }
             }
         ];
+    }
+
+    private _getChartsViewCommands(): IContextualMenuItem[] {
+        return [
+            {
+                key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, 
+                disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
+                onClick: () => {
+                    this._refreshBugBashItems();
+                }
+            }
+        ];
+    }
+
+    private async _refreshBugBashItems() {
+        const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
+        if (confirm) {                        
+            await BugBashItemActions.refreshItems(this.props.bugBashId);
+            BugBashItemCommentActions.clearComments();
+            EventsService.getService().fire(Events.RefreshItems);
+        }
     }
 
     private async _saveBugBash() {        

@@ -14,7 +14,6 @@ import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from 
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { Checkbox } from "OfficeFabric/Checkbox";
-import { Overlay } from "OfficeFabric/Overlay";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
@@ -127,10 +126,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         }        
     }
 
-    public render(): JSX.Element {        
+    public render(): JSX.Element {
+        if (this.state.loading) {
+            return <Loading />;
+        }
         return (
             <div className="bugbash-results">
-                { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay> }
                 { this.state.bugBashItemViewModels && StoresHub.teamStore.isLoaded() &&
                     <SplitterLayout 
                         primaryIndex={0}
@@ -316,14 +317,17 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }
 
     private _getItemEditorFarCommands(): IContextualMenuItem[] {
-        let menuItems: IContextualMenuItem[] = [];
         let bugBash = StoresHub.bugBashStore.getItem(this.props.bugBash.id);
 
         if (!bugBash.autoAccept) {
+            if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
+                return [];
+            }
+
             const isMenuDisabled = BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel) 
                 || BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem);
 
-            menuItems.push(
+            return [
                 {
                     key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
                     disabled: isMenuDisabled,
@@ -355,17 +359,65 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                                         this._onItemChange(updatedItem);
                                     }} />;
                     }
-                });
+                }
+            ];
         }
         else {
-            menuItems.push({
+            return [{
                 key: "Accept", name: "Auto accept on", className: "auto-accept-menuitem",
                 title: "Auto accept is turned on for this bug bash. A work item would be created as soon as a bug bash item is created", 
                 iconProps: {iconName: "SkypeCircleCheck"}
-            });
+            }];
+        }
+    }
+
+    private _getItemEditorCommands(): IContextualMenuItem[] {
+        if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
+            return [];
         }
 
-        return menuItems;
+        return [
+            {
+                key: "save", name: "", 
+                iconProps: {iconName: "Save"}, 
+                disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)
+                        || !BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel),
+                onClick: async () => {
+                    this._saveSelectedItem();
+                }
+            },
+            {
+                key: "refresh", name: "", 
+                iconProps: {iconName: "Refresh"}, 
+                disabled: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem),
+                onClick: async () => {  
+                    if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)){
+                        const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+                        if (confirm) {
+                            try {
+                                const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
+                                BugBashItemCommentActions.refreshComments(this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
+                                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+                            }
+                            catch (e) {
+                                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
+                            }
+                        }
+                    }                                 
+                }
+            },
+            {
+                key: "undo", name: "", 
+                title: "Undo changes", iconProps: {iconName: "Undo"}, 
+                disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel),
+                onClick: async () => {
+                    const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
+                    if (confirm) {
+                        this._onItemChange(this.state.selectedBugBashItemViewModel.originalBugBashItem, "");
+                    }
+                }
+            }
+        ];
     }
 
     @autobind
@@ -410,51 +462,6 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
             }
         }
-    }
-
-    private _getItemEditorCommands(): IContextualMenuItem[] {
-        return [
-            {
-                key: "save", name: "", 
-                iconProps: {iconName: "Save"}, 
-                disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)
-                        || !BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel),
-                onClick: async () => {
-                    this._saveSelectedItem();
-                }
-            },
-            {
-                key: "refresh", name: "", 
-                iconProps: {iconName: "Refresh"}, 
-                disabled: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem),
-                onClick: async () => {  
-                    if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)){
-                        const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
-                        if (confirm) {
-                            try {
-                                const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
-                                BugBashItemCommentActions.refreshComments(this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
-                                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
-                            }
-                            catch (e) {
-                                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
-                            }
-                        }
-                    }                                 
-                }
-            },
-            {
-                key: "undo", name: "", 
-                title: "Undo changes", iconProps: {iconName: "Undo"}, 
-                disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel),
-                onClick: async () => {
-                    const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
-                    if (confirm) {
-                        this._onItemChange(this.state.selectedBugBashItemViewModel.originalBugBashItem, "");
-                    }
-                }
-            }
-        ];
     }
 
     private _getExtraWorkItemGridColumns(): IExtraWorkItemGridColumn[] {

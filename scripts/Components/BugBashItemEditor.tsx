@@ -148,17 +148,23 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     public render(): JSX.Element {
         const item = {...this.props.bugBashItem};
         
+        if (BugBashItemHelpers.isAccepted(item)) {
+            const webContext = VSS.getWebContext();
+            const witUrl = `${webContext.collection.uri}/${webContext.project.name}/_workitems/edit/${item.workItemId}`;
+
+            return <div className="item-editor accepted-item">
+                <MessagePanel messageType={MessageType.Success} message={"Accepted"} />
+                <a href={witUrl} target="_blank">Work item: {item.workItemId}</a>
+            </div>;
+        }
+
         const allTeams = StoresHub.teamStore.getAll();
         const team = StoresHub.teamStore.getItem(item.teamId);
 
         return (
             <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>                    
                 { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay>}
-                { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} />}
-                { BugBashItemHelpers.isAccepted(item) && 
-                    <MessagePanel 
-                        messageType={MessageType.Info} 
-                        message={"This item has been accepted. You can view or edit this item's work item from the \"Accepted items\" tab. Please refresh the list to clear this message."} /> }
+                { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} />}                    
 
                 <TextField label="Title" 
                         value={item.title}

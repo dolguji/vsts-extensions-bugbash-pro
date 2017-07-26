@@ -38,13 +38,20 @@
         .bugbash-hub-contents {
             height: 100%;
             position: relative;
-            
-            .message-panel {
-                margin-top: 10px;
+            box-sizing: border-box;
+            padding-top: 10px;                    
+
+            .bugbash-editor, .bugbash-analytics {
+                padding: 8px;
+                padding-top: 0;
             }
 
-            .bugbash-editor {
-                padding: 8px;
+            &.bugbash-results-hub-contents {
+                padding-top: 0;
+                
+                .message-panel {
+                    margin-top: 10px;
+                }
             }
         }
 

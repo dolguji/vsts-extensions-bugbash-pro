@@ -1,6 +1,22 @@
 .item-editor {
     outline: none;
 
+    &.accepted-item {
+        .message-panel {
+            margin-bottom: 10px;
+        }
+
+        a {
+            text-decoration: none;            
+            color: #0078d7;
+
+            &:hover {
+                color: #0078d7;
+                text-decoration: underline;
+            }
+        }
+    }
+
     .item-editor-header {
         font-weight: bold;
     }    
