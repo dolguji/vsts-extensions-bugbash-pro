@@ -235,6 +235,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         switch (this.state.selectedPivot) {
             case SelectedPivot.Pending:
                 pivotContent = <Grid
+                    filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-pending-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
@@ -249,6 +250,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 break;
             case SelectedPivot.Accepted:
                 pivotContent = <WorkItemGrid
+                    filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-work-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
@@ -256,14 +258,11 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     fieldRefNames={["System.Id", "System.Title", "System.State", "System.AssignedTo", "System.AreaPath"]}
                     noResultsText="No Accepted items"
                     extraColumns={this._getExtraWorkItemGridColumns()}
-                    commandBarProps={{
-                        hideSearchBox: true,
-                        hideCommandBar: true
-                    }}
                 />;                
                 break;
             default:
                 pivotContent = <Grid
+                    filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-rejected-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
@@ -548,6 +547,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.title, filterText),
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.title, viewModel2.updatedBugBashItem.title);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
@@ -582,6 +582,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
                     let compareValue = Utils_String.ignoreCaseComparer(team1Name, team2Name);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) =>  {
+                    const team = StoresHub.teamStore.getItem(viewModel.updatedBugBashItem.teamId);
+                    return Utils_String.caseInsensitiveContains(team ? team.name : viewModel.updatedBugBashItem.teamId, filterText);
                 }
             },
             {
@@ -606,7 +610,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.createdBy, viewModel2.updatedBugBashItem.createdBy);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                }
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.createdBy, filterText)
             },
             {
                 key: "createddate",
@@ -658,7 +663,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.rejectedBy, viewModel2.updatedBugBashItem.rejectedBy);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                }
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.rejectedBy, filterText)
             }, 
             {
                 key: "rejectreason",
@@ -683,7 +689,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 sortFunction: (viewModel1: IBugBashItemViewModel, viewModel2: IBugBashItemViewModel, sortOrder: SortOrder) => {
                     let compareValue = Utils_String.ignoreCaseComparer(viewModel1.updatedBugBashItem.rejectReason, viewModel2.updatedBugBashItem.rejectReason);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                }
+                },
+                filterFunction: (viewModel: IBugBashItemViewModel, filterText: string) => Utils_String.caseInsensitiveContains(viewModel.updatedBugBashItem.rejectReason, filterText)
             });
         }
 

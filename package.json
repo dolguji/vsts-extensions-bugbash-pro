@@ -39,7 +39,7 @@
         "vss-web-extension-sdk": "2.117.0",
         "es6-promise": "4.1.1",
         "office-ui-fabric-react": "4.21.4",
-        "vsts-extension-react-widgets": "0.0.54",
+        "vsts-extension-react-widgets": "0.0.56",
         "trumbowyg": "2.5.1",
         "recharts": "0.22.4",
         "rc-split-layout": "1.0.0"
