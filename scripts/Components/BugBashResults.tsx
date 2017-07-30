@@ -480,11 +480,11 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     minWidth: 100,
                     maxWidth: 250,
                     resizable: true,
-                    onRenderCell: (workItemId: number) => {
-                        return <IdentityView identityDistinctName={workItemIdToItemMap[workItemId].createdBy} />;
+                    onRenderCell: (workItem: WorkItem) => {
+                        return <IdentityView identityDistinctName={workItemIdToItemMap[workItem.id].createdBy} />;
                     },
-                    sortFunction: (workItemId1: number, workItemId2: number, sortOrder: SortOrder) => {                        
-                        let compareValue = Utils_String.ignoreCaseComparer(workItemIdToItemMap[workItemId1].createdBy, workItemIdToItemMap[workItemId2].createdBy);
+                    sortFunction: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {                        
+                        let compareValue = Utils_String.ignoreCaseComparer(workItemIdToItemMap[workItem1.id].createdBy, workItemIdToItemMap[workItem2.id].createdBy);
                         return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
                     },
                     filterFunction: (workItem: WorkItem, filterText: string) => Utils_String.caseInsensitiveContains(workItemIdToItemMap[workItem.id].createdBy, filterText)
