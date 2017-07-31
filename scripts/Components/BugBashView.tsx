@@ -4,6 +4,7 @@ import * as React from "react";
 import Utils_String = require("VSS/Utils/String");
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import * as EventsService from "VSS/Events/Services";
+import Context = require("VSS/Context");
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
@@ -12,7 +13,7 @@ import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
 
-import { CommandButton } from "OfficeFabric/Button";
+import { Link } from "OfficeFabric/Link";
 import { Overlay } from "OfficeFabric/Overlay";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
@@ -124,19 +125,28 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _onTitleRender(title: string): React.ReactNode {
+        const pageContext = Context.getPageContext();
+        const navigation = pageContext.navigation;
+        const webContext = VSS.getWebContext();
+        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_ALL}`;
         return (
             <div className="bugbash-hub-title">
-                <CommandButton 
-                    text="Bug Bashes" 
-                    onClick={async () => {
-                        const confirm = await confirmAction(BugBashHelpers.isDirty(this.state.bugBashViewModel), "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
+                <Link 
+                    href={bugBashUrl}
+                    onClick={async (e: React.MouseEvent<HTMLElement>) => {
+                        if (!e.ctrlKey) {
+                            e.preventDefault();
+                            const confirm = await confirmAction(BugBashHelpers.isDirty(this.state.bugBashViewModel), "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
 
-                        if (confirm) {
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
-                        } 
+                            if (confirm) {
+                                let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                            } 
+                        }
                     }}
-                    className="bugbashes-button" />
+                    className="bugbashes-button">
+                    Bug Bashes
+                </Link>
                 <span className="divider">></span>
                 <span className="bugbash-title">{title}</span>
             </div>
@@ -179,8 +189,6 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                                     {this._renderCharts()}
                                 </div>;
                         }
-
-                        
                     },
                     pivots: [
                         {

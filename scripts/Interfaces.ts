@@ -1,5 +1,3 @@
-import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-
 export interface IBugBash {
     id: string;
     readonly __etag: number;
@@ -46,11 +44,6 @@ export interface IBugBashItemViewModel {
     originalBugBashItem: IBugBashItem;
     updatedBugBashItem: IBugBashItem;
     newComment?: string;
-}
-
-export interface IAcceptedBugBashItemViewModel {
-    bugBashItem: IBugBashItem;
-    workItem: WorkItem;
 }
 
 export interface Settings {

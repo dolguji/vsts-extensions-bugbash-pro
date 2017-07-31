@@ -11,7 +11,7 @@ import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 import { UrlActions } from "../Constants";
 import { BugBashItemActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
-import { IBugBashItem, IBugBash, IBugBashItemComment, IAcceptedBugBashItemViewModel } from "../Interfaces";
+import { IBugBashItem, IBugBash, IBugBashItemComment } from "../Interfaces";
 import { BugBashItemHelpers } from "../Helpers";
 
 export module BugBashItemActions {
@@ -145,12 +145,12 @@ export module BugBashItemActions {
             StoresHub.bugBashItemStore.setLoading(true, bugBashItem.id);
 
             try {
-                let acceptedBugBashItemViewModel = await acceptItem(bugBashItem);
+                let acceptedBugBashItem = await acceptItem(bugBashItem);
                 
-                BugBashItemActionsHub.AcceptBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: acceptedBugBashItemViewModel.bugBashItem});
+                BugBashItemActionsHub.AcceptBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: acceptedBugBashItem});
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
 
-                return acceptedBugBashItemViewModel.bugBashItem;
+                return acceptedBugBashItem;
             }
             catch (e) {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
@@ -178,7 +178,7 @@ export module BugBashItemActions {
         bugBashItem.teamId = bugBashItem.teamId || "";
     }    
 
-    async function acceptItem(bugBashItem: IBugBashItem): Promise<IAcceptedBugBashItemViewModel> {
+    async function acceptItem(bugBashItem: IBugBashItem): Promise<IBugBashItem> {
         let updatedBugBashItem: IBugBashItem;
         let savedWorkItem: WorkItem;
         const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
@@ -241,10 +241,7 @@ export module BugBashItemActions {
 
         addExtraFieldsToWorkitem(savedWorkItem.id, updatedBugBashItem);
 
-        return {
-            bugBashItem: updatedBugBashItem,
-            workItem: savedWorkItem
-        };
+        return updatedBugBashItem;
     }
 
     function addExtraFieldsToWorkitem(workItemId: number, bugBashItem: IBugBashItem) {

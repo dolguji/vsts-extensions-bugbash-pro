@@ -451,10 +451,13 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     private async _saveSelectedItem() {
         if (BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel) && BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel)) {
             try {
-                const updatedItem = await BugBashItemActions.saveItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.updatedBugBashItem);
+                let updatedItem = await BugBashItemActions.saveItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.updatedBugBashItem);
                 if (this.state.selectedBugBashItemViewModel.newComment != null && this.state.selectedBugBashItemViewModel.newComment.trim() !== "") {
-                    BugBashItemCommentActions.createComment(updatedItem.id, this.state.selectedBugBashItemViewModel.newComment);
-                }                
+                    await BugBashItemCommentActions.createComment(updatedItem.id, this.state.selectedBugBashItemViewModel.newComment);
+                }
+                if (this.props.bugBash.autoAccept) {
+                    updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, updatedItem);
+                }
                 this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
             }
             catch (e) {
@@ -481,7 +484,15 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     maxWidth: 250,
                     resizable: true,
                     onRenderCell: (workItem: WorkItem) => {
-                        return <IdentityView identityDistinctName={workItemIdToItemMap[workItem.id].createdBy} />;
+                        return (
+                            <TooltipHost 
+                                content={workItemIdToItemMap[workItem.id].createdBy}
+                                delay={TooltipDelay.medium}
+                                directionalHint={DirectionalHint.bottomLeftEdge}>
+
+                                <IdentityView identityDistinctName={workItemIdToItemMap[workItem.id].createdBy} />
+                            </TooltipHost>
+                        );
                     },
                     sortFunction: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {                        
                         let compareValue = Utils_String.ignoreCaseComparer(workItemIdToItemMap[workItem1.id].createdBy, workItemIdToItemMap[workItem2.id].createdBy);
@@ -601,9 +612,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <div className={getCellClassName(viewModel)}>
-                                <IdentityView identityDistinctName={viewModel.updatedBugBashItem.createdBy} />
-                            </div>
+                            <IdentityView identityDistinctName={viewModel.updatedBugBashItem.createdBy} />
                         </TooltipHost>
                     )
                 },
@@ -654,9 +663,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <div className={getCellClassName(viewModel)}>
-                                <IdentityView identityDistinctName={viewModel.updatedBugBashItem.rejectedBy} />
-                            </div>
+                            <IdentityView identityDistinctName={viewModel.updatedBugBashItem.rejectedBy} />
                         </TooltipHost>
                     )
                 },
