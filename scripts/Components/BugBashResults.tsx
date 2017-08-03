@@ -200,7 +200,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
     private _renderPivots(): JSX.Element {
         const pendingBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && !viewModel.originalBugBashItem.rejected);
-        const rejectedBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => viewModel.originalBugBashItem.rejected);
+        const rejectedBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && viewModel.originalBugBashItem.rejected);
         const acceptedWorkItemIds = this.state.bugBashItemViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem)).map(viewModel => viewModel.originalBugBashItem.workItemId);
 
         let pivots: JSX.Element;
@@ -297,9 +297,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             bugBashItem={this.state.selectedBugBashItemViewModel.updatedBugBashItem}
                             error={this.state.bugBashItemEditorError}
                             newComment={this.state.selectedBugBashItemViewModel.newComment}
-                            save={() => {
-                                this._saveSelectedItem();
-                            }}
+                            save={this._saveSelectedItem}
                             onChange={this._onItemChange} />;
                     },
                     pivots: [
@@ -330,17 +328,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 {
                     key: "Accept", name: "Accept", title: "Create workitems from selected items", iconProps: {iconName: "Accept"}, className: !isMenuDisabled ? "acceptItemButton" : "",
                     disabled: isMenuDisabled,
-                    onClick: async () => {
-                        if (!BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)) {
-                            try {
-                                const updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem);                                               
-                                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
-                            }
-                            catch (e) {
-                                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
-                            }
-                        }
-                    }
+                    onClick: this._acceptBugBashItem
                 },
                 {
                     key: "Reject",
@@ -350,13 +338,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                                     className="reject-menu-item-checkbox"
                                     label="Reject"
                                     checked={this.state.selectedBugBashItemViewModel.updatedBugBashItem.rejected === true}
-                                    onChange={() => {                                        
-                                        let updatedItem = {...this.state.selectedBugBashItemViewModel.updatedBugBashItem};
-                                        updatedItem.rejected = !updatedItem.rejected;
-                                        updatedItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-                                        updatedItem.rejectReason = "";
-                                        this._onItemChange(updatedItem);
-                                    }} />;
+                                    onChange={this._rejectBugBashItem} />;
                     }
                 }
             ];
@@ -368,7 +350,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 iconProps: {iconName: "SkypeCircleCheck"}
             }];
         }
-    }
+    }    
 
     private _getItemEditorCommands(): IContextualMenuItem[] {
         if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
@@ -381,42 +363,68 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 iconProps: {iconName: "Save"}, 
                 disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)
                         || !BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel),
-                onClick: async () => {
-                    this._saveSelectedItem();
-                }
+                onClick: this._saveSelectedItem
             },
             {
                 key: "refresh", name: "", 
                 iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem),
-                onClick: async () => {  
-                    if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)){
-                        const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
-                        if (confirm) {
-                            try {
-                                const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
-                                BugBashItemCommentActions.refreshComments(this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
-                                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
-                            }
-                            catch (e) {
-                                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
-                            }
-                        }
-                    }                                 
-                }
+                onClick: this._refreshBugBashItem
             },
             {
                 key: "undo", name: "", 
                 title: "Undo changes", iconProps: {iconName: "Undo"}, 
                 disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel),
-                onClick: async () => {
-                    const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
-                    if (confirm) {
-                        this._onItemChange(this.state.selectedBugBashItemViewModel.originalBugBashItem, "");
-                    }
-                }
+                onClick: this._revertBugBashItem
             }
         ];
+    }
+
+    @autobind
+    private async _acceptBugBashItem() {
+        if (!BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)) {
+            try {
+                const updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem);                                               
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+            }
+            catch (e) {
+                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
+            }
+        }
+    }
+
+    @autobind
+    private _rejectBugBashItem() {
+        let updatedItem = {...this.state.selectedBugBashItemViewModel.updatedBugBashItem};
+        updatedItem.rejected = !updatedItem.rejected;
+        updatedItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+        updatedItem.rejectReason = "";
+        this._onItemChange(updatedItem);
+    }
+
+    @autobind
+    private async _refreshBugBashItem() {
+        if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)){
+            const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+            if (confirm) {
+                try {
+                    const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
+                    BugBashItemCommentActions.refreshComments(this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
+                    this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+                }
+                catch (e) {
+                    this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
+                }
+            }
+        }
+    }
+
+    @autobind
+    private async _revertBugBashItem() {
+        const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
+        if (confirm) {
+            this._onItemChange(this.state.selectedBugBashItemViewModel.originalBugBashItem, "");
+        }
     }
 
     @autobind
@@ -448,6 +456,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         }
     }
 
+    @autobind
     private async _saveSelectedItem() {
         if (BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel) && BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel)) {
             try {

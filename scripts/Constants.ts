@@ -10,3 +10,10 @@ export module Events {
     export var RefreshItems = "refresh-items";
 }
 
+export module ChartsView {
+    export var All = "All Items";
+    export var PendingItemsOnly = "Pending Items";
+    export var RejectedItemsOnly = "Rejected Items";
+    export var AcceptedItemsOnly = "Accepted Items";
+}
+

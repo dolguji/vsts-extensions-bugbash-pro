@@ -13,13 +13,19 @@ import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 import { IBugBashItem, IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
+import { BugBashItemHelpers } from "../Helpers";
+import { ChartsView } from "../Constants";
 
 interface IBugBashChartsState extends IBaseComponentState {
-    bugBashItems: IBugBashItem[];
+    allBugBashItems: IBugBashItem[];
+    pendingBugBashItems: IBugBashItem[];
+    acceptedBugBashItems: IBugBashItem[];
+    rejectedBugBashItems: IBugBashItem[];    
 }
 
 interface IBugBashChartsProps extends IBaseComponentProps {
     bugBash: IBugBash;
+    view?: string;
 }
 
 const CustomizedAxisTick: React.StatelessComponent<any> =
@@ -36,7 +42,10 @@ const CustomizedAxisTick: React.StatelessComponent<any> =
 export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashChartsState> {
     protected initializeState() {
         this.state = {
-            bugBashItems: null,
+            allBugBashItems: null,
+            pendingBugBashItems: null,
+            rejectedBugBashItems: null,
+            acceptedBugBashItems: null,
             loading: true
         };
     }
@@ -46,9 +55,14 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
     }
 
     protected getStoresState(): IBugBashChartsState {
+        const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id);
+
         return {
             loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id) || StoresHub.teamStore.isLoading(),
-            bugBashItems: StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id)
+            allBugBashItems: bugBashItems,
+            pendingBugBashItems: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && !b.rejected) : null,
+            acceptedBugBashItems: bugBashItems ? bugBashItems.filter(b => BugBashItemHelpers.isAccepted(b)) : null,
+            rejectedBugBashItems: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && b.rejected) : null
         } as IBugBashChartsState;
     }
 
@@ -63,10 +77,21 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
             return <Loading />;
         }
 
-        if (this.state.bugBashItems.length === 0) {
+        if (this.state.allBugBashItems.length === 0) {
             return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
                 No items created yet.
             </MessageBar>;            
+        }
+
+        let bugBashItems = this.state.allBugBashItems;
+        if (this.props.view === ChartsView.AcceptedItemsOnly) {
+            bugBashItems = this.state.acceptedBugBashItems;
+        }
+        else if (this.props.view === ChartsView.RejectedItemsOnly) {
+            bugBashItems = this.state.rejectedBugBashItems;
+        }
+        else if (this.props.view === ChartsView.PendingItemsOnly) {
+            bugBashItems = this.state.pendingBugBashItems;
         }
 
         let teamCounts: IDictionaryStringTo<number> = {};
@@ -74,7 +99,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         let teamData = [];
         let createdByData = [];
 
-        for (const model of this.state.bugBashItems) {
+        for (const model of bugBashItems) {
             let teamId = model.teamId;
 
             let createdBy = model.createdBy;
@@ -99,7 +124,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
 
         return <div className="bugbash-analytics">
                 <div className="chart-view">
-                    <Label className="header">Assigned to team</Label>
+                    <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
                     <BarChart layout={"vertical"} width={600} height={600} data={teamData} barSize={10}
                         margin={{top: 5, right: 30, left: 20, bottom: 5}}>
                         <XAxis type="number" allowDecimals={false} />
@@ -109,7 +134,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                     </BarChart>
                 </div>                
                 <div className="chart-view">
-                    <Label className="header">Created By</Label>
+                    <Label className="header">{`Created By (${bugBashItems.length})`}</Label>
                     <BarChart layout={"vertical"} width={600} height={600} data={createdByData} barSize={10}
                         margin={{top: 5, right: 30, left: 20, bottom: 5}}>
                         <XAxis type="number" allowDecimals={false} />

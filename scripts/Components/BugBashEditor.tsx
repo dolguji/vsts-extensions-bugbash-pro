@@ -113,7 +113,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
                 <TextField 
                     label='Title' 
                     value={bugBash.title} 
-                    onChanged={(newValue: string) => this._updateTitle(newValue)} />
+                    onChanged={this._updateTitle} />
                 
                 { (bugBash.title == null || bugBash.title.trim() === "") && <InputError error="Title is required." /> }
                 { bugBash.title && bugBash.title.length > 256 && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBash.title.length}.`} /> }
@@ -134,7 +134,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
                             ['fullscreen']
                         ]
                     }}
-                    onChange={(newValue: string) => this._updateDescription(newValue)} />
+                    onChange={this._updateDescription} />
             </div>
             <div className="second-section">
                 <div className="checkbox-container">                            
@@ -152,14 +152,14 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
                     allowTextInput={true} 
                     isRequired={false} 
                     value={bugBash.startTime}
-                    onSelectDate={(newValue: Date) => this._updateStartTime(newValue)} />
+                    onSelectDate={this._updateStartTime} />
 
                 <DatePicker 
                     label="Finish Date" 
                     allowTextInput={true}
                     isRequired={false} 
                     value={bugBash.endTime} 
-                    onSelectDate={(newValue: Date) => this._updateEndTime(newValue)} />
+                    onSelectDate={this._updateEndTime} />
 
                 { bugBash.startTime && bugBash.endTime && Utils_Date.defaultComparer(bugBash.startTime, bugBash.endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
@@ -239,6 +239,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
         this.props.onChange(updatedBugBash);
     }
 
+    @autobind
     private _updateTitle(newTitle: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.title = newTitle;
@@ -252,6 +253,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
         this._onChange(bugBash);
     }
 
+    @autobind
     private _updateDescription(newDescription: string) {
         let bugBash = {...this.props.bugBash};
         bugBash.description = newDescription;
@@ -264,12 +266,14 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
         this._onChange(bugBash);
     }
 
+    @autobind
     private _updateStartTime(newStartTime: Date) {
         let bugBash = {...this.props.bugBash};
         bugBash.startTime = newStartTime;
         this._onChange(bugBash);
     }
 
+    @autobind
     private _updateEndTime(newEndTime: Date) {        
         let bugBash = {...this.props.bugBash};
         bugBash.endTime = newEndTime;

@@ -11,18 +11,19 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
 
+import { autobind } from "OfficeFabric/Utilities";
 import { Link } from "OfficeFabric/Link";
 import { Overlay } from "OfficeFabric/Overlay";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
-import { IBugBashViewModel } from "../Interfaces";
+import { IBugBashViewModel, IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, BugBashHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { UrlActions, Events } from "../Constants";
+import { UrlActions, Events, ChartsView } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
 export interface IBugBashViewProps extends IBaseComponentProps {
@@ -36,6 +37,7 @@ export interface IBugBashViewState extends IBaseComponentState {
     isAnyBugBashItemDirty?: boolean;
     bugBashEditorError?: string;
     filterText?: string;
+    chartsView?: string;
 }
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
@@ -191,9 +193,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             commands: this._getResultViewCommands(),
                             filterProps: {
                                 showFilter: true,
-                                onFilterChange: (filterText) => {
-                                    this.updateState({filterText: filterText} as IBugBashViewState);
-                                },
+                                onFilterChange: this._onFilterTextChange,
                                 filterPosition: FilterPosition.Left
                             }
                         },
@@ -214,7 +214,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         else {
             return null;
         }
-    }
+    }    
 
     private _renderEditor(): JSX.Element {
         return <LazyLoad module="scripts/BugBashEditor">
@@ -222,14 +222,8 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 <BugBashEditor.BugBashEditor 
                     bugBash={{...this.state.bugBashViewModel.updatedBugBash}}
                     error={this.state.bugBashEditorError}
-                    onChange={updatedBugbash => {
-                        let newViewModel = {...this.state.bugBashViewModel};
-                        newViewModel.updatedBugBash = {...updatedBugbash};
-                        this.updateState({
-                            bugBashViewModel: newViewModel
-                        } as IBugBashViewState);
-                    }}
-                    save={() => this._saveBugBash()}
+                    onChange={this._onBugBashChange}
+                    save={this._saveBugBash}
                 />
             )}
         </LazyLoad>;
@@ -256,7 +250,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         if (!BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash)) {
             return <LazyLoad module="scripts/BugBashCharts">
                 {(BugBashCharts) => (
-                    <BugBashCharts.BugBashCharts bugBash={{...this.state.bugBashViewModel.originalBugBash}} />
+                    <BugBashCharts.BugBashCharts bugBash={{...this.state.bugBashViewModel.originalBugBash}} view={this.state.chartsView} />
                 )}
             </LazyLoad>;
         }
@@ -272,40 +266,17 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             {
                 key: "save", name: "Save", iconProps: {iconName: "Save"}, 
                 disabled: !BugBashHelpers.isDirty(this.state.bugBashViewModel) || !BugBashHelpers.isValid(this.state.bugBashViewModel),
-                onClick: () => {
-                    this._saveBugBash();
-                }
+                onClick: this._saveBugBash
             },
             {
                 key: "undo", name: "Undo", iconProps: {iconName: "Undo"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash) || !BugBashHelpers.isDirty(this.state.bugBashViewModel),
-                onClick: async () => {
-                    const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this instance?");
-                    if (confirm) {
-                        let newViewModel = {...this.state.bugBashViewModel};
-                        newViewModel.updatedBugBash = {...newViewModel.originalBugBash};
-                        this.updateState({
-                            bugBashViewModel: newViewModel
-                        } as IBugBashViewState);
-                    }
-                }
+                onClick: this._revertBugBash
             },
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
-                onClick: async () => {
-                    const confirm = await confirmAction(BugBashHelpers.isDirty(this.state.bugBashViewModel), 
-                        "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
-
-                    if (confirm) {
-                        try {
-                            await BugBashActions.refreshBugBash(this.props.bugBashId);
-                        }
-                        catch (e) {
-                            this.updateState({bugBashEditorError: e} as IBugBashViewState);
-                        }                        
-                    }
-                }
+                onClick: this._refreshBugBash
             }
         ];
     }
@@ -315,9 +286,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
-                onClick: () => {
-                    this._refreshBugBashItems();
-                }
+                onClick: this._refreshBugBashItems
             },
             {
                 key: "newitem", name: "New", iconProps: {iconName: "Add"}, 
@@ -334,13 +303,57 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
-                onClick: () => {
-                    this._refreshBugBashItems();
+                onClick: this._refreshBugBashItems
+            },
+            {
+                key: "chartsview", name: this.state.chartsView || ChartsView.All, 
+                iconProps: { iconName: "Equalizer" },
+                disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
+                subMenuProps: {
+                    items: [
+                        {
+                            key: "all", name: ChartsView.All, canCheck: true,
+                            checked: !this.state.chartsView || this.state.chartsView === ChartsView.All
+                        },
+                        {
+                            key: "pending", name: ChartsView.PendingItemsOnly, canCheck: true,
+                            checked: this.state.chartsView === ChartsView.PendingItemsOnly
+                        },
+                        {
+                            key: "rejected", name: ChartsView.RejectedItemsOnly, canCheck: true,
+                            checked: this.state.chartsView === ChartsView.RejectedItemsOnly
+                        },
+                        {
+                            key: "accepted", name: ChartsView.AcceptedItemsOnly, canCheck: true,
+                            checked: this.state.chartsView === ChartsView.AcceptedItemsOnly
+                        },
+                    ],
+                    onItemClick: this._onChangeChartsView
                 }
             }
         ];
     }
 
+    @autobind
+    private _onChangeChartsView(_ev?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) {
+        this.updateState({chartsView: item.name} as IBugBashViewState);
+    }
+
+    @autobind
+    private _onFilterTextChange(filterText: string) {
+        this.updateState({filterText: filterText} as IBugBashViewState);
+    }
+
+    @autobind
+    private _onBugBashChange(updatedBugBash: IBugBash) {
+        let newViewModel = {...this.state.bugBashViewModel};
+        newViewModel.updatedBugBash = {...updatedBugBash};
+        this.updateState({
+            bugBashViewModel: newViewModel
+        } as IBugBashViewState);
+    }
+
+    @autobind
     private async _refreshBugBashItems() {
         const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
         if (confirm) {                        
@@ -350,6 +363,34 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         }
     }
 
+    @autobind
+    private async _revertBugBash() {
+        const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this instance?");
+        if (confirm) {
+            let newViewModel = {...this.state.bugBashViewModel};
+            newViewModel.updatedBugBash = {...newViewModel.originalBugBash};
+            this.updateState({
+                bugBashViewModel: newViewModel
+            } as IBugBashViewState);
+        }
+    }
+
+    @autobind
+    private async _refreshBugBash() {
+        const confirm = await confirmAction(BugBashHelpers.isDirty(this.state.bugBashViewModel), 
+            "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+
+        if (confirm) {
+            try {
+                await BugBashActions.refreshBugBash(this.props.bugBashId);
+            }
+            catch (e) {
+                this.updateState({bugBashEditorError: e} as IBugBashViewState);
+            }                        
+        }
+    }
+
+    @autobind
     private async _saveBugBash() {        
         if (BugBashHelpers.isDirty(this.state.bugBashViewModel) && BugBashHelpers.isValid(this.state.bugBashViewModel)) {
             const originalBugBash = this.state.bugBashViewModel.originalBugBash;
