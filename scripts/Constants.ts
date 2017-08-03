@@ -17,3 +17,8 @@ export module ChartsView {
     export var AcceptedItemsOnly = "Accepted Items";
 }
 
+export module ResultsView {
+    export var PendingItemsOnly = "Pending Items";
+    export var RejectedItemsOnly = "Rejected Items";
+    export var AcceptedItemsOnly = "Accepted Items";
+}

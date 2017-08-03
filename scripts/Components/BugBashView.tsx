@@ -19,11 +19,11 @@ import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/Cont
 
 import { IBugBashViewModel, IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
-import { confirmAction, BugBashHelpers } from "../Helpers";
+import { confirmAction, BugBashHelpers, BugBashItemHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { UrlActions, Events, ChartsView } from "../Constants";
+import { UrlActions, Events, ChartsView, ResultsView } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
 export interface IBugBashViewProps extends IBaseComponentProps {
@@ -38,6 +38,10 @@ export interface IBugBashViewState extends IBaseComponentState {
     bugBashEditorError?: string;
     filterText?: string;
     chartsView?: string;
+    resultsView?: string;
+    pendingItemsCount?: number;
+    acceptedItemsCount?: number;
+    rejectedItemsCount?: number;
 }
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
@@ -45,19 +49,27 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         this.state = {
             bugBashViewModel: this.props.bugBashId ? null : BugBashHelpers.getNewViewModel(),
             loading: this.props.bugBashId ? true : false,
-            selectedPivot: this.props.pivotKey
+            selectedPivot: this.props.pivotKey,
+            pendingItemsCount: 0,
+            acceptedItemsCount: 0,
+            rejectedItemsCount: 0,
         };
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashStore];
+        return [StoresHub.bugBashStore, StoresHub.bugBashItemStore];
     }
 
     protected getStoresState(): IBugBashViewState {
+        const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId);
+
         return {
             loading: StoresHub.bugBashStore.isLoading(this.props.bugBashId),
             bugBashEditorError: null,
-            bugBashViewModel: BugBashHelpers.getViewModel(StoresHub.bugBashStore.getItem(this.props.bugBashId))
+            bugBashViewModel: BugBashHelpers.getViewModel(StoresHub.bugBashStore.getItem(this.props.bugBashId)),
+            pendingItemsCount: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && !b.rejected).length : 0,
+            acceptedItemsCount: bugBashItems ? bugBashItems.filter(b => BugBashItemHelpers.isAccepted(b)).length : 0,
+            rejectedItemsCount: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && b.rejected).length : 0
         } as IBugBashViewState;
     }
 
@@ -191,6 +203,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             key: "results",
                             text: "Results",
                             commands: this._getResultViewCommands(),
+                            farCommands: this._getResultViewFarCommands(),
                             filterProps: {
                                 showFilter: true,
                                 onFilterChange: this._onFilterTextChange,
@@ -206,6 +219,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             key: "charts",
                             text: "Charts",
                             commands: this._getChartsViewCommands(),
+                            farCommands: this._getChartsViewFarCommands()
                         }
                     ]
                 }}
@@ -235,6 +249,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 {(BugBashResults) => (
                     <BugBashResults.BugBashResults 
                         filterText={this.state.filterText || ""}
+                        view={this.state.resultsView}
                         bugBash={{...this.state.bugBashViewModel.originalBugBash}} />
                 )}
             </LazyLoad>;
@@ -250,7 +265,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         if (!BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash)) {
             return <LazyLoad module="scripts/BugBashCharts">
                 {(BugBashCharts) => (
-                    <BugBashCharts.BugBashCharts bugBash={{...this.state.bugBashViewModel.originalBugBash}} view={this.state.chartsView} />
+                    <BugBashCharts.BugBashCharts 
+                        bugBash={{...this.state.bugBashViewModel.originalBugBash}} 
+                        view={this.state.chartsView} />
                 )}
             </LazyLoad>;
         }
@@ -294,6 +311,47 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 onClick: () => {
                     EventsService.getService().fire(Events.RefreshItems);
                 }
+            }            
+        ];
+    }
+
+    private _getResultCount(): number {
+        switch (this.state.resultsView) {
+            case ResultsView.RejectedItemsOnly:
+                return this.state.rejectedItemsCount;
+            case ResultsView.AcceptedItemsOnly:
+                return this.state.acceptedItemsCount;
+            default:
+                return this.state.pendingItemsCount;
+        }
+    }
+
+    private _getResultViewFarCommands(): IContextualMenuItem[] {
+        return [
+            {
+                key:"resultCount", name: `${this._getResultCount()} results`
+            },
+            {
+                key: "resultsview", name: this.state.resultsView || ResultsView.PendingItemsOnly, 
+                iconProps: { iconName: "Equalizer" },
+                disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
+                subMenuProps: {
+                    items: [                        
+                        {
+                            key: "pending", name: ResultsView.PendingItemsOnly, canCheck: true,
+                            checked: !this.state.resultsView || this.state.resultsView === ResultsView.PendingItemsOnly
+                        },
+                        {
+                            key: "rejected", name: ResultsView.RejectedItemsOnly, canCheck: true,
+                            checked: this.state.resultsView === ResultsView.RejectedItemsOnly
+                        },
+                        {
+                            key: "accepted", name: ResultsView.AcceptedItemsOnly, canCheck: true,
+                            checked: this.state.resultsView === ResultsView.AcceptedItemsOnly
+                        },
+                    ],
+                    onItemClick: this._onChangeResultsView
+                }
             }
         ];
     }
@@ -304,7 +362,12 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
                 onClick: this._refreshBugBashItems
-            },
+            }            
+        ];
+    }
+
+    private _getChartsViewFarCommands(): IContextualMenuItem[] {
+        return [
             {
                 key: "chartsview", name: this.state.chartsView || ChartsView.All, 
                 iconProps: { iconName: "Equalizer" },
@@ -337,6 +400,11 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     @autobind
     private _onChangeChartsView(_ev?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) {
         this.updateState({chartsView: item.name} as IBugBashViewState);
+    }
+
+    @autobind
+    private _onChangeResultsView(_ev?: React.MouseEvent<HTMLElement>, item?: IContextualMenuItem) {
+        this.updateState({resultsView: item.name} as IBugBashViewState);
     }
 
     @autobind

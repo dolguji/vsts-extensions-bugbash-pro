@@ -9,7 +9,6 @@ import * as EventsService from "VSS/Events/Services";
 
 import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
-import { Nav, INavLink } from "OfficeFabric/Nav";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
@@ -34,12 +33,11 @@ import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { Events } from "../Constants";
+import { Events, ResultsView } from "../Constants";
 
 interface IBugBashResultsState extends IBaseComponentState {
     itemIdToIndexMap: IDictionaryStringTo<number>;
     bugBashItemViewModels: IBugBashItemViewModel[];
-    selectedPivot: SelectedPivot;
     selectedBugBashItemViewModel?: IBugBashItemViewModel;
     bugBashItemEditorError?: string;
     gridKeyCounter: number;
@@ -48,12 +46,7 @@ interface IBugBashResultsState extends IBaseComponentState {
 interface IBugBashResultsProps extends IBaseComponentProps {
     bugBash: IBugBash;
     filterText?: string;
-}
-
-enum SelectedPivot {
-    Pending,
-    Accepted,
-    Rejected
+    view?: string;
 }
 
 export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBashResultsState> {
@@ -64,7 +57,6 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             itemIdToIndexMap: {},
             bugBashItemViewModels: null,
             selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id),
-            selectedPivot: this.props.bugBash.autoAccept ? SelectedPivot.Accepted : SelectedPivot.Pending,
             loading: true,
             gridKeyCounter: 0
         };
@@ -135,7 +127,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 { this.state.bugBashItemViewModels && StoresHub.teamStore.isLoaded() &&
                     <SplitterLayout 
                         primaryIndex={0}
-                        primaryMinSize={700}
+                        primaryMinSize={500}
                         secondaryMinSize={400}
                         secondaryInitialSize={500}
                         onChange={() => {
@@ -143,7 +135,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             evt.initUIEvent('resize', true, false, window, 0);
                             window.dispatchEvent(evt);
                         }} >                        
-                        { this._renderPivots() }
+                        { this._renderGrids() }
                         { this._renderItemEditor() }
                     </SplitterLayout>
                 }
@@ -173,67 +165,41 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         return map;
     }
 
-    private _getSelectedPivotKey(): string {
-        switch (this.state.selectedPivot) {
-            case SelectedPivot.Pending:
-                return "Pending";
-            case SelectedPivot.Accepted:
-                return "Accepted";
-            default:
-                return "Rejected";
-        }
-    }
-
-    private _updateSelectedPivot(pivotKey: string) {
-        switch (pivotKey) {
-            case "Pending":
-                this.updateState({selectedPivot: SelectedPivot.Pending} as IBugBashResultsState);
-                break;
-            case "Accepted":
-                this.updateState({selectedPivot: SelectedPivot.Accepted} as IBugBashResultsState);
-                break;
-           default:
-                this.updateState({selectedPivot: SelectedPivot.Rejected} as IBugBashResultsState);
-                break;
-        }
-    }    
-
-    private _renderPivots(): JSX.Element {
-        const pendingBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && !viewModel.originalBugBashItem.rejected);
-        const rejectedBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && viewModel.originalBugBashItem.rejected);
-        const acceptedWorkItemIds = this.state.bugBashItemViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem)).map(viewModel => viewModel.originalBugBashItem.workItemId);
-
-        let pivots: JSX.Element;
+    private _renderGrids(): JSX.Element {
         let pivotContent: JSX.Element;
-
-        if (this.props.bugBash.autoAccept) {
-            pivots = <Nav
-                className="nav-panel"
-                initialSelectedKey="Accepted"
-                groups={ [{
-                    links: [
-                        { name: `Accepted Items (${acceptedWorkItemIds.length})`, key:"Accepted", url: "" },
-                    ]
-                }] }
-            />;
-        }
-        else {
-            pivots = <Nav
-                className="nav-panel"
-                initialSelectedKey={this._getSelectedPivotKey()}
-                onLinkClick={(_ev?: React.MouseEvent<HTMLElement>, item?: INavLink) => this._updateSelectedPivot(item.key)}
-                groups={ [{
-                    links: [
-                        { name: `Pending Items (${pendingBugBashItemViewModels.length})`, key: "Pending", url: "" },
-                        { name: `Accepted Items (${acceptedWorkItemIds.length})`, key:"Accepted", url: "" },
-                        { name: `Rejected Items (${rejectedBugBashItemViewModels.length})`, key:"Rejected", url: "" }
-                    ]
-                }] }
-            />;
-        }
         
-        switch (this.state.selectedPivot) {
-            case SelectedPivot.Pending:
+        switch (this.props.view) {            
+            case ResultsView.AcceptedItemsOnly:
+                const acceptedWorkItemIds = this.state.bugBashItemViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem)).map(viewModel => viewModel.originalBugBashItem.workItemId);
+                pivotContent = <WorkItemGrid
+                    filterText={this.props.filterText}
+                    selectionPreservedOnEmptyClick={true}
+                    setKey={`bugbash-work-item-grid-${this.state.gridKeyCounter}`}
+                    className="bugbash-item-grid"
+                    workItemIds={acceptedWorkItemIds}
+                    fieldRefNames={["System.Id", "System.Title", "System.State", "System.AssignedTo", "System.AreaPath"]}
+                    noResultsText="No Accepted items"
+                    extraColumns={this._getExtraWorkItemGridColumns()}
+                />;                
+                break;
+            case ResultsView.RejectedItemsOnly:
+                const rejectedBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && viewModel.originalBugBashItem.rejected);
+                pivotContent = <Grid
+                    filterText={this.props.filterText}
+                    selectionPreservedOnEmptyClick={true}
+                    setKey={`bugbash-rejected-item-grid-${this.state.gridKeyCounter}`}
+                    className="bugbash-item-grid"
+                    noResultsText="No Rejected items"
+                    items={rejectedBugBashItemViewModels}
+                    selectionMode={SelectionMode.single}
+                    columns={this._getBugBashItemGridColumns(true)}
+                    events={{
+                        onSelectionChanged: this._onBugBashItemSelectionChanged
+                    }}
+                />;
+                break;
+            default:
+                const pendingBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && !viewModel.originalBugBashItem.rejected);
                 pivotContent = <Grid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
@@ -248,38 +214,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     }}
                 />;
                 break;
-            case SelectedPivot.Accepted:
-                pivotContent = <WorkItemGrid
-                    filterText={this.props.filterText}
-                    selectionPreservedOnEmptyClick={true}
-                    setKey={`bugbash-work-item-grid-${this.state.gridKeyCounter}`}
-                    className="bugbash-item-grid"
-                    workItemIds={acceptedWorkItemIds}
-                    fieldRefNames={["System.Id", "System.Title", "System.State", "System.AssignedTo", "System.AreaPath"]}
-                    noResultsText="No Accepted items"
-                    extraColumns={this._getExtraWorkItemGridColumns()}
-                />;                
-                break;
-            default:
-                pivotContent = <Grid
-                    filterText={this.props.filterText}
-                    selectionPreservedOnEmptyClick={true}
-                    setKey={`bugbash-rejected-item-grid-${this.state.gridKeyCounter}`}
-                    className="bugbash-item-grid"
-                    noResultsText="No Rejected items"
-                    items={rejectedBugBashItemViewModels}
-                    selectionMode={SelectionMode.single}
-                    columns={this._getBugBashItemGridColumns(true)}
-                    events={{
-                        onSelectionChanged: this._onBugBashItemSelectionChanged
-                    }}
-                />;
-                break;            
         }
 
         return (
             <div className="left-content">
-                {pivots}
                 {pivotContent}
             </div>
         );

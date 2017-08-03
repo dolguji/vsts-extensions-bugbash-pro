@@ -27,20 +27,8 @@
 
         .left-content {
             height: 100%;
-            display: flex;
-
-            .nav-panel {
-                border-right: 1px solid #ccc;
-                height: 100%;
-                padding-right: 1px;
-
-                .ms-Nav-linkText {
-                    vertical-align: top;
-                }
-            }
 
             .bugbash-item-grid {
-                flex: 1;
                 overflow: hidden;
                 
                 .message-panel {
