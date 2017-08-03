@@ -10,6 +10,7 @@ import { TeamFieldStore } from "VSTS_Extension/Flux/Stores/TeamFieldStore";
 import { WorkItemStore } from "VSTS_Extension/Flux/Stores/WorkItemStore";
 
 import { BugBashStore } from "./BugBashStore";
+import { BugBashErrorMessageStore } from "./BugBashErrorMessageStore";
 import { BugBashItemStore } from "./BugBashItemStore";
 import { BugBashItemCommentStore } from "./BugBashItemCommentStore";
 import { SettingsStore } from "./SettingsStore";
@@ -19,6 +20,7 @@ export module StoresHub {
     export var settingsStore: SettingsStore = StoreFactory.getInstance<SettingsStore>(SettingsStore);
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
     export var bugBashItemStore: BugBashItemStore = StoreFactory.getInstance<BugBashItemStore>(BugBashItemStore);
+    export var bugBashErrorMessageStore: BugBashErrorMessageStore = StoreFactory.getInstance<BugBashErrorMessageStore>(BugBashErrorMessageStore);
     export var bugBashItemCommentStore: BugBashItemCommentStore = StoreFactory.getInstance<BugBashItemCommentStore>(BugBashItemCommentStore);
 
     export var gitRepoStore: GitRepoStore = StoreFactory.getInstance<GitRepoStore>(GitRepoStore);

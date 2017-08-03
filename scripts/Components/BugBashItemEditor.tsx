@@ -5,9 +5,9 @@ import { autobind } from "OfficeFabric/Utilities";
 import { Label } from "OfficeFabric/Label";
 import { TextField } from "OfficeFabric/TextField";
 import { Overlay } from "OfficeFabric/Overlay";
+import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
 import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
-import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
@@ -153,7 +153,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             const witUrl = `${webContext.collection.uri}/${webContext.project.name}/_workitems/edit/${item.workItemId}`;
 
             return <div className="item-editor accepted-item">
-                <MessagePanel messageType={MessageType.Success} message={"Accepted"} />
+                <MessageBar messageBarType={MessageBarType.success} className="message-panel">Accepted</MessageBar>
                 <a href={witUrl} target="_blank">Work item: {item.workItemId}</a>
             </div>;
         }
@@ -164,7 +164,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         return (
             <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>                    
                 { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay>}
-                { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} />}                    
+                { this.props.error && <MessageBar messageBarType={MessageBarType.error} className="message-panel">{this.props.error}</MessageBar> }
 
                 <TextField label="Title" 
                         value={item.title}

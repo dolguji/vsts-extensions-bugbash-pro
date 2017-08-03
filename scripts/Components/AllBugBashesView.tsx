@@ -7,6 +7,7 @@ import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from 
 import { Label } from "OfficeFabric/Label";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { Panel, PanelType } from "OfficeFabric/Panel";
+import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { Grid } from "VSTS_Extension/Components/Grids/Grid";
@@ -26,6 +27,7 @@ import { UrlActions } from "../Constants";
 import { IBugBash } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActions } from "../Actions/BugBashActions";
+import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
 interface IAllBugBashesViewState extends IBaseComponentState {
     pastBugBashes: IBugBash[];
@@ -33,11 +35,12 @@ interface IAllBugBashesViewState extends IBaseComponentState {
     upcomingBugBashes: IBugBash[];
     settingsPanelOpen: boolean;
     selectedPivot?: string;
+    errorMessage?: string
 }
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashStore];
+        return [StoresHub.bugBashStore, StoresHub.bugBashErrorMessageStore];
     }
 
     protected initializeState() {
@@ -47,13 +50,19 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             upcomingBugBashes: [],
             loading: true,
             selectedPivot: "ongoing",
-            settingsPanelOpen: false
+            settingsPanelOpen: false,
+            errorMessage: StoresHub.bugBashErrorMessageStore.getAll()
         };
     }
 
     public componentDidMount() {
         super.componentDidMount();
         BugBashActions.initializeAllBugBashes(); 
+    }
+
+    public componentWillUnmount() {
+        super.componentWillUnmount();
+        BugBashErrorMessageActions.dismissErrorMessage();
     }
 
     protected getStoresState(): IAllBugBashesViewState {        
@@ -64,13 +73,15 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             pastBugBashes: this._getPastBugBashes(allBugBashes, currentTime),
             currentBugBashes: this._getCurrentBugBashes(allBugBashes, currentTime),
             upcomingBugBashes: this._getUpcomingBugBashes(allBugBashes, currentTime),
-            loading: StoresHub.bugBashStore.isLoading()
+            loading: StoresHub.bugBashStore.isLoading(),
+            errorMessage: StoresHub.bugBashErrorMessageStore.getAll()
         } as IAllBugBashesViewState;
     }
 
     public render(): JSX.Element {
         return (
             <div className="all-view">
+                { this.state.errorMessage && <MessageBar messageBarType={MessageBarType.error}>{this.state.errorMessage}</MessageBar>}
                 <Hub 
                     title="Bug Bashes"          
                     pivotProps={{
@@ -144,13 +155,18 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             missingItemsMsg = "No upcoming bug bashes.";            
         }
 
+        if (bugBashes.length === 0) {
+            return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
+                {missingItemsMsg}
+            </MessageBar>
+        }
+
         return <Grid
             className={"instance-list"}
             items={bugBashes}
             columns={this._getGridColumns()}
             selectionMode={SelectionMode.none}
             contextMenuProps={this._getGridContextMenuProps()}
-            noResultsText={missingItemsMsg}
         />;                    
     }
 

@@ -1,13 +1,15 @@
 .all-view {
     height: 100%;
 
-    .instance-list {
+    .hub-pivot-content {
         .message-panel {
             margin-top: 10px;
         }
-        
-        .bugbash-grid-cell {
-            padding: 0;
+
+        .instance-list {        
+            .bugbash-grid-cell {
+                padding: 0;
+            }
         }
-    }
+    }    
 }

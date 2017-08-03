@@ -2,11 +2,11 @@ import "../../css/BugBashCharts.scss";
 
 import * as React from "react";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 
+import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
 import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 
@@ -64,7 +64,9 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         }
 
         if (this.state.bugBashItems.length === 0) {
-            return <MessagePanel messageType={MessageType.Info} message="No items created yet." />;
+            return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
+                No items created yet.
+            </MessageBar>;            
         }
 
         let teamCounts: IDictionaryStringTo<number> = {};

@@ -8,13 +8,13 @@ import { Label } from "OfficeFabric/Label";
 import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
 import { autobind } from "OfficeFabric/Utilities";
 import { Checkbox } from "OfficeFabric/Checkbox";
+import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_Core = require("VSS/Utils/Core");
 
-import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
@@ -80,8 +80,8 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBaseCompo
         }
 
         return (
-            <div className="bugbash-editor">                
-                { this.props.error && <MessagePanel messageType={MessageType.Error} message={this.props.error} /> }
+            <div className="bugbash-editor">
+                { this.props.error && <MessageBar messageBarType={MessageBarType.error} className="message-panel">{this.props.error}</MessageBar> }
                 { this._renderEditor() }                
             </div>
         );

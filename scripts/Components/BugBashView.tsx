@@ -10,11 +10,11 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Ex
 import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { MessagePanel, MessageType } from "VSTS_Extension/Components/Common/MessagePanel";
 import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
 
 import { Link } from "OfficeFabric/Link";
 import { Overlay } from "OfficeFabric/Overlay";
+import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { IBugBashViewModel } from "../Interfaces";
@@ -111,10 +111,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     public render(): JSX.Element {
         if (!this.state.loading && !this.state.bugBashViewModel) {
-            return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash doesn't exist." />;
+            return <MessageBar messageBarType={MessageBarType.error} className="message-panel">This instance of bug bash doesn't exist.</MessageBar>;
         }
         else if(!this.state.loading && this.state.bugBashViewModel && !Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashViewModel.originalBugBash.projectId, true)) {
-            return <MessagePanel messageType={MessageType.Error} message="This instance of bug bash is out of scope of current project." />;
+            return <MessageBar messageBarType={MessageBarType.error} className="message-panel">This instance of bug bash is out of scope of current project.</MessageBar>;
         }
         else {
             return <div className="bugbash-view">
@@ -252,7 +252,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             </LazyLoad>;
         }
         else {
-            return <MessagePanel messageType={MessageType.Info} message="Please save the bug bash first to view results" />;
+            return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
+                Please save the bug bash first to view results.
+            </MessageBar>;
         }
     }
 
@@ -265,7 +267,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             </LazyLoad>;
         }
         else {
-            return <MessagePanel messageType={MessageType.Info} message="Please save the bug bash first to view charts" />;
+            return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
+                Please save the bug bash first to view charts.
+            </MessageBar>;
         }
     }
 

@@ -33,3 +33,8 @@ export module BugBashItemActionsHub {
     export var DeleteBugBashItem = new Action<{bugBashId: string, bugBashItemId: string}>();
     export var AcceptBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
 }
+
+export module BugBashErrorMessageActionsHub {
+    export var PushErrorMessage = new Action<string>();
+    export var DismissErrorMessage = new Action<void>();
+}
