@@ -191,7 +191,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     className="bugbash-item-grid"
                     noResultsText="No Rejected items"
                     items={rejectedBugBashItemViewModels}
-                    selectionMode={SelectionMode.single}
+                    selectionMode={SelectionMode.none}
                     columns={this._getBugBashItemGridColumns(true)}
                     events={{
                         onSelectionChanged: this._onBugBashItemSelectionChanged
@@ -206,7 +206,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     setKey={`bugbash-pending-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
                     items={pendingBugBashItemViewModels}
-                    selectionMode={SelectionMode.single}
+                    selectionMode={SelectionMode.none}
                     columns={this._getBugBashItemGridColumns(false)}  
                     noResultsText="No Pending items"
                     events={{
