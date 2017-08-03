@@ -1,6 +1,14 @@
 .all-view {
     height: 100%;
 
+    .bugbash-error {
+        margin-bottom: 10px;
+    }
+
+    .hub.with-error {
+        height: calc(100% - 55px);
+    }
+
     .hub-pivot-content {
         .message-panel {
             margin-top: 10px;

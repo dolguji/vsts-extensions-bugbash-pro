@@ -1,7 +1,6 @@
 import "../../css/BugBashView.scss";
 
 import * as React from "react";
-import Utils_String = require("VSS/Utils/String");
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import * as EventsService from "VSS/Events/Services";
 import Context = require("VSS/Context");
@@ -24,6 +23,7 @@ import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
 import { UrlActions, Events } from "../Constants";
+import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
 export interface IBugBashViewProps extends IBaseComponentProps {
     bugBashId?: string;
@@ -105,23 +105,17 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             await BugBashActions.initializeBugBash(bugBashId);
         }
         catch (e) {
-            // no-op
+            BugBashErrorMessageActions.showErrorMessage(e);
+            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null, true);
         }
     }
 
     public render(): JSX.Element {
-        if (!this.state.loading && !this.state.bugBashViewModel) {
-            return <MessageBar messageBarType={MessageBarType.error} className="message-panel">This instance of bug bash doesn't exist.</MessageBar>;
-        }
-        else if(!this.state.loading && this.state.bugBashViewModel && !Utils_String.equals(VSS.getWebContext().project.id, this.state.bugBashViewModel.originalBugBash.projectId, true)) {
-            return <MessageBar messageBarType={MessageBarType.error} className="message-panel">This instance of bug bash is out of scope of current project.</MessageBar>;
-        }
-        else {
-            return <div className="bugbash-view">
-                { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay> }
-                { this.state.bugBashViewModel && this._renderHub() }
-            </div>;
-        }            
+        return <div className="bugbash-view">
+            { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay> }
+            { this.state.bugBashViewModel && this._renderHub() }
+        </div>;
     }
 
     private _onTitleRender(title: string): React.ReactNode {

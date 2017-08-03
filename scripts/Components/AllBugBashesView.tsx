@@ -81,8 +81,16 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     public render(): JSX.Element {
         return (
             <div className="all-view">
-                { this.state.errorMessage && <MessageBar messageBarType={MessageBarType.error}>{this.state.errorMessage}</MessageBar>}
+                { this.state.errorMessage && 
+                    <MessageBar 
+                        className="bugbash-error"
+                        messageBarType={MessageBarType.error} 
+                        onDismiss={this._onDismissErrorMessage}>
+                        {this.state.errorMessage}
+                    </MessageBar>
+                }
                 <Hub 
+                    className={this.state.errorMessage ? "with-error" : ""}
                     title="Bug Bashes"          
                     pivotProps={{
                         initialSelectedKey: this.state.selectedPivot,
@@ -133,6 +141,10 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             </div>
         );
     }
+
+    private _onDismissErrorMessage = () => {
+        BugBashErrorMessageActions.dismissErrorMessage();
+    };
 
     private _getContents(key: string): JSX.Element {
         if (this.state.loading) {

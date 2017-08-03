@@ -1,4 +1,5 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+import * as Utils_String from "VSS/Utils/String";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActionsHub } from "./ActionsHub";
@@ -12,7 +13,9 @@ export module BugBashActions {
         else if (!StoresHub.bugBashStore.isLoading()) {
             StoresHub.bugBashStore.setLoading(true);
             let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
-            for(let bugBash of bugBashes) {
+            bugBashes = bugBashes.filter(b => Utils_String.equals(VSS.getWebContext().project.id, b.projectId, true));
+
+            for (let bugBash of bugBashes) {
                 translateDates(bugBash);
             }
 
@@ -28,14 +31,19 @@ export module BugBashActions {
         else if (!StoresHub.bugBashStore.isLoading(bugBashId)) {
             StoresHub.bugBashStore.setLoading(true, bugBashId);
             let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
-            if (bugBash) {
+
+            if (bugBash && Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true)) {
                 translateDates(bugBash);
                 BugBashActionsHub.InitializeBugBash.invoke(bugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
             }
+            else if (bugBash && !Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true)) {
+                StoresHub.bugBashStore.setLoading(false, bugBashId);
+                throw `Bug Bash "${bugBashId}" is out of scope of current project.`;
+            }
             else {
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
-                throw "This instance of bug bash does not exist.";
+                throw `Bug Bash "${bugBashId}" does not exist.`;
             }
         }
     } 
@@ -45,15 +53,20 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true, bugBashId);
 
             let bugBash = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
-            if (bugBash) {
+
+            if (bugBash && Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true)) {
                 translateDates(bugBash);
                 BugBashActionsHub.RefreshBugBash.invoke(bugBash);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
             }
+            else if (bugBash && !Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true)) {
+                StoresHub.bugBashStore.setLoading(false, bugBashId);
+                throw `Bug Bash "${bugBashId}" is out of scope of current project.`;
+            }
             else {
                 BugBashActionsHub.DeleteBugBash.invoke(bugBashId);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
-                throw "This instance of bug bash does not exist.";
+                throw `Bug Bash "${bugBashId}" does not exist.`;
             }
         }
     } 
@@ -63,6 +76,8 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true);
 
             let bugBashes = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
+            bugBashes = bugBashes.filter(b => Utils_String.equals(VSS.getWebContext().project.id, b.projectId, true));
+
             for(let bugBash of bugBashes) {
                 translateDates(bugBash);
             }
