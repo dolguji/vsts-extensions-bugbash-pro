@@ -167,9 +167,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 { this.props.error && <MessageBar messageBarType={MessageBarType.error} className="message-panel">{this.props.error}</MessageBar> }
 
                 <TextField label="Title" 
-                        value={item.title}
-                        required={true} 
-                        onChanged={this._onTitleChange} />
+                    value={item.title}
+                    required={true} 
+                    onChanged={this._onTitleChange} />
 
                 { this._renderTitleError(item.title) }
 

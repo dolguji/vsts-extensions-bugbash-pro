@@ -276,7 +276,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     private _getCommandBarItems(): IContextualMenuItem[] {
          return [
             {
-                key: "new", name: "New", iconProps: {iconName: "Add"},
+                key: "new", name: "New Bug Bash", iconProps: {iconName: "Add"},
                 onClick: async () => {
                     let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
                     navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT);

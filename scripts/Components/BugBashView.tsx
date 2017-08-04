@@ -306,7 +306,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 onClick: this._refreshBugBashItems
             },
             {
-                key: "newitem", name: "New", iconProps: {iconName: "Add"}, 
+                key: "newitem", name: "New Item", iconProps: {iconName: "Add"}, 
                 disabled: BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash),
                 onClick: () => {
                     EventsService.getService().fire(Events.RefreshItems);
