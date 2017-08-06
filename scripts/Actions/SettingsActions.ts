@@ -38,7 +38,7 @@ export module SettingsActions {
         }
         else if (!StoresHub.userSettingsStore.isLoading()) {
             StoresHub.userSettingsStore.setLoading(true);
-            const settings = await ExtensionDataManager.readDocuments<IUserSettings>(`bugBashProUserSettings_${VSS.getWebContext().project.id}`, false);
+            const settings = await ExtensionDataManager.readDocuments<IUserSettings>(`UserSettings_${VSS.getWebContext().project.id}`, false);
             SettingsActionsHub.InitializeUserSettings.invoke(settings);
             StoresHub.userSettingsStore.setLoading(false);
         }
@@ -49,7 +49,7 @@ export module SettingsActions {
             StoresHub.userSettingsStore.setLoading(true);
 
             try {
-                const updatedSettings = await ExtensionDataManager.addOrUpdateDocument<IUserSettings>(`bugBashProUserSettings_${VSS.getWebContext().project.id}`, settings, false);
+                const updatedSettings = await ExtensionDataManager.addOrUpdateDocument<IUserSettings>(`UserSettings_${VSS.getWebContext().project.id}`, settings, false);
                 SettingsActionsHub.UpdateUserSettings.invoke(updatedSettings);
                 StoresHub.userSettingsStore.setLoading(false);
             }

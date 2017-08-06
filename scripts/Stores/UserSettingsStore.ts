@@ -4,18 +4,20 @@ import { SettingsActionsHub } from "../Actions/ActionsHub";
 import { IUserSettings } from "../Interfaces";
 
 export class UserSettingsStore extends BaseStore<IDictionaryStringTo<IUserSettings>, IUserSettings, string> {
-    constructor() {
-        super();
-        this.items = {};    
-    }
-
     public getItem(id: string): IUserSettings {
-         return this.items[id.toLowerCase()];
+        if (!this.items) {
+            return null;
+        }
+
+        return this.items[id.toLowerCase()];
     }
 
     protected initializeActionListeners() {
         SettingsActionsHub.InitializeUserSettings.addListener((settings: IUserSettings[]) => {
             if (settings) {
+                if (!this.items) {
+                    this.items = {};
+                }
                 for (const setting of settings) {
                     this.items[setting.id.toLowerCase()] = setting;
                 }
@@ -26,6 +28,9 @@ export class UserSettingsStore extends BaseStore<IDictionaryStringTo<IUserSettin
 
         SettingsActionsHub.UpdateUserSettings.addListener((settings: IUserSettings) => {
             if (settings) {
+                if (!this.items) {
+                    this.items = {};
+                }
                 this.items[settings.id.toLowerCase()] = settings;
             }
 
