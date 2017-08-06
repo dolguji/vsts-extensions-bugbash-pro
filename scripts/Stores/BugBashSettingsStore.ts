@@ -1,15 +1,15 @@
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 
 import { SettingsActionsHub } from "../Actions/ActionsHub";
-import { BugBashSettings } from "../Interfaces";
+import { IBugBashSettings } from "../Interfaces";
 
-export class BugBashSettingsStore extends BaseStore<BugBashSettings, BugBashSettings, void> {
-    public getItem(_id: void): BugBashSettings {
+export class BugBashSettingsStore extends BaseStore<IBugBashSettings, IBugBashSettings, void> {
+    public getItem(_id: void): IBugBashSettings {
          return this.items;
     }
 
     protected initializeActionListeners() {
-        SettingsActionsHub.InitializeBugBashSettings.addListener((settings: BugBashSettings) => {
+        SettingsActionsHub.InitializeBugBashSettings.addListener((settings: IBugBashSettings) => {
             if (settings) {
                 this.items = settings;
             }
@@ -17,7 +17,7 @@ export class BugBashSettingsStore extends BaseStore<BugBashSettings, BugBashSett
             this.emitChanged();
         });
 
-        SettingsActionsHub.UpdateBugBashSettings.addListener((settings: BugBashSettings) => {
+        SettingsActionsHub.UpdateBugBashSettings.addListener((settings: IBugBashSettings) => {
             if (settings) {
                 this.items = settings;
             }

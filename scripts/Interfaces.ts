@@ -46,10 +46,12 @@ export interface IBugBashItemViewModel {
     newComment?: string;
 }
 
-export interface BugBashSettings {
+export interface IBugBashSettings {
     gitMediaRepo: string;
 }
 
-export interface UserSettings {
+export interface IUserSettings {
+    id: string;
+    readonly __etag: number;
     associatedTeam: string;
 }

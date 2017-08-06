@@ -1,25 +1,32 @@
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 
 import { SettingsActionsHub } from "../Actions/ActionsHub";
-import { UserSettings } from "../Interfaces";
+import { IUserSettings } from "../Interfaces";
 
-export class UserSettingsStore extends BaseStore<UserSettings, UserSettings, void> {
-    public getItem(_id: void): UserSettings {
-         return this.items;
+export class UserSettingsStore extends BaseStore<IDictionaryStringTo<IUserSettings>, IUserSettings, string> {
+    constructor() {
+        super();
+        this.items = {};    
+    }
+
+    public getItem(id: string): IUserSettings {
+         return this.items[id.toLowerCase()];
     }
 
     protected initializeActionListeners() {
-        SettingsActionsHub.InitializeUserSettings.addListener((settings: UserSettings) => {
+        SettingsActionsHub.InitializeUserSettings.addListener((settings: IUserSettings[]) => {
             if (settings) {
-                this.items = settings;
+                for (const setting of settings) {
+                    this.items[setting.id.toLowerCase()] = setting;
+                }
             }
 
             this.emitChanged();
         });
 
-        SettingsActionsHub.UpdateUserSettings.addListener((settings: UserSettings) => {
+        SettingsActionsHub.UpdateUserSettings.addListener((settings: IUserSettings) => {
             if (settings) {
-                this.items = settings;
+                this.items[settings.id.toLowerCase()] = settings;
             }
 
             this.emitChanged();
@@ -27,10 +34,10 @@ export class UserSettingsStore extends BaseStore<UserSettings, UserSettings, voi
     }
 
     public getKey(): string {
-        return "ProjectSettingsStore";
+        return "UserSettingsStore";
     }
 
-    protected convertItemKeyToString(_key: void): string {
-        return null;
+    protected convertItemKeyToString(key: string): string {
+        return key;
     }
 }
