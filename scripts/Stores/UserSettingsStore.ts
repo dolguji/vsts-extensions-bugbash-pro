@@ -1,15 +1,15 @@
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 
 import { SettingsActionsHub } from "../Actions/ActionsHub";
-import { Settings } from "../Interfaces";
+import { UserSettings } from "../Interfaces";
 
-export class SettingsStore extends BaseStore<Settings, Settings, void> {
-    public getItem(_id: void): Settings {
+export class UserSettingsStore extends BaseStore<UserSettings, UserSettings, void> {
+    public getItem(_id: void): UserSettings {
          return this.items;
     }
 
     protected initializeActionListeners() {
-        SettingsActionsHub.InitializeBugBashSettings.addListener((settings: Settings) => {
+        SettingsActionsHub.InitializeUserSettings.addListener((settings: UserSettings) => {
             if (settings) {
                 this.items = settings;
             }
@@ -17,7 +17,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
             this.emitChanged();
         });
 
-        SettingsActionsHub.UpdateBugBashSettings.addListener((settings: Settings) => {
+        SettingsActionsHub.UpdateUserSettings.addListener((settings: UserSettings) => {
             if (settings) {
                 this.items = settings;
             }
@@ -27,7 +27,7 @@ export class SettingsStore extends BaseStore<Settings, Settings, void> {
     }
 
     public getKey(): string {
-        return "SettingsStore";
+        return "ProjectSettingsStore";
     }
 
     protected convertItemKeyToString(_key: void): string {

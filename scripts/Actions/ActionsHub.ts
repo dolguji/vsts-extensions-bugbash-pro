@@ -1,10 +1,10 @@
 import { Action } from "VSS/Flux/Action";
 
-import { Settings, IBugBash, IBugBashItemComment, IBugBashItem } from "../Interfaces";
+import { UserSettings, BugBashSettings, IBugBash, IBugBashItemComment, IBugBashItem } from "../Interfaces";
 
 export module SettingsActionsHub {
-    export var InitializeBugBashSettings = new Action<Settings>();
-    export var UpdateBugBashSettings = new Action<Settings>();
+    export var InitializeBugBashSettings = new Action<BugBashSettings>();
+    export var UpdateBugBashSettings = new Action<BugBashSettings>();
 }
 
 export module BugBashActionsHub {

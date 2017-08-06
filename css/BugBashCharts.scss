@@ -3,13 +3,24 @@
 
     .chart-view {
         flex: 1;
-        background-color: #f4f4f4;
+        background-color: #f9f9f9;
         padding: 10px;
         margin-right: 10px;
 
         .header {
             font-weight: bold;
             margin-bottom: 10px;
+        }
+    }
+
+    .chart-tooltip {
+        border: 1px solid #ccc;
+        background-color: white;
+        color: #8884d8;
+        padding: 10px;
+
+        .tooltip-key {
+            color: #111;
         }
     }
 }

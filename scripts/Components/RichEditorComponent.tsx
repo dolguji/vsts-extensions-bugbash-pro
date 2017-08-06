@@ -12,7 +12,7 @@ import "../PasteImagePlugin";
 
 export class RichEditorComponent extends BaseComponent<IRichEditorProps, IBaseComponentState> {
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.settingsStore];
+        return [StoresHub.bugBashSettingsStore];
     }
 
     protected initializeState() {
@@ -28,7 +28,7 @@ export class RichEditorComponent extends BaseComponent<IRichEditorProps, IBaseCo
 
     protected getStoresState(): IBaseComponentState {                
         return {
-            loading: StoresHub.settingsStore.isLoading()
+            loading: StoresHub.bugBashSettingsStore.isLoading()
         };
     }
 

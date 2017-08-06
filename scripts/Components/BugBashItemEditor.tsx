@@ -312,7 +312,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         const data = args.data;
         const callback = args.callback;
 
-        const settings = StoresHub.settingsStore.getAll();
+        const settings = StoresHub.bugBashSettingsStore.getAll();
         if (settings && settings.gitMediaRepo) {
             const dataStartIndex = data.indexOf(",") + 1;
             const metaPart = data.substring(5, dataStartIndex - 1);

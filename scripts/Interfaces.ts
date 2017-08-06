@@ -46,6 +46,10 @@ export interface IBugBashItemViewModel {
     newComment?: string;
 }
 
-export interface Settings {
+export interface BugBashSettings {
     gitMediaRepo: string;
+}
+
+export interface UserSettings {
+    associatedTeam: string;
 }

@@ -13,11 +13,13 @@ import { BugBashStore } from "./BugBashStore";
 import { BugBashErrorMessageStore } from "./BugBashErrorMessageStore";
 import { BugBashItemStore } from "./BugBashItemStore";
 import { BugBashItemCommentStore } from "./BugBashItemCommentStore";
-import { SettingsStore } from "./SettingsStore";
+import { BugBashSettingsStore } from "./BugBashSettingsStore";
+import { UserSettingsStore } from "./UserSettingsStore";
 
 export module StoresHub {
     export var workItemStore: WorkItemStore = StoreFactory.getInstance<WorkItemStore>(WorkItemStore);
-    export var settingsStore: SettingsStore = StoreFactory.getInstance<SettingsStore>(SettingsStore);
+    export var bugBashSettingsStore: BugBashSettingsStore = StoreFactory.getInstance<BugBashSettingsStore>(BugBashSettingsStore);
+    export var userSettingsStore: UserSettingsStore = StoreFactory.getInstance<UserSettingsStore>(UserSettingsStore);
     export var bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
     export var bugBashItemStore: BugBashItemStore = StoreFactory.getInstance<BugBashItemStore>(BugBashItemStore);
     export var bugBashErrorMessageStore: BugBashErrorMessageStore = StoreFactory.getInstance<BugBashErrorMessageStore>(BugBashErrorMessageStore);

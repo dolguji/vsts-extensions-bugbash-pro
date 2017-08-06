@@ -16,18 +16,20 @@ import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown
 import { PrimaryButton } from "OfficeFabric/Button";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { Settings } from "../Interfaces";
+import { UserSettings, BugBashSettings } from "../Interfaces";
 import { SettingsActions } from "../Actions/SettingsActions";
 
 interface ISettingsPanelState extends IBaseComponentState {
-    origSettings?: Settings;
-    newSettings?: Settings;
+    origBugBashSettings?: BugBashSettings;
+    newBugBashSettings?: BugBashSettings;
+    origUserSettings?: UserSettings;
+    newUserSettings?: UserSettings;
     gitRepos?: GitRepository[];
 }
 
 export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsPanelState> {
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.settingsStore, StoresHub.gitRepoStore];
+        return [StoresHub.bugBashSettingsStore, StoresHub.gitRepoStore];
     }
 
     protected initializeState() {
@@ -45,10 +47,10 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
 
     protected getStoresState(): ISettingsPanelState {
         return {
-            newSettings: {...StoresHub.settingsStore.getAll()},
-            origSettings: {...StoresHub.settingsStore.getAll()},
+            newBugBashSettings: {...StoresHub.bugBashSettingsStore.getAll()},
+            origBugBashSettings: {...StoresHub.bugBashSettingsStore.getAll()},
             gitRepos: StoresHub.gitRepoStore.getAll(),
-            loading: StoresHub.settingsStore.isLoading() || StoresHub.gitRepoStore.isLoading()
+            loading: StoresHub.bugBashSettingsStore.isLoading() || StoresHub.gitRepoStore.isLoading()
         };
     }
 
@@ -62,36 +64,54 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                     key: repo.id,
                     index: index,
                     text: repo.name,
-                    selected: Utils_String.equals(this.state.newSettings.gitMediaRepo, repo.id, true)
+                    selected: Utils_String.equals(this.state.newBugBashSettings.gitMediaRepo, repo.id, true)
                 };
             });
 
-            return <div className="settings-panel">
-                <Label className="settings-label">Settings</Label>
-                <div className="settings-controls">
-                    <div className="settings-control-container">
+            return <div className="settings-panel">                
+                <div className="settings-controls-container">
+                    <Label className="settings-label">Project Settings</Label>
+                    <div className="settings-control">
                         <InfoLabel label="Media Git Repo" info="Select a git repo to store media and attachments" />
                         <Dropdown                 
                             className="git-repo-dropdown"
                             onRenderList={this._onRenderCallout} 
                             options={gitDropdownOptions} 
                             onChanged={(option: IDropdownOption) => {
-                                let newSettings = {...this.state.newSettings};
+                                let newSettings = {...this.state.newBugBashSettings};
                                 newSettings.gitMediaRepo = option.key as string;
-                                this.updateState({newSettings: newSettings});
+                                this.updateState({newBugBashSettings: newSettings});
                             }} /> 
                     </div>
+                    <PrimaryButton className="save-button" disabled={!this._isSettingsDirty()} onClick={this._onSaveClick}>
+                        Save
+                    </PrimaryButton>
                 </div>
 
-                <PrimaryButton className="save-button" disabled={!this._isSettingsDirty()} onClick={this._onSaveClick}>
-                    Save
-                </PrimaryButton>
+                <div className="settings-controls-container">
+                    <Label className="settings-label">User Settings</Label>
+                    <div className="settings-control">
+                        <InfoLabel label="Media Git Repo" info="Select a git repo to store media and attachments" />
+                        <Dropdown                 
+                            className="git-repo-dropdown"
+                            onRenderList={this._onRenderCallout} 
+                            options={gitDropdownOptions} 
+                            onChanged={(option: IDropdownOption) => {
+                                let newSettings = {...this.state.newBugBashSettings};
+                                newSettings.gitMediaRepo = option.key as string;
+                                this.updateState({newBugBashSettings: newSettings});
+                            }} /> 
+                    </div>
+                    <PrimaryButton className="save-button" disabled={!this._isSettingsDirty()} onClick={this._onSaveClick}>
+                        Save
+                    </PrimaryButton>
+                </div>               
             </div>;
         }        
     }
 
     private _isSettingsDirty(): boolean {
-        return this.state.newSettings.gitMediaRepo !== this.state.origSettings.gitMediaRepo;
+        return this.state.newBugBashSettings.gitMediaRepo !== this.state.origBugBashSettings.gitMediaRepo;
     }
 
     @autobind
@@ -106,7 +126,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
     @autobind
     private async _onSaveClick(): Promise<void> {
         if (this._isSettingsDirty()) {
-            SettingsActions.updateBugBashSettings(this.state.newSettings);
+            SettingsActions.updateBugBashSettings(this.state.newBugBashSettings);
         }        
     }
 }
