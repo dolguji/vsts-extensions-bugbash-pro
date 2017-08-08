@@ -94,7 +94,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                                     text: r.name
                                 }
                             })}
-                            allowFreeform={true}
+                            allowFreeform={false}
                             autoComplete={"on"}
                             selectedKey={this.state.newBugBashSettings.gitMediaRepo}
                             onChanged={(option?: IComboBoxOption) => {
@@ -120,7 +120,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                                     text: t.name
                                 }
                             })}
-                            allowFreeform={true}
+                            allowFreeform={false}
                             autoComplete={"on"}
                             selectedKey={this.state.newUserSettings.associatedTeam}
                             onChanged={(option?: IComboBoxOption) => {

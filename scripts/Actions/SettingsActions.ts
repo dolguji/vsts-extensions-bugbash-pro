@@ -17,17 +17,12 @@ export module SettingsActions {
         }
     }
 
-    export async function updateBugBashSettings(settings: IBugBashSettings) {        
-        StoresHub.bugBashSettingsStore.setLoading(true);
-        
+    export async function updateBugBashSettings(settings: IBugBashSettings) {
         try {
             const updatedSettings = await ExtensionDataManager.writeUserSetting<IBugBashSettings>(`bugBashProSettings_${VSS.getWebContext().project.id}`, settings, false);
-            
             SettingsActionsHub.UpdateBugBashSettings.invoke(updatedSettings);
-            StoresHub.bugBashSettingsStore.setLoading(false);
         }
         catch (e) {
-            StoresHub.bugBashSettingsStore.setLoading(false);
             throw e.message;
         }
     }
@@ -45,18 +40,12 @@ export module SettingsActions {
     }
 
     export async function updateUserSettings(settings: IUserSettings) {
-        if (!StoresHub.userSettingsStore.isLoading()) {
-            StoresHub.userSettingsStore.setLoading(true);
-
-            try {
-                const updatedSettings = await ExtensionDataManager.addOrUpdateDocument<IUserSettings>(`UserSettings_${VSS.getWebContext().project.id}`, settings, false);
-                SettingsActionsHub.UpdateUserSettings.invoke(updatedSettings);
-                StoresHub.userSettingsStore.setLoading(false);
-            }
-            catch (e) {
-                StoresHub.userSettingsStore.setLoading(false);
-                throw e;
-            }
+        try {
+            const updatedSettings = await ExtensionDataManager.addOrUpdateDocument<IUserSettings>(`UserSettings_${VSS.getWebContext().project.id}`, settings, false);
+            SettingsActionsHub.UpdateUserSettings.invoke(updatedSettings);
+        }
+        catch (e) {
+            throw e.message;
         }
     }
 }
