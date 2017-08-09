@@ -20,17 +20,8 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
          return this.getBugBashItems(bugBashId);
     }
 
-    public getBugBashItem(bugBashId: string, bugBashItemId: string): IBugBashItem {
-         const bugBashItems = this.getBugBashItems(bugBashId);
-         if (bugBashItems) {
-            return Utils_Array.first(bugBashItems, (bugBashItem: IBugBashItem) => Utils_String.equals(bugBashItem.id, bugBashItemId, true));
-         }
-         
-         return null;
-    }
-
     public getBugBashItems(bugBashId: string): IBugBashItem[] {
-         return this.items[bugBashId.toLowerCase()] || null;
+         return this.items[(bugBashId || "").toLowerCase()] || null;
     }
 
     protected initializeActionListeners() {

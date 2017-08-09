@@ -9,7 +9,7 @@ export class UserSettingsStore extends BaseStore<IDictionaryStringTo<IUserSettin
             return null;
         }
 
-        return this.items[id.toLowerCase()];
+        return this.items[(id || "").toLowerCase()];
     }
 
     protected initializeActionListeners() {

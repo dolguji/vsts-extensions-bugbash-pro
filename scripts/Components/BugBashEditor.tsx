@@ -13,7 +13,7 @@ import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
-import Utils_Core = require("VSS/Utils/Core");
+import { delegate, delay, DelayedFunction } from "VSS/Utils/Core";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { InputError } from "VSTS_Extension/Components/Common/InputError";
@@ -43,10 +43,11 @@ export interface IBugBashEditorState extends IBaseComponentState {
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
     private _imagePastedHandler: (event, data) => void;    
+    private _updateBugBashDelayedFunction: DelayedFunction;
 
     constructor(props: IBugBashEditorProps, context?: any) {
         super(props, context);
-        this._imagePastedHandler = Utils_Core.delegate(this, this._onImagePaste);
+        this._imagePastedHandler = delegate(this, this._onImagePaste);
     }
 
     protected initializeState(): void {
@@ -78,7 +79,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             state = {...state, workItemTypes: workItemTypes};
         }
 
-        if (StoresHub.workItemFieldStore.isLoaded() && !this.state.htmlFields) {
+        if (StoresHub.workItemFieldStore.isLoaded() && !this.state.htmlFields) {            
             const htmlFields: IDropdownOption[] = StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map((field: WorkItemField) => {
                 return {
                     key: field.referenceName.toLowerCase(),
@@ -88,7 +89,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             state = {...state, htmlFields: htmlFields};
         }
 
-        if (StoresHub.workItemTemplateStore.isLoaded() && !this.state.templates) {
+        if (StoresHub.workItemTemplateStore.isLoaded() && !this.state.templates) {            
             let emptyTemplateItem = [
                 {   
                     key: "", text: "<No template>"
@@ -125,6 +126,28 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         $(window).off("imagepasted", this._imagePastedHandler);
     }      
 
+    public componentWillReceiveProps(nextProps: IBugBashEditorProps) {
+        if (nextProps.bugBash.workItemType != this.props.bugBash.workItemType) {
+            let emptyTemplateItem = [
+                {   
+                    key: "", text: "<No template>"
+                }
+            ];
+            let filteredTemplates = StoresHub.workItemTemplateStore
+                .getAll()
+                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.workItemType || "", true));
+
+            const templates = emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference) => {
+                return {
+                    key: template.id.toLowerCase(),
+                    text: template.name
+                }
+            }));
+
+            this.updateState({templates: templates} as IBugBashEditorState);
+        }
+    }
+
     public render(): JSX.Element {
         if (this.state.loading) {
             return <Loading />;
@@ -139,8 +162,8 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     private _renderEditor(): JSX.Element {
-        const bugBash = this.props.bugBash;
-        
+        const bugBash = this.props.bugBash;        
+
         return <div className="bugbash-editor-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
             <div className="first-section">                        
                 <TextField 
@@ -218,7 +241,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     options={this.state.htmlFields} 
                     onChanged={(option: IDropdownOption) => this._updateDescriptionField(option.key as string)} />
 
-                { !bugBash.itemDescriptionField && <InputError error="A description field is required." /> }       
+                { !bugBash.itemDescriptionField && <InputError error="A description field is required." /> }     
 
                 <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
                 <Dropdown 
@@ -252,7 +275,11 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     private _onChange(updatedBugBash: IBugBash) {
-        this.props.onChange(updatedBugBash);
+        if (this._updateBugBashDelayedFunction) {
+            this._updateBugBashDelayedFunction.cancel();
+        }
+
+        this._updateBugBashDelayedFunction = delay(this, 200, this.props.onChange, [updatedBugBash]);
     }
 
     @autobind

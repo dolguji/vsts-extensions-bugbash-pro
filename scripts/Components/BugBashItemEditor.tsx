@@ -184,9 +184,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             allowEdit: true,
                             source: allTeams.map(t => t.name)
                         }} 
-                        onChange={this._onTeamChange}/>
-                    
-                    { this._renderTeamError(item.teamId, team) }
+                        error={this._getTeamError(item.teamId, team)}
+                        onChange={this._onTeamChange}/>                    
                 </div>
 
                 { item.rejected && 
@@ -274,12 +273,12 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         }
     }    
 
-    private _renderTeamError(teamId: string, team: WebApiTeam): JSX.Element {
+    private _getTeamError(teamId: string, team: WebApiTeam): string {
         if (teamId == null || teamId.trim() === "") {
-            return <InputError error={`Team is required.`} />;
+            return "Team is required.";
         }
         else if (team == null) {
-            return <InputError error={`${teamId} team does not exist.`} />;
+            return `${teamId} team does not exist.`
         }
 
         return null;

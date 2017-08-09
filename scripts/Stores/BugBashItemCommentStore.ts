@@ -9,7 +9,7 @@ export class BugBashItemCommentStore extends BaseStore<IDictionaryStringTo<IBugB
     }
 
     public getItem(bugBashItemId: string): IBugBashItemComment[] {
-         return this.items[bugBashItemId.toLowerCase()] || null;
+         return this.items[(bugBashItemId || "").toLowerCase()] || null;
     }
 
     protected initializeActionListeners() {
