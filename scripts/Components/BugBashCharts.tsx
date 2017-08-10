@@ -4,6 +4,7 @@ import * as React from "react";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
@@ -15,6 +16,7 @@ import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemHelpers } from "../Helpers";
 import { ChartsView } from "../Constants";
+import { SettingsActions } from "../Actions/SettingsActions";
 
 interface IBugBashChartsState extends IBaseComponentState {
     allBugBashItems: IBugBashItem[];
@@ -31,6 +33,7 @@ interface IBugBashChartsProps extends IBaseComponentProps {
 interface INameValuePair {
     name: string;
     value: number;
+    members?: INameValuePair[];
 }
 
 const CustomAxisTick: React.StatelessComponent<any> =
@@ -46,18 +49,20 @@ const CustomAxisTick: React.StatelessComponent<any> =
 
 const CustomTooltip: React.StatelessComponent<any> =
     (props: any): JSX.Element => {
-        const data = props && props.payload && props.payload[0] && props.payload[0].payload;
+        const data: INameValuePair = props && props.payload && props.payload[0] && props.payload[0].payload;
         if (!data) {
             return null;
         }
-
-        const keys = Object.keys(data).filter(k => k !== "name" && k !== "value");
-        if (keys.length === 0) {
-            return <div className="chart-tooltip"><span className="tooltip-key">{data["name"]}</span> : <span className="tooltip-value">{data["value"]}</span></div>;
+        
+        if (!data.members || data.members.length === 0) {
+            return <div className="chart-tooltip"><span className="tooltip-key">{parseUniquefiedIdentityName(data["name"]).displayName}</span> : <span className="tooltip-value">{data["value"]}</span></div>;
         }
         else {
             return <div className="chart-tooltip">
-                { keys.map(k => <div key={k}><span className="tooltip-key">{k}</span> : <span className="tooltip-value">{data[k]}</span></div>) }
+                <div className="team-name">{data["name"]}</div>
+                { data.members.map((member: INameValuePair) => {
+                    return <div key={member.name}><span className="tooltip-key">{parseUniquefiedIdentityName(member.name).displayName}</span> : <span className="tooltip-value">{member.value}</span></div>
+                })}
             </div>;
         }        
     };
@@ -74,14 +79,14 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashItemStore, StoresHub.teamStore];
+        return [StoresHub.bugBashItemStore, StoresHub.teamStore, StoresHub.userSettingsStore];
     }
 
     protected getStoresState(): IBugBashChartsState {
         const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id);
 
         return {
-            loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id) || StoresHub.teamStore.isLoading(),
+            loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id) || StoresHub.teamStore.isLoading() || StoresHub.userSettingsStore.isLoading(),
             allBugBashItems: bugBashItems,
             pendingBugBashItems: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && !b.rejected) : null,
             acceptedBugBashItems: bugBashItems ? bugBashItems.filter(b => BugBashItemHelpers.isAccepted(b)) : null,
@@ -93,6 +98,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         super.componentDidMount();
         TeamActions.initializeTeams();
         BugBashItemActions.initializeItems(this.props.bugBash.id);
+        SettingsActions.initializeUserSettings();
     }  
 
     public render() {
@@ -106,7 +112,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
             </MessageBar>;            
         }
 
-        let bugBashItems = this.state.allBugBashItems;
+        let bugBashItems: any = this.state.allBugBashItems;
         if (this.props.view === ChartsView.AcceptedItemsOnly) {
             bugBashItems = this.state.acceptedBugBashItems;
         }
@@ -116,70 +122,86 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         else if (this.props.view === ChartsView.PendingItemsOnly) {
             bugBashItems = this.state.pendingBugBashItems;
         }
-
+        
         let assignedToTeamCounts: IDictionaryStringTo<number> = {};
-        let createdByCounts: IDictionaryStringTo<number> = {};
+        let createdByCounts: IDictionaryStringTo<{count: number, members: IDictionaryStringTo<number>}> = {};
         let assignedToTeamData: INameValuePair[] = [];
         let createdByData: INameValuePair[] = [];
 
         for (const model of bugBashItems) {
-            let teamId = model.teamId;
+            const teamId = model.teamId;
+            const createdBy = model.createdBy;
+            const createdByUser = parseUniquefiedIdentityName(createdBy);
+            const userSetting = StoresHub.userSettingsStore.getItem(createdByUser.uniqueName);
+            const associatedTeamId = userSetting ? userSetting.associatedTeam : "";
+            const associatedTeam = associatedTeamId ? StoresHub.teamStore.getItem(associatedTeamId) : null;
 
-            let createdBy = model.createdBy;
+            assignedToTeamCounts[teamId] = (assignedToTeamCounts[teamId] || 0) + 1;
 
-            if (assignedToTeamCounts[teamId] == null) {
-                assignedToTeamCounts[teamId] = 0;
+            if (associatedTeam) {
+                if (createdByCounts[associatedTeam.name] == null) {
+                    createdByCounts[associatedTeam.name] = {
+                        count: 0,
+                        members: {}
+                    };
+                }
+                createdByCounts[associatedTeam.name].count = createdByCounts[associatedTeam.name].count + 1;
+                createdByCounts[associatedTeam.name].members[createdBy] = (createdByCounts[associatedTeam.name].members[createdBy] || 0) + 1;
             }
-            if (createdByCounts[createdBy] == null) {
-                createdByCounts[createdBy] = 0;
+            else {
+                if (createdByCounts[createdBy] == null) {
+                    createdByCounts[createdBy] = {
+                        count: 0,
+                        members: {}
+                    };
+                }
+                createdByCounts[createdBy].count = createdByCounts[createdBy].count + 1;
             }
-
-            assignedToTeamCounts[teamId] = assignedToTeamCounts[teamId] + 1;
-            createdByCounts[createdBy] = createdByCounts[createdBy] + 1;
         }
 
         for (const teamId in assignedToTeamCounts) {
             assignedToTeamData.push({ name: this._getTeamName(teamId), value: assignedToTeamCounts[teamId]});
         }
+
         for (const createdBy in createdByCounts) {
-            createdByData.push({ name: this._getIdentityDisplayName(createdBy), value: createdByCounts[createdBy]});
+            let membersMap = createdByCounts[createdBy].members;
+            let membersArr: INameValuePair[] = $.map(membersMap, (count: number, key: string) => {
+                return {name: key, value: count}
+            })
+            membersArr.sort((a, b) => b.value - a.value);
+
+            createdByData.push({ name: parseUniquefiedIdentityName(createdBy).displayName, value: createdByCounts[createdBy].count, members: membersArr});
         }
 
-        const data = [
-            {name: 'WITIQ', value:100, "Mohit Bagra": 10 , "Matt Manela": 100, "Karthik Bala": 50, "Mohit": 10 , "Matt": 100, "Karthik": 50, "M": 10 , "MM": 100, "K": 50},
-            {name: 'MWIT', value:1000,"Mohit Bagra1": 100 , "Matt Manela1": 5, "Karthik Bala1": 20, "Mohit1": 10 , "Matt1": 100, "Karthik1": 50, "M1": 10 , "MM1": 100, "K1": 50},
-            {name: 'WITPI', value:100,"Mohit Bagra2": 40 , "Matt Manela2": 100, "Karthik2": 50, "M2": 10 , "MM2": 100, "K2": 50},
-            {name: 'WITX', value:50},
-        ];
-        
         assignedToTeamData.sort((a, b) => b.value - a.value);
         createdByData.sort((a, b) => b.value - a.value);
-        data.sort((a, b) => b.value - a.value);
 
-        return <div className="bugbash-analytics">
+        return <div className="bugbash-charts">
                 <div className="chart-view">
                     <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
                     <ResponsiveContainer>
-                    <BarChart layout={"vertical"} width={600} height={600} data={assignedToTeamData} barSize={10}
-                        margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
-                        <CartesianGrid strokeDasharray="3 3"/>
-                        <Tooltip isAnimationActive={false} />
-                        <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
-                    </BarChart>
+                        <BarChart layout={"vertical"} width={600} height={600} data={assignedToTeamData} barSize={10}
+                            margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
+                            <CartesianGrid strokeDasharray="3 3"/>
+                            <Tooltip isAnimationActive={false} />
+                            <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>                
                 <div className="chart-view">
                     <Label className="header">{`Created By (${bugBashItems.length})`}</Label>
-                    <BarChart layout={"vertical"} width={600} height={600} data={data} barSize={10}
-                        margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
-                        <CartesianGrid strokeDasharray="3 3"/>
-                        <Tooltip isAnimationActive={false} content={<CustomTooltip/>}/>
-                        <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
-                    </BarChart>
+                    <ResponsiveContainer>
+                        <BarChart layout={"vertical"} width={600} height={600} data={createdByData} barSize={10}
+                            margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
+                            <CartesianGrid strokeDasharray="3 3"/>
+                            <Tooltip isAnimationActive={false} content={<CustomTooltip/>}/>
+                            <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
     }
@@ -187,10 +209,5 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
     private _getTeamName(teamId: string): string {
         const team = StoresHub.teamStore.getItem(teamId);
         return team ? team.name : teamId;
-    }
-
-    private _getIdentityDisplayName(name: string): string {
-        const i = name.indexOf(" <");
-        return i > 0 ? name.substr(0, i) : name;
     }
 }

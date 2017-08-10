@@ -14,10 +14,10 @@ import { InputError } from "VSTS_Extension/Components/Common/InputError";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
+import { delegate, delay, DelayedFunction } from "VSS/Utils/Core";
 import { VersionControlChangeType, ItemContentType } from "TFS/VersionControl/Contracts";
 import * as GitClient from "TFS/VersionControl/GitRestClient";
 import Utils_Date = require("VSS/Utils/Date");
-import Utils_Core = require("VSS/Utils/Core");
 import { WebApiTeam } from "TFS/Core/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
@@ -41,11 +41,12 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
     private _imagePastedHandler: (event, data) => void;
+    private _updateBugBashDelayedFunction: DelayedFunction;
 
     constructor(props: IBugBashItemEditorProps, context?: any) {
         super(props, context);
 
-        this._imagePastedHandler = Utils_Core.delegate(this, this._onImagePaste);
+        this._imagePastedHandler = delegate(this, this._onImagePaste);
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
@@ -107,7 +108,11 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     } 
 
     private _onChange(updatedBugBashItem: IBugBashItem, newComment?: string) {
-        this.props.onChange(updatedBugBashItem, newComment);
+        if (this._updateBugBashDelayedFunction) {
+            this._updateBugBashDelayedFunction.cancel();
+        }
+
+        this._updateBugBashDelayedFunction = delay(this, 200, this.props.onChange, [updatedBugBashItem, newComment]);
     }
 
     @autobind
