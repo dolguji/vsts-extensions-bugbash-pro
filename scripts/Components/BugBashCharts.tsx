@@ -17,6 +17,7 @@ import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemHelpers } from "../Helpers";
 import { ChartsView } from "../Constants";
 import { SettingsActions } from "../Actions/SettingsActions";
+import {TestData} from "../TestData";
 
 interface IBugBashChartsState extends IBaseComponentState {
     allBugBashItems: IBugBashItem[];
@@ -123,6 +124,8 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
             bugBashItems = this.state.pendingBugBashItems;
         }
         
+        bugBashItems = TestData.testItems;
+
         let assignedToTeamCounts: IDictionaryStringTo<number> = {};
         let createdByCounts: IDictionaryStringTo<{count: number, members: IDictionaryStringTo<number>}> = {};
         let assignedToTeamData: INameValuePair[] = [];
@@ -177,31 +180,35 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         createdByData.sort((a, b) => b.value - a.value);
 
         return <div className="bugbash-charts">
-                <div className="chart-view">
+                <div className="chart-view-container">
                     <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
-                    <ResponsiveContainer>
-                        <BarChart layout={"vertical"} width={600} height={600} data={assignedToTeamData} barSize={10}
-                            margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                            <XAxis type="number" allowDecimals={false} />
-                            <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
-                            <CartesianGrid strokeDasharray="3 3"/>
-                            <Tooltip isAnimationActive={false} />
-                            <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="chart-view">
+                        <ResponsiveContainer>
+                            <BarChart layout={"vertical"} width={600} height={600} data={assignedToTeamData} barSize={5}
+                                margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                                <XAxis type="number" allowDecimals={false} />
+                                <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <Tooltip isAnimationActive={false} />
+                                <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>                
-                <div className="chart-view">
+                <div className="chart-view-container">
                     <Label className="header">{`Created By (${bugBashItems.length})`}</Label>
-                    <ResponsiveContainer>
-                        <BarChart layout={"vertical"} width={600} height={600} data={createdByData} barSize={10}
-                            margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                            <XAxis type="number" allowDecimals={false} />
-                            <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
-                            <CartesianGrid strokeDasharray="3 3"/>
-                            <Tooltip isAnimationActive={false} content={<CustomTooltip/>}/>
-                            <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="chart-view">
+                        <ResponsiveContainer>
+                            <BarChart layout={"vertical"} width={600} height={600} data={createdByData} barSize={5}
+                                margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                                <XAxis type="number" allowDecimals={false} />
+                                <YAxis type="category" dataKey="name" tick={<CustomAxisTick />} allowDecimals={false} />
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <Tooltip isAnimationActive={false} content={<CustomTooltip/>}/>
+                                <Bar isAnimationActive={false} dataKey="value" fill="#8884d8" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
     }

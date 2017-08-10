@@ -1,16 +1,22 @@
 .bugbash-charts {
     display: flex;
-    height: 100%;
+    height: calc(100% - 10px);
 
-    .chart-view {
+    .chart-view-container {
         flex: 1;
         background-color: #f9f9f9;
         padding: 10px;
         margin-right: 10px;
+        display: flex;
+        flex-direction: column;
 
         .header {
             font-weight: bold;
             margin-bottom: 10px;
+        }
+
+        .chart-view {
+            flex: 1;
         }
     }
 
