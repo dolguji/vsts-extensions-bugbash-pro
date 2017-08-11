@@ -158,8 +158,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             const witUrl = `${webContext.collection.uri}/${webContext.project.name}/_workitems/edit/${item.workItemId}`;
 
             return <div className="item-editor accepted-item">
-                <MessageBar messageBarType={MessageBarType.success} className="message-panel">Accepted</MessageBar>
-                <a href={witUrl} target="_blank">Work item: {item.workItemId}</a>
+                <MessageBar messageBarType={MessageBarType.success} className="message-panel">
+                    Accepted: <a href={witUrl} target="_blank">Work item: {item.workItemId}</a>
+                </MessageBar>
             </div>;
         }
 

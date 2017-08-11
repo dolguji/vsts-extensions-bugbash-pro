@@ -189,7 +189,8 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                                     {this._renderEditor()}
                                 </div>;
                             case "results":
-                                return <div className="bugbash-hub-contents bugbash-results-hub-contents">
+                                const extraCss = BugBashHelpers.isNew(this.state.bugBashViewModel.originalBugBash) ? "new-bugbash" : "";
+                                return <div className={`bugbash-hub-contents bugbash-results-hub-contents ${extraCss}`}>
                                     {this._renderResults()}
                                 </div>;
                             case "charts":

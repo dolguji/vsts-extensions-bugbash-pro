@@ -100,6 +100,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     bugBashItemViewModels: bugBashItems.map(item => BugBashItemHelpers.getViewModel(item)),
                     itemIdToIndexMap: this._prepareIdToIndexMap(bugBashItems),
                     loading: false,
+                    bugBashItemEditorError: null,
                     selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id),
                     gridKeyCounter: this.state.gridKeyCounter + 1
                 } as IBugBashResultsState);
@@ -109,6 +110,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     loading: true,
                     bugBashItemViewModels: null,
                     itemIdToIndexMap: {},
+                    bugBashItemEditorError: null,
                     selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id),
                     gridKeyCounter: this.state.gridKeyCounter + 1
                 } as IBugBashResultsState);
@@ -460,10 +462,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
         this._itemInvokedTimeout = setTimeout(() => {
             if (bugBashItemViewModels == null || bugBashItemViewModels.length !== 1) {
-                this.updateState({selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id)} as IBugBashResultsState);
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id)} as IBugBashResultsState);
             }
             else {
-                this.updateState({selectedBugBashItemViewModel: {...bugBashItemViewModels[0]}} as IBugBashResultsState);
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: {...bugBashItemViewModels[0]}} as IBugBashResultsState);
             }
 
             this._itemInvokedTimeout = null;

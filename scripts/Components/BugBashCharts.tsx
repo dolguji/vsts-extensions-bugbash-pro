@@ -17,7 +17,6 @@ import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemHelpers } from "../Helpers";
 import { ChartsView } from "../Constants";
 import { SettingsActions } from "../Actions/SettingsActions";
-import {TestData} from "../TestData";
 
 interface IBugBashChartsState extends IBaseComponentState {
     allBugBashItems: IBugBashItem[];
@@ -124,8 +123,6 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
             bugBashItems = this.state.pendingBugBashItems;
         }
         
-        bugBashItems = TestData.testItems;
-
         let assignedToTeamCounts: IDictionaryStringTo<number> = {};
         let createdByCounts: IDictionaryStringTo<{count: number, members: IDictionaryStringTo<number>}> = {};
         let assignedToTeamData: INameValuePair[] = [];

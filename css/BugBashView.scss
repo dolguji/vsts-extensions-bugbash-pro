@@ -44,7 +44,11 @@
             &.bugbash-results-hub-contents {
                 padding-top: 0;
                 
-                .message-panel {
+                &.new-bugbash {
+                    padding-top: 10px;
+                }
+
+                .grid-message-bar {
                     margin-top: 10px;
                 }
             }
