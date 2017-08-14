@@ -9,6 +9,7 @@ import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
+import { Checkbox } from "OfficeFabric/Checkbox";
 import { Bar, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 import { IBugBashItem, IBugBash } from "../Interfaces";
@@ -22,7 +23,8 @@ interface IBugBashChartsState extends IBaseComponentState {
     allBugBashItems: IBugBashItem[];
     pendingBugBashItems: IBugBashItem[];
     acceptedBugBashItems: IBugBashItem[];
-    rejectedBugBashItems: IBugBashItem[];    
+    rejectedBugBashItems: IBugBashItem[];   
+    groupedByTeam?: boolean; 
 }
 
 interface IBugBashChartsProps extends IBaseComponentProps {
@@ -74,7 +76,8 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
             pendingBugBashItems: null,
             rejectedBugBashItems: null,
             acceptedBugBashItems: null,
-            loading: true
+            loading: true,
+            groupedByTeam: true
         };
     }
 
@@ -138,7 +141,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
 
             assignedToTeamCounts[teamId] = (assignedToTeamCounts[teamId] || 0) + 1;
 
-            if (associatedTeam) {
+            if (associatedTeam && this.state.groupedByTeam) {
                 if (createdByCounts[associatedTeam.name] == null) {
                     createdByCounts[associatedTeam.name] = {
                         count: 0,
@@ -178,7 +181,9 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
 
         return <div className="bugbash-charts">
                 <div className="chart-view-container">
-                    <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
+                    <div className="header-container">
+                        <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
+                    </div>
                     <div className="chart-view">
                         <ResponsiveContainer>
                             <BarChart layout={"vertical"} width={600} height={600} data={assignedToTeamData} barSize={5}
@@ -193,7 +198,17 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                     </div>
                 </div>                
                 <div className="chart-view-container">
-                    <Label className="header">{`Created By (${bugBashItems.length})`}</Label>
+                    <div className="header-container">
+                        <Label className="header">{`Created By (${bugBashItems.length})`}</Label>
+                        <Checkbox 
+                            label="Group by team" 
+                            checked={this.state.groupedByTeam}
+                            className="groupe-by-checkbox"
+                            onChange={() => {
+                                this.updateState({groupedByTeam: !this.state.groupedByTeam} as IBugBashChartsState);
+                            }}
+                        />
+                    </div>
                     <div className="chart-view">
                         <ResponsiveContainer>
                             <BarChart layout={"vertical"} width={600} height={600} data={createdByData} barSize={5}

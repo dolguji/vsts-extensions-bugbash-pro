@@ -10,10 +10,15 @@
         display: flex;
         flex-direction: column;
 
-        .header {
-            font-weight: bold;
+        .header-container {
+            display: flex; 
             margin-bottom: 10px;
-        }
+            
+            .header {
+                flex: 1;
+                font-weight: bold;                
+            }
+        }        
 
         .chart-view {
             flex: 1;

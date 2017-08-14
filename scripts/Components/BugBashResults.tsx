@@ -6,6 +6,7 @@ import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import * as EventsService from "VSS/Events/Services";
+import { delay, DelayedFunction } from "VSS/Utils/Core";
 
 import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
@@ -50,7 +51,7 @@ interface IBugBashResultsProps extends IBaseComponentProps {
 }
 
 export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBashResultsState> {
-    private _itemInvokedTimeout: any;
+    private _itemInvokedDelayedFunction: DelayedFunction;
 
     protected initializeState() {
         this.state = {
@@ -455,21 +456,18 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     
     @autobind
     private _onBugBashItemSelectionChanged(bugBashItemViewModels: IBugBashItemViewModel[]) {
-        if (this._itemInvokedTimeout) {
-            clearTimeout(this._itemInvokedTimeout);
-            this._itemInvokedTimeout = null;
+        if (this._itemInvokedDelayedFunction) {
+            this._itemInvokedDelayedFunction.cancel();
         }
 
-        this._itemInvokedTimeout = setTimeout(() => {
+        this._itemInvokedDelayedFunction = delay(this, 100, () => {
             if (bugBashItemViewModels == null || bugBashItemViewModels.length !== 1) {
                 this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id)} as IBugBashResultsState);
             }
             else {
                 this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: {...bugBashItemViewModels[0]}} as IBugBashResultsState);
             }
-
-            this._itemInvokedTimeout = null;
-        }, 100);
+        });
     }
 
     private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {

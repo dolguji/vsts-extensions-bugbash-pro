@@ -4,6 +4,7 @@ import * as React from "react";
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import * as EventsService from "VSS/Events/Services";
 import Context = require("VSS/Context");
+import { delay, DelayedFunction } from "VSS/Utils/Core";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
@@ -45,6 +46,8 @@ export interface IBugBashViewState extends IBaseComponentState {
 }
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
+    private _filterChangeDelayedFunction: DelayedFunction;
+
     protected initializeState() {
         this.state = {
             bugBashViewModel: this.props.bugBashId ? null : BugBashHelpers.getNewViewModel(),
@@ -410,7 +413,13 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     @autobind
     private _onFilterTextChange(filterText: string) {
-        this.updateState({filterText: filterText} as IBugBashViewState);
+        if (this._filterChangeDelayedFunction) {
+            this._filterChangeDelayedFunction.cancel();
+        }
+
+        this._filterChangeDelayedFunction = delay(this, 200, () => {
+            this.updateState({filterText: filterText} as IBugBashViewState);
+        });        
     }
 
     @autobind
