@@ -11,6 +11,7 @@
         "noUnusedParameters": true,
         "forceConsistentCasingInFileNames": true,
         "baseUrl": ".",
+        "allowJs": true,
         "paths": {
             "OfficeFabric/*": ["node_modules/office-ui-fabric-react/lib-amd/*"],
             "VSTS_Extension/*": ["node_modules/vsts-extension-react-widgets/lib-amd/*"]

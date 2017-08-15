@@ -11,7 +11,8 @@ module.exports = {
         BugBashEditor: "./scripts/Components/BugBashEditor.tsx",
         BugBashResults: "./scripts/Components/BugBashResults.tsx",
         BugBashCharts: "./scripts/Components/BugBashCharts.tsx",
-        SettingsPanel: "./scripts/Components/SettingsPanel.tsx"
+        SettingsPanel: "./scripts/Components/SettingsPanel.tsx",
+        ExcelExporter: "./scripts/ExcelExporter.ts"
     },
     output: {
         filename: "scripts/[name].js",
@@ -34,18 +35,32 @@ module.exports = {
         }        
     },
     module: {
-        loaders: [
+        rules: [
             {
                 test: /\.tsx?$/,
-                loader: "ts-loader"
+                use: "ts-loader"
             },
             {
                 test: /\.s?css$/,
-                loaders: ["style-loader", "css-loader", "sass-loader"]
+                use: [
+                    { loader: "style-loader" },
+                    { loader: "css-loader" },
+                    { loader: "sass-loader" }
+                ]
             },
             {
                 test: /\.(otf|eot|svg|ttf|woff|woff2)(\?.+)?$/,
-                loader: 'url-loader?limit=4096&name=[name].[ext]'
+                use: "url-loader?limit=4096&name=[name].[ext]"
+            },
+            {
+                test: /\.js$/,
+                exclude: [/typings/, /node_modules\/(?!(better-xlsx)\/).*/],
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['env']
+                    }
+                }
             }
         ]
     },

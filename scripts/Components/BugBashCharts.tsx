@@ -7,12 +7,13 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 
+import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { Bar, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
-import { IBugBashItem, IBugBash } from "../Interfaces";
+import { IBugBashItem, IBugBash, INameValuePair } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemHelpers } from "../Helpers";
@@ -30,12 +31,6 @@ interface IBugBashChartsState extends IBaseComponentState {
 interface IBugBashChartsProps extends IBaseComponentProps {
     bugBash: IBugBash;
     view?: string;
-}
-
-interface INameValuePair {
-    name: string;
-    value: number;
-    members?: INameValuePair[];
 }
 
 const CustomAxisTick: React.StatelessComponent<any> =
@@ -57,13 +52,13 @@ const CustomTooltip: React.StatelessComponent<any> =
         }
         
         if (!data.members || data.members.length === 0) {
-            return <div className="chart-tooltip"><span className="tooltip-key">{parseUniquefiedIdentityName(data["name"]).displayName}</span> : <span className="tooltip-value">{data["value"]}</span></div>;
+            return <div className="chart-tooltip"><span className="tooltip-key">{data["name"]}</span> : <span className="tooltip-value">{data["value"]}</span></div>;
         }
         else {
             return <div className="chart-tooltip">
                 <div className="team-name">{data["name"]}</div>
                 { data.members.map((member: INameValuePair) => {
-                    return <div key={member.name}><span className="tooltip-key">{parseUniquefiedIdentityName(member.name).displayName}</span> : <span className="tooltip-value">{member.value}</span></div>
+                    return <div key={member.name}><span className="tooltip-key">{member.name}</span> : <span className="tooltip-value">{member.value}</span></div>
                 })}
             </div>;
         }        
@@ -169,7 +164,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         for (const createdBy in createdByCounts) {
             let membersMap = createdByCounts[createdBy].members;
             let membersArr: INameValuePair[] = $.map(membersMap, (count: number, key: string) => {
-                return {name: key, value: count}
+                return {name: parseUniquefiedIdentityName(key).displayName, value: count}
             })
             membersArr.sort((a, b) => b.value - a.value);
 
@@ -183,6 +178,13 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                 <div className="chart-view-container">
                     <div className="header-container">
                         <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
+                        <PrimaryButton className="export-excel" onClick={() => {
+                            requirejs(["scripts/ExcelExporter"], (ExcelExporter) => {
+                                new ExcelExporter.ExcelExporter(assignedToTeamData).export();          
+                            })
+                        }}>
+                            Export
+                        </PrimaryButton>
                     </div>
                     <div className="chart-view">
                         <ResponsiveContainer>
@@ -208,6 +210,13 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                                 this.updateState({groupedByTeam: !this.state.groupedByTeam} as IBugBashChartsState);
                             }}
                         />
+                        <PrimaryButton className="export-excel" onClick={() => {
+                            requirejs(["scripts/ExcelExporter"], (ExcelExporter) => {
+                                new ExcelExporter.ExcelExporter(createdByData).export();          
+                            })
+                        }}>
+                            Export
+                        </PrimaryButton>
                     </div>
                     <div className="chart-view">
                         <ResponsiveContainer>
@@ -228,5 +237,6 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
     private _getTeamName(teamId: string): string {
         const team = StoresHub.teamStore.getItem(teamId);
         return team ? team.name : teamId;
-    }
+    }    
 }
+

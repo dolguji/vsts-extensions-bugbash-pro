@@ -55,3 +55,9 @@ export interface IUserSettings {
     readonly __etag: number;
     associatedTeam: string;
 }
+
+export interface INameValuePair {
+    name: string;
+    value: number;
+    members?: INameValuePair[];
+}
