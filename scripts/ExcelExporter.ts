@@ -1,5 +1,5 @@
 import saveAs = require("jszip/vendor/FileSaver");
-import { File } from "better-xlsx/lib/file";
+import XLSX = require("better-xlsx/dist/xlsx.min.js");
 import { INameValuePair } from "./Interfaces";
 
 export class ExcelExporter {
@@ -11,7 +11,7 @@ export class ExcelExporter {
 
     public export() {
         let total = 0;
-        const file = new File();
+        const file = new XLSX.File();
         const sheet = file.addSheet("Sheet1");
     
         const header = sheet.addRow();

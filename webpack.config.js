@@ -51,16 +51,6 @@ module.exports = {
             {
                 test: /\.(otf|eot|svg|ttf|woff|woff2)(\?.+)?$/,
                 use: "url-loader?limit=4096&name=[name].[ext]"
-            },
-            {
-                test: /\.js$/,
-                exclude: [/typings/, /node_modules\/(?!(better-xlsx)\/).*/],
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: ['env']
-                    }
-                }
             }
         ]
     },
