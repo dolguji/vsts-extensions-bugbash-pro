@@ -210,7 +210,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         containerId="description-editor" 
                         data={item.description} 
                         editorOptions={{
-                            svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                            svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.png`,
                             btns: [
                                 ['bold', 'italic'], 
                                 ['link'],
@@ -229,7 +229,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         containerId="comment-editor" 
                         data={this.props.newComment || ""} 
                         editorOptions={{
-                            svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                            svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.png`,
                             btns: []
                         }}
                         onChange={this._onCommentChange} />

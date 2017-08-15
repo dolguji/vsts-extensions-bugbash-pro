@@ -179,7 +179,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     containerId="bugbash-description-editor" 
                     data={bugBash.description} 
                     editorOptions={{
-                        svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.svg`,
+                        svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.png`,
                         btns: [
                             ['formatting'],
                             ['bold', 'italic'], 
