@@ -7,7 +7,7 @@ import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
 
-//import { PrimaryButton } from "OfficeFabric/Button";
+import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
 import { Checkbox } from "OfficeFabric/Checkbox";
@@ -178,13 +178,13 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                 <div className="chart-view-container">
                     <div className="header-container">
                         <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
-                        {/* <PrimaryButton className="export-excel" onClick={() => {
+                         <PrimaryButton className="export-excel" onClick={() => {
                             requirejs(["scripts/ExcelExporter"], (ExcelExporter) => {
-                                new ExcelExporter.ExcelExporter(assignedToTeamData).export();          
+                                new ExcelExporter.ExcelExporter(assignedToTeamData).export(`${this.props.bugBash.title} - Assigned To Team.xlsx`);          
                             })
                         }}>
                             Export
-                        </PrimaryButton> */}
+                        </PrimaryButton> 
                     </div>
                     <div className="chart-view">
                         <ResponsiveContainer>
@@ -210,13 +210,13 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                                 this.updateState({groupedByTeam: !this.state.groupedByTeam} as IBugBashChartsState);
                             }}
                         />
-                        {/* <PrimaryButton className="export-excel" onClick={() => {
+                         <PrimaryButton className="export-excel" onClick={() => {
                             requirejs(["scripts/ExcelExporter"], (ExcelExporter) => {
-                                new ExcelExporter.ExcelExporter(createdByData).export();          
+                                new ExcelExporter.ExcelExporter(createdByData).export(`${this.props.bugBash.title} - Created By.xlsx`);          
                             })
                         }}>
                             Export
-                        </PrimaryButton> */}
+                        </PrimaryButton> 
                     </div>
                     <div className="chart-view">
                         <ResponsiveContainer>

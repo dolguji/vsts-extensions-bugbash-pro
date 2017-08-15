@@ -9,7 +9,7 @@ export class ExcelExporter {
         this._data = data;
     }
 
-    public export() {
+    public export(fileName: string) {
         let total = 0;
         const file = new XLSX.File();
         const sheet = file.addSheet("Sheet1");
@@ -68,7 +68,7 @@ export class ExcelExporter {
         sheet.col(1).width = 15;
     
         file.saveAs("blob").then((content) => {
-          saveAs(content, "example.xlsx");
+          saveAs(content, fileName);
         });
     }
 
