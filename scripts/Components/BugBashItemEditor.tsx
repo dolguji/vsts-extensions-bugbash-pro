@@ -53,7 +53,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         return [StoresHub.bugBashItemCommentStore, StoresHub.bugBashItemStore];
     }
 
-    public componentDidMount(): void {
+    public componentDidMount() {
         super.componentDidMount();
 
         $(window).off("imagepasted", this._imagePastedHandler);
@@ -79,7 +79,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         };
     }
 
-    public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>): void {
+    public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>) {
         if (this.props.bugBashItem.id !== nextProps.bugBashItem.id) {
             if (nextProps.bugBashItem.id && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
                 this.updateState({
@@ -325,7 +325,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
             const extension = metaPart.split(";")[0].split("/").pop();
             const fileName = `pastedImage_${Date.now().toString()}.${extension}`;
-            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.props.bugBashItem.bugBashId).title.replace(" ", "_")}/pastedImages/${fileName}`;
+            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.props.bugBashItem.bugBashId).originalModel.title.replace(" ", "_")}/pastedImages/${fileName}`;
             const projectId = VSS.getWebContext().project.id;
 
             try {

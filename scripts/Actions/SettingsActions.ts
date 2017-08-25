@@ -1,8 +1,9 @@
 import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
 
-import { SettingsActionsHub } from "./ActionsHub";
+import { SettingsActionsHub, BugBashErrorMessageActionsHub } from "./ActionsHub";
 import { IUserSettings, IBugBashSettings } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
+import { ErrorKeys } from "../Constants";
 
 export module SettingsActions {
     export async function initializeBugBashSettings() {
@@ -21,9 +22,13 @@ export module SettingsActions {
         try {
             const updatedSettings = await ExtensionDataManager.writeUserSetting<IBugBashSettings>(`bugBashProSettings_${VSS.getWebContext().project.id}`, settings, false);
             SettingsActionsHub.UpdateBugBashSettings.invoke(updatedSettings);
+            BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashSettingsError);
         }
         catch (e) {
-            throw e.message;
+            BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
+                errorMessage: "Settings could not be saved due to an unknown error. Please refresh the page and try again.",
+                errorKey: ErrorKeys.BugBashSettingsError
+            });
         }
     }
 
@@ -43,9 +48,13 @@ export module SettingsActions {
         try {
             const updatedSettings = await ExtensionDataManager.addOrUpdateDocument<IUserSettings>(`UserSettings_${VSS.getWebContext().project.id}`, settings, false);
             SettingsActionsHub.UpdateUserSettings.invoke(updatedSettings);
+            BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashSettingsError);
         }
         catch (e) {
-            throw e.message;
+            BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
+                errorMessage: "Settings could not be saved due to an unknown error. Please refresh the page and try again.",
+                errorKey: ErrorKeys.BugBashSettingsError
+            });
         }
     }
 }

@@ -28,13 +28,14 @@ import { Hub } from "VSTS_Extension/Components/Common/Hub/Hub";
 
 import SplitterLayout from "rc-split-layout";
 
-import { IBugBash, IBugBashItem, IBugBashItemViewModel } from "../Interfaces";
+import { IBugBashItem, IBugBashItemViewModel } from "../Interfaces";
 import { BugBashItemHelpers, confirmAction } from "../Helpers";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
 import { Events, ResultsView } from "../Constants";
+import { BugBash } from "../ViewModels/BugBash";
 
 interface IBugBashResultsState extends IBaseComponentState {
     itemIdToIndexMap: IDictionaryStringTo<number>;
@@ -45,7 +46,7 @@ interface IBugBashResultsState extends IBaseComponentState {
 }
 
 interface IBugBashResultsProps extends IBaseComponentProps {
-    bugBash: IBugBash;
+    bugBash: BugBash;
     filterText?: string;
     view?: string;
 }
@@ -93,7 +94,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         EventsService.getService().detachEvent(Events.RefreshItems, this._clearSelectedItem);
     }
 
-    public componentWillReceiveProps(nextProps: Readonly<IBugBashResultsProps>): void {
+    public componentWillReceiveProps(nextProps: Readonly<IBugBashResultsProps>) {
         if (this.props.bugBash.id !== nextProps.bugBash.id) {
             if (StoresHub.bugBashItemStore.isLoaded(nextProps.bugBash.id)) {
                 const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(nextProps.bugBash.id);
@@ -257,7 +258,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     private _getItemEditorFarCommands(): IContextualMenuItem[] {
         let bugBash = StoresHub.bugBashStore.getItem(this.props.bugBash.id);
 
-        if (!bugBash.autoAccept) {
+        if (!bugBash.originalModel.autoAccept) {
             if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
                 return [];
             }
@@ -405,7 +406,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 if (this.state.selectedBugBashItemViewModel.newComment != null && this.state.selectedBugBashItemViewModel.newComment.trim() !== "") {
                     await BugBashItemCommentActions.createComment(updatedItem.id, this.state.selectedBugBashItemViewModel.newComment);
                 }
-                if (this.props.bugBash.autoAccept) {
+                if (this.props.bugBash.originalModel.autoAccept) {
                     updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, updatedItem);
                 }
                 this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);

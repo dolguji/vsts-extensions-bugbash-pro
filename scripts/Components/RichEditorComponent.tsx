@@ -21,7 +21,7 @@ export class RichEditorComponent extends BaseComponent<IRichEditorProps, IBaseCo
         };
     }
 
-    public componentDidMount(): void {
+    public componentDidMount() {
         super.componentDidMount();
         SettingsActions.initializeBugBashSettings();
     }

@@ -9,7 +9,12 @@ export interface IBugBash {
     description?: string;    
     startTime?: Date;
     endTime?: Date;
-    acceptTemplate?: {team: string, templateId: string};
+    acceptTemplate?: IBugBashAcceptTemplate;
+}
+
+export interface IBugBashAcceptTemplate {
+    team: string;
+    templateId: string
 }
 
 export interface IBugBashItem {
@@ -33,11 +38,6 @@ export interface IBugBashItemComment {
     content: string;
     createdDate: Date;
     createdBy: string;
-}
-
-export interface IBugBashViewModel {
-    originalBugBash: IBugBash;
-    updatedBugBash: IBugBash;
 }
 
 export interface IBugBashItemViewModel {

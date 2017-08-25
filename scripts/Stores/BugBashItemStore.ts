@@ -73,7 +73,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
         return key;
     }
 
-    private _addBugBashItem(bugBashId: string, bugBashItem: IBugBashItem): void {
+    private _addBugBashItem(bugBashId: string, bugBashItem: IBugBashItem) {
         if (!bugBashItem) {
             return;
         }
@@ -91,7 +91,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<IBugBashItem
         }
     }
 
-    private _removeBugBashItem(bugBashId: string, bugBashItemId: string): void {
+    private _removeBugBashItem(bugBashId: string, bugBashItemId: string) {
         if (!bugBashItemId || this.items[bugBashId.toLowerCase()] == null || this.items[bugBashId.toLowerCase()].length === 0) {
             return;
         }

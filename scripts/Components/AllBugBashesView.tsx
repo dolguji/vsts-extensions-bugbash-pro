@@ -14,29 +14,35 @@ import { Grid } from "VSTS_Extension/Components/Grids/Grid";
 import { IContextMenuProps, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
 import { Hub } from "VSTS_Extension/Components/Common/Hub/Hub";
 
+import { getAsyncLoadedComponent } from "VSS/Flux/AsyncLoadedComponent";
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import Utils_Date = require("VSS/Utils/Date");
 import Utils_String = require("VSS/Utils/String");
 import Context = require("VSS/Context");
 
 import { confirmAction } from "../Helpers";
-import { UrlActions } from "../Constants";
-import { IBugBash } from "../Interfaces";
+import { UrlActions, ErrorKeys } from "../Constants";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
+import * as SettingsPanel_Async from "./SettingsPanel";
+import { BugBash } from "../ViewModels/BugBash";
 
 interface IAllBugBashesViewState extends IBaseComponentState {
-    pastBugBashes: IBugBash[];
-    currentBugBashes: IBugBash[];
-    upcomingBugBashes: IBugBash[];
+    pastBugBashes: BugBash[];
+    currentBugBashes: BugBash[];
+    upcomingBugBashes: BugBash[];
     settingsPanelOpen: boolean;
     selectedPivot?: string;
-    errorMessage?: string
+    error?: string
 }
+
+const AsyncSettingsPanel = getAsyncLoadedComponent(
+    ["scripts/SettingsPanel"],
+    (m: typeof SettingsPanel_Async) => m.SettingsPanel,
+    () => <Loading />);
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
     protected getStores(): BaseStore<any, any, any>[] {
@@ -51,7 +57,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             loading: true,
             selectedPivot: "ongoing",
             settingsPanelOpen: false,
-            errorMessage: StoresHub.bugBashErrorMessageStore.getAll()
+            error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError)
         };
     }
 
@@ -62,11 +68,12 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
 
     public componentWillUnmount() {
         super.componentWillUnmount();
-        BugBashErrorMessageActions.dismissErrorMessage();
+        this._dismissErrorMessage();
     }
 
     protected getStoresState(): IAllBugBashesViewState {        
-        const allBugBashes = (StoresHub.bugBashStore.getAll() || []).filter((bugBash: IBugBash) => Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
+        const allBugBashes = (StoresHub.bugBashStore.getAll() || [])
+            .filter(bugBash => Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
         const currentTime = new Date();
         
         return {
@@ -74,23 +81,23 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             currentBugBashes: this._getCurrentBugBashes(allBugBashes, currentTime),
             upcomingBugBashes: this._getUpcomingBugBashes(allBugBashes, currentTime),
             loading: StoresHub.bugBashStore.isLoading(),
-            errorMessage: StoresHub.bugBashErrorMessageStore.getAll()
+            error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError)
         } as IAllBugBashesViewState;
     }
 
     public render(): JSX.Element {
         return (
             <div className="all-view">
-                { this.state.errorMessage && 
+                { this.state.error && 
                     <MessageBar 
                         className="bugbash-error"
                         messageBarType={MessageBarType.error} 
-                        onDismiss={this._onDismissErrorMessage}>
-                        {this.state.errorMessage}
+                        onDismiss={this._dismissErrorMessage}>
+                        {this.state.error}
                     </MessageBar>
                 }
                 <Hub 
-                    className={this.state.errorMessage ? "with-error" : ""}
+                    className={this.state.error ? "with-error" : ""}
                     title="Bug Bashes"          
                     pivotProps={{
                         initialSelectedKey: this.state.selectedPivot,
@@ -131,19 +138,15 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         isLightDismiss={true} 
                         onDismiss={() => this.updateState({settingsPanelOpen: false} as IAllBugBashesViewState)}>
 
-                        <LazyLoad module="scripts/SettingsPanel">
-                            {(SettingsPanel) => (
-                                <SettingsPanel.SettingsPanel />
-                            )}
-                        </LazyLoad>
+                        <AsyncSettingsPanel />
                     </Panel>
                 }
             </div>
         );
     }
 
-    private _onDismissErrorMessage = () => {
-        BugBashErrorMessageActions.dismissErrorMessage();
+    private _dismissErrorMessage = () => {
+        BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.DirectoryPageError);
     };
 
     private _getContents(key: string): JSX.Element {
@@ -151,7 +154,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             return <Loading />;
         }
             
-        let bugBashes: IBugBash[];
+        let bugBashes: BugBash[];
         let missingItemsMsg = "";
 
         if (key === "past") {
@@ -189,14 +192,14 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 name: "Title",
                 minWidth: 300,
                 maxWidth: Infinity,
-                onRenderCell: bugBash => {
+                onRenderCell: (bugBash: BugBash) => {
                     return <TooltipHost 
-                        content={bugBash.title}
+                        content={bugBash.originalModel.title}
                         delay={TooltipDelay.medium}
                         overflowMode={TooltipOverflowMode.Parent}
                         directionalHint={DirectionalHint.bottomLeftEdge}>
                         <Label className="bugbash-grid-cell">
-                            <a href={this._getBugBashUrl(bugBash, UrlActions.ACTION_RESULTS)} onClick={(e: React.MouseEvent<HTMLElement>) => this._onRowClick(e, bugBash)}>{ bugBash.title }</a>
+                            <a href={this._getBugBashUrl(bugBash, UrlActions.ACTION_RESULTS)} onClick={(e: React.MouseEvent<HTMLElement>) => this._onRowClick(e, bugBash)}>{ bugBash.originalModel.title }</a>
                         </Label>
                     </TooltipHost>;
                 }
@@ -206,8 +209,8 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 name: "Start Date",
                 minWidth: 400,
                 maxWidth: 600,
-                onRenderCell: bugBash => {
-                    const label = bugBash.startTime ? Utils_Date.format(bugBash.startTime, "dddd, MMMM dd, yyyy") : "N/A";
+                onRenderCell: (bugBash: BugBash) => {
+                    const label = bugBash.originalModel.startTime ? Utils_Date.format(bugBash.originalModel.startTime, "dddd, MMMM dd, yyyy") : "N/A";
                     return <TooltipHost 
                         content={label}
                         delay={TooltipDelay.medium}
@@ -222,8 +225,8 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 name: "End Date",
                 minWidth: 400,
                 maxWidth: 600,
-                onRenderCell: bugBash => {
-                    const label = bugBash.endTime ? Utils_Date.format(bugBash.endTime, "dddd, MMMM dd, yyyy") : "N/A";
+                onRenderCell: (bugBash: BugBash) => {
+                    const label = bugBash.originalModel.endTime ? Utils_Date.format(bugBash.originalModel.endTime, "dddd, MMMM dd, yyyy") : "N/A";
                     return <TooltipHost 
                         content={label}
                         delay={TooltipDelay.medium}
@@ -238,7 +241,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
 
     private _getGridContextMenuProps(): IContextMenuProps {
         return {
-            menuItems: (selectedItems: IBugBash[]) => {
+            menuItems: (selectedItems: BugBash[]) => {
                 if (selectedItems.length !== 1) {
                     return [];
                 }
@@ -264,7 +267,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         onClick: async () => {                    
                             const confirm = await confirmAction(true, "Are you sure you want to delete this bug bash instance?");
                             if (confirm) {
-                                BugBashActions.deleteBugBash(bugBash.id);                                
+                                bugBash.delete();
                             }   
                         }
                     },
@@ -297,14 +300,14 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
          ];
     }
 
-    private _getBugBashUrl(bugBash: IBugBash, viewName?: string): string {
+    private _getBugBashUrl(bugBash: BugBash, viewName?: string): string {
         const pageContext = Context.getPageContext();
         const navigation = pageContext.navigation;
         const webContext = VSS.getWebContext();
         return `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${viewName}&id=${bugBash.id}`;
     }
 
-    private async _onRowClick(e: React.MouseEvent<HTMLElement>, bugBash: IBugBash) {
+    private async _onRowClick(e: React.MouseEvent<HTMLElement>, bugBash: BugBash) {
         if (!e.ctrlKey) {
             e.preventDefault();
             let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
@@ -312,38 +315,38 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         }      
     }
 
-    private _getPastBugBashes(list: IBugBash[], currentTime: Date): IBugBash[] {
-        return list.filter((bugBash: IBugBash) => {
-            return bugBash.endTime && Utils_Date.defaultComparer(bugBash.endTime, currentTime) < 0;
-        }).sort((b1: IBugBash, b2: IBugBash) => {
-            return Utils_Date.defaultComparer(b1.endTime, b2.endTime);
+    private _getPastBugBashes(list: BugBash[], currentTime: Date): BugBash[] {
+        return list.filter((bugBash: BugBash) => {
+            return bugBash.originalModel.endTime && Utils_Date.defaultComparer(bugBash.originalModel.endTime, currentTime) < 0;
+        }).sort((b1: BugBash, b2: BugBash) => {
+            return Utils_Date.defaultComparer(b1.originalModel.endTime, b2.originalModel.endTime);
         });
     }
 
-    private _getCurrentBugBashes(list: IBugBash[], currentTime: Date): IBugBash[] {        
-        return list.filter((bugBash: IBugBash) => {
-            if (!bugBash.startTime && !bugBash.endTime) {
+    private _getCurrentBugBashes(list: BugBash[], currentTime: Date): BugBash[] {        
+        return list.filter((bugBash: BugBash) => {
+            if (!bugBash.originalModel.startTime && !bugBash.originalModel.endTime) {
                 return true;
             }
-            else if(!bugBash.startTime && bugBash.endTime) {
-                return Utils_Date.defaultComparer(bugBash.endTime, currentTime) >= 0;
+            else if(!bugBash.originalModel.startTime && bugBash.originalModel.endTime) {
+                return Utils_Date.defaultComparer(bugBash.originalModel.endTime, currentTime) >= 0;
             }
-            else if (bugBash.startTime && !bugBash.endTime) {
-                return Utils_Date.defaultComparer(bugBash.startTime, currentTime) <= 0;
+            else if (bugBash.originalModel.startTime && !bugBash.originalModel.endTime) {
+                return Utils_Date.defaultComparer(bugBash.originalModel.startTime, currentTime) <= 0;
             }
             else {
-                return Utils_Date.defaultComparer(bugBash.startTime, currentTime) <= 0 && Utils_Date.defaultComparer(bugBash.endTime, currentTime) >= 0;
+                return Utils_Date.defaultComparer(bugBash.originalModel.startTime, currentTime) <= 0 && Utils_Date.defaultComparer(bugBash.originalModel.endTime, currentTime) >= 0;
             }
-        }).sort((b1: IBugBash, b2: IBugBash) => {
-            return Utils_Date.defaultComparer(b1.startTime, b2.startTime);
+        }).sort((b1: BugBash, b2: BugBash) => {
+            return Utils_Date.defaultComparer(b1.originalModel.startTime, b2.originalModel.startTime);
         });
     }
 
-    private _getUpcomingBugBashes(list: IBugBash[], currentTime: Date): IBugBash[] {
-        return list.filter((bugBash: IBugBash) => {
-            return bugBash.startTime && Utils_Date.defaultComparer(bugBash.startTime, currentTime) > 0;
-        }).sort((b1: IBugBash, b2: IBugBash) => {
-            return Utils_Date.defaultComparer(b1.startTime, b2.startTime);
+    private _getUpcomingBugBashes(list: BugBash[], currentTime: Date): BugBash[] {
+        return list.filter((bugBash: BugBash) => {
+            return bugBash.originalModel.startTime && Utils_Date.defaultComparer(bugBash.originalModel.startTime, currentTime) > 0;
+        }).sort((b1: BugBash, b2: BugBash) => {
+            return Utils_Date.defaultComparer(b1.originalModel.startTime, b2.originalModel.startTime);
         });
     }
 }

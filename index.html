@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <script src="scripts/libs/es6-promise.min.js"></script>
     <script src="scripts/libs/VSS.SDK.min.js"></script>    
-    <script src="scripts/libs/require.js"></script>
     <script src="scripts/common_chunks.js"></script>
 </head>
 
@@ -20,7 +19,7 @@
         // Load main entry point for extension
         VSS.require(["scripts/App", "VSS/Utils/Date", "VSS/Utils/String", "VSS/Utils/Array", "VSS/Utils/Core", "VSS/Context",        
         "VSS/WebApi/Contracts", "VSS/SDK/Services/Navigation", "VSS/Flux/Store", "VSS/Flux/Action", 
-        "VSS/Controls/Combos", "VSS/Controls", "VSS/Events/Services",
+        "VSS/Controls/Combos", "VSS/Controls", "VSS/Events/Services", "VSS/Flux/AsyncLoadedComponent",
         "TFS/WorkItemTracking/Contracts", "TFS/WorkItemTracking/RestClient", "TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/ExtensionContracts",
         "TFS/Work/Contracts", "TFS/Work/RestClient",
         "TFS/Core/Contracts", "TFS/Core/RestClient",

@@ -1,20 +1,20 @@
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { BugBashErrorMessageActionsHub } from "../Actions/ActionsHub";
 
-export class BugBashErrorMessageStore extends BaseStore<string, string, void> {
+export class BugBashErrorMessageStore extends BaseStore<IDictionaryStringTo<string>, string, string> {
     constructor() {
         super();
-        this.items = null;    
+        this.items = {};    
     }
 
     protected initializeActionListeners() {
-        BugBashErrorMessageActionsHub.PushErrorMessage.addListener((errorMessage: string) => {
-            this.items = errorMessage;
+        BugBashErrorMessageActionsHub.PushErrorMessage.addListener((error: {errorMessage: string, errorKey: string}) => {
+            this.items[error.errorKey] = error.errorMessage;
             this.emitChanged();
         });
 
-        BugBashErrorMessageActionsHub.DismissErrorMessage.addListener(() => {
-            this.items = null;
+        BugBashErrorMessageActionsHub.DismissErrorMessage.addListener((errorKey: string) => {
+            delete this.items[errorKey];
             this.emitChanged();
         });
     }   
@@ -23,11 +23,11 @@ export class BugBashErrorMessageStore extends BaseStore<string, string, void> {
         return "BugBashErrorMessageStore";
     }
 
-    protected convertItemKeyToString(_key: void): string {
-        return "";
+    protected convertItemKeyToString(key: string): string {
+        return key;
     }
 
-    public getItem(_key: void): string {
-         return this.items;
+    public getItem(key: string): string {
+         return this.items[key];
     }
 }

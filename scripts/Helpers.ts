@@ -1,8 +1,7 @@
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 import Utils_String = require("VSS/Utils/String");
-import Utils_Date = require("VSS/Utils/Date");
 
-import { IBugBash, IBugBashItem, IBugBashViewModel, IBugBashItemViewModel } from "./Interfaces";
+import { IBugBashItem, IBugBashItemViewModel } from "./Interfaces";
 import { StoresHub } from "./Stores/StoresHub";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
@@ -42,82 +41,6 @@ export function buildGitPush(path: string, oldObjectId: string, changeType: Vers
         }],
         commits,
     } as GitPush;
-}
-
-export class BugBashHelpers {
-    public static getViewModel(bugBash: IBugBash): IBugBashViewModel {
-        if (bugBash == null) {
-            return null;
-        }
-        
-        return {
-            originalBugBash: {...bugBash},
-            updatedBugBash: {...bugBash}
-        };
-    }
-
-    public static getNewViewModel(): IBugBashViewModel {
-        const bugBash = this.getNewBugBash();
-        return {
-            originalBugBash: bugBash,
-            updatedBugBash: {...bugBash}
-        };
-    }
-
-    public static getNewBugBash(): IBugBash {
-        return {
-            id: "",
-            title: "New Bug Bash",
-            __etag: 0,
-            projectId: VSS.getWebContext().project.id,
-            workItemType: "",
-            itemDescriptionField: "",
-            autoAccept: false,
-            description: "",
-            acceptTemplate: {
-                team: VSS.getWebContext().team.id,
-                templateId: ""
-            }
-        };
-    }
-
-    public static isNew(bugBash: IBugBash): boolean {
-        return bugBash && (bugBash.id == null || bugBash.id.trim() === "");
-    }
-
-    public static isDirty(viewModel: IBugBashViewModel): boolean {
-        if (viewModel == null) {
-            return false;
-        }
-
-        const updatedBugBash = viewModel.updatedBugBash;
-        const originalBugBash = viewModel.originalBugBash;
-
-        return !Utils_String.equals(updatedBugBash.title, originalBugBash.title)
-            || !Utils_String.equals(updatedBugBash.workItemType, originalBugBash.workItemType, true)
-            || !Utils_String.equals(updatedBugBash.description, originalBugBash.description)
-            || !Utils_Date.equals(updatedBugBash.startTime, originalBugBash.startTime)
-            || !Utils_Date.equals(updatedBugBash.endTime, originalBugBash.endTime)
-            || !Utils_String.equals(updatedBugBash.itemDescriptionField, originalBugBash.itemDescriptionField, true)
-            || updatedBugBash.autoAccept !== originalBugBash.autoAccept
-            || !Utils_String.equals(updatedBugBash.acceptTemplate.team, originalBugBash.acceptTemplate.team)
-            || !Utils_String.equals(updatedBugBash.acceptTemplate.templateId, originalBugBash.acceptTemplate.templateId);
-
-    }
-
-    public static isValid(viewModel: IBugBashViewModel): boolean {
-        if (viewModel == null) {
-            return false;
-        }
-        
-        const updatedBugBash = viewModel.updatedBugBash;
-
-        return updatedBugBash.title.trim().length > 0
-            && updatedBugBash.title.length <= 256
-            && updatedBugBash.workItemType.trim().length > 0
-            && updatedBugBash.itemDescriptionField.trim().length > 0
-            && (!updatedBugBash.startTime || !updatedBugBash.endTime || Utils_Date.defaultComparer(updatedBugBash.startTime, updatedBugBash.endTime) < 0);
-    }
 }
 
 export class BugBashItemHelpers {

@@ -5,13 +5,14 @@ import * as ReactDOM from "react-dom";
 
 import { Fabric } from "OfficeFabric/Fabric";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { LazyLoad } from "VSTS_Extension/Components/Common/LazyLoad";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
+import { getAsyncLoadedComponent } from "VSS/Flux/AsyncLoadedComponent";
 
 import { UrlActions } from "./Constants";
 import { BugBashView } from "./Components/BugBashView";
+import * as AllBugBashesView_Async from "./Components/AllBugBashesView";
 
 export enum HubViewMode {
     All,
@@ -26,8 +27,13 @@ export interface IHubState extends IBaseComponentState {
     bugBashId?: string;
 }
 
+const AsyncAllBugBashView = getAsyncLoadedComponent(
+    ["scripts/AllBugBashesView"],
+    (m: typeof AllBugBashesView_Async) => m.AllBugBashesView,
+    () => <Loading />);
+
 export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
-    protected initializeState(): void {
+    protected initializeState() {
         this.state = {
             hubViewMode: null
         };
@@ -47,11 +53,7 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         else {
             switch (this.state.hubViewMode) {            
                 case HubViewMode.All:
-                    view = <LazyLoad module="scripts/AllBugBashesView">
-                            {(AllBugBashesView) => (
-                                <AllBugBashesView.AllBugBashesView />
-                            )}
-                        </LazyLoad>;
+                    view = <AsyncAllBugBashView />;
                     break;
                 case HubViewMode.New:
                 case HubViewMode.Edit:

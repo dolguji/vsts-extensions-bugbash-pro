@@ -13,12 +13,14 @@ import { Label } from "OfficeFabric/Label";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { Bar, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
-import { IBugBashItem, IBugBash, INameValuePair } from "../Interfaces";
+import { IBugBashItem, INameValuePair } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemHelpers } from "../Helpers";
 import { ChartsView } from "../Constants";
 import { SettingsActions } from "../Actions/SettingsActions";
+import { BugBash } from "../ViewModels/BugBash";
+import * as ExcelExporter_Async from "../ExcelExporter";
 
 interface IBugBashChartsState extends IBaseComponentState {
     allBugBashItems: IBugBashItem[];
@@ -29,7 +31,7 @@ interface IBugBashChartsState extends IBaseComponentState {
 }
 
 interface IBugBashChartsProps extends IBaseComponentProps {
-    bugBash: IBugBash;
+    bugBash: BugBash;
     view?: string;
 }
 
@@ -92,7 +94,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         } as IBugBashChartsState;
     }
 
-    public componentDidMount(): void {
+    public componentDidMount() {
         super.componentDidMount();
         TeamActions.initializeTeams();
         BugBashItemActions.initializeItems(this.props.bugBash.id);
@@ -179,8 +181,8 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                     <div className="header-container">
                         <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
                          <PrimaryButton className="export-excel" onClick={() => {
-                            requirejs(["scripts/ExcelExporter"], (ExcelExporter) => {
-                                new ExcelExporter.ExcelExporter(assignedToTeamData).export(`${this.props.bugBash.title} - Assigned To Team.xlsx`);          
+                            requirejs(["scripts/ExcelExporter"], (ExcelExporter: typeof ExcelExporter_Async) => {
+                                new ExcelExporter.ExcelExporter(assignedToTeamData).export(`${this.props.bugBash.originalModel.title} - Assigned To Team.xlsx`);          
                             })
                         }}>
                             Export
@@ -211,8 +213,8 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                             }}
                         />
                          <PrimaryButton className="export-excel" onClick={() => {
-                            requirejs(["scripts/ExcelExporter"], (ExcelExporter) => {
-                                new ExcelExporter.ExcelExporter(createdByData).export(`${this.props.bugBash.title} - Created By.xlsx`);          
+                            requirejs(["scripts/ExcelExporter"], (ExcelExporter: typeof ExcelExporter_Async) => {
+                                new ExcelExporter.ExcelExporter(createdByData).export(`${this.props.bugBash.originalModel.title} - Created By.xlsx`);          
                             })
                         }}>
                             Export
@@ -239,4 +241,3 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         return team ? team.name : teamId;
     }    
 }
-

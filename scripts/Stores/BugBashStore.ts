@@ -2,12 +2,22 @@ import Utils_String = require("VSS/Utils/String");
 import Utils_Array = require("VSS/Utils/Array");
 
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { IBugBash } from "../Interfaces";
+import { BugBash } from "../ViewModels/BugBash";
 import { BugBashActionsHub } from "../Actions/ActionsHub";
+import { IBugBash } from "../Interfaces";
 
-export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
+export class BugBashStore extends BaseStore<BugBash[], BugBash, string> {
     private _allLoaded: boolean = false;
+    private _itemIdMap: IDictionaryStringTo<BugBash>;
+    private _newBugBash: BugBash;
 
+    constructor() {
+        super();
+        this._allLoaded = false;
+        this._itemIdMap = {};
+        this._newBugBash = new BugBash();
+    }
+    
     public isLoaded(key?: string): boolean {
         if (key) {
             return super.isLoaded();
@@ -16,51 +26,55 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         return this._allLoaded && super.isLoaded();
     }
 
-    public getItem(id: string): IBugBash {
-         return Utils_Array.first(this.items || [], (bugBash: IBugBash) => Utils_String.equals(bugBash.id, id, true));
+    public getNewBugBash(): BugBash {
+        return this._newBugBash;
+    }
+
+    public getItem(id: string): BugBash {
+        return this._itemIdMap[id.toLowerCase()];
     }
 
     protected initializeActionListeners() {
-        BugBashActionsHub.InitializeAllBugBashes.addListener((bugBashes: IBugBash[]) => {
-            if (bugBashes) {
-                this.items = bugBashes;
-            }
+        BugBashActionsHub.FireStoreChange.addListener(() => {
+            this.emitChanged();
+        });
+
+        BugBashActionsHub.InitializeAllBugBashes.addListener((bugBashModels: IBugBash[]) => {
+            this._refreshBugBashes(bugBashModels);
             this._allLoaded = true;
             this.emitChanged();
         }); 
 
-        BugBashActionsHub.RefreshAllBugBashes.addListener((bugBashes: IBugBash[]) => {
-            this.items = bugBashes;
+        BugBashActionsHub.RefreshAllBugBashes.addListener((bugBashModels: IBugBash[]) => {
+            this._refreshBugBashes(bugBashModels);
             this.emitChanged();
         });
 
-        BugBashActionsHub.InitializeBugBash.addListener((bugBash: IBugBash) => {
-            if (bugBash) {
-                this._addBugBash(bugBash);
-            }
-
+        BugBashActionsHub.InitializeBugBash.addListener((bugBashModel: IBugBash) => {
+            this._addOrUpdateBugBash(bugBashModel);
             this.emitChanged();
         }); 
         
-        BugBashActionsHub.RefreshBugBash.addListener((bugBash: IBugBash) => {
-            this._addBugBash(bugBash);
+        BugBashActionsHub.RefreshBugBash.addListener((bugBashModel: IBugBash) => {
+            this._addOrUpdateBugBash(bugBashModel);
             this.emitChanged();
         }); 
 
-        BugBashActionsHub.CreateBugBash.addListener((bugBash: IBugBash) => {
-            this._addBugBash(bugBash);
+        BugBashActionsHub.CreateBugBash.addListener((bugBashModel: IBugBash) => {
+            this._newBugBash.reset(false);
+            this._addOrUpdateBugBash(bugBashModel);
             this.emitChanged();
         });  
 
+        BugBashActionsHub.UpdateBugBash.addListener((bugBashModel: IBugBash) => {
+            this._addOrUpdateBugBash(bugBashModel);
+            this.emitChanged();
+        });  
+        
         BugBashActionsHub.DeleteBugBash.addListener((bugBashId: string) => {
             this._removeBugBash(bugBashId);
             this.emitChanged();
-        });
-
-        BugBashActionsHub.UpdateBugBash.addListener((bugBash: IBugBash) => {
-            this._addBugBash(bugBash);
-            this.emitChanged();
-        });  
+        });        
     }
 
     public getKey(): string {
@@ -71,8 +85,21 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         return key;
     }    
     
-    private _addBugBash(bugBash: IBugBash): void {
-        if (!bugBash) {
+    private _refreshBugBashes(bugBashModels: IBugBash[]) {
+        if (bugBashModels) {
+            this.items = [];
+            this._itemIdMap = {};
+
+            for (const bugBashModel of bugBashModels) {
+                const bugBash = new BugBash(bugBashModel);
+                this.items.push(bugBash);
+                this._itemIdMap[bugBashModel.id.toLowerCase()] = bugBash;
+            }
+        }
+    }
+
+    private _addOrUpdateBugBash(bugBashModel: IBugBash) {
+        if (!bugBashModel) {
             return;
         }
 
@@ -80,7 +107,10 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
             this.items = [];
         }
 
-        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBash) => Utils_String.equals(bugBash.id, existingBugBash.id, true));
+        const bugBash = new BugBash(bugBashModel);
+        this._itemIdMap[bugBashModel.id.toLowerCase()] = bugBash;
+
+        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: BugBash) => Utils_String.equals(bugBashModel.id, existingBugBash.id, true));
         if (existingBugBashIndex !== -1) {
             this.items[existingBugBashIndex] = bugBash;
         }
@@ -89,12 +119,14 @@ export class BugBashStore extends BaseStore<IBugBash[], IBugBash, string> {
         }
     }
 
-    private _removeBugBash(bugBashId: string): void {
+    private _removeBugBash(bugBashId: string) {        
         if (!bugBashId || this.items == null || this.items.length === 0) {
             return;
         }
 
-        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: IBugBash) => Utils_String.equals(bugBashId, existingBugBash.id, true));
+        delete this._itemIdMap[bugBashId.toLowerCase()];
+
+        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: BugBash) => Utils_String.equals(bugBashId, existingBugBash.id, true));
 
         if (existingBugBashIndex !== -1) {
             this.items.splice(existingBugBashIndex, 1);

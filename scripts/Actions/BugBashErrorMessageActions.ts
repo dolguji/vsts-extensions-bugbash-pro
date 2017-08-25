@@ -1,11 +1,11 @@
 import { BugBashErrorMessageActionsHub } from "./ActionsHub";
 
 export module BugBashErrorMessageActions {
-    export function showErrorMessage(errorMessage: string): void {
-        BugBashErrorMessageActionsHub.PushErrorMessage.invoke(errorMessage);
+    export function showErrorMessage(errorMessage: string, errorKey: string) {
+        BugBashErrorMessageActionsHub.PushErrorMessage.invoke({errorMessage: errorMessage, errorKey: errorKey});
     }
 
-    export function dismissErrorMessage(): void {
-        return BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(null);
+    export function dismissErrorMessage(errorKey: string) {
+        return BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(errorKey);
     }
 }

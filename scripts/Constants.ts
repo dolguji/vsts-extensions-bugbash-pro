@@ -22,3 +22,10 @@ export module ResultsView {
     export var RejectedItemsOnly = "Rejected Items";
     export var AcceptedItemsOnly = "Accepted Items";
 }
+
+export module ErrorKeys {
+    export var DirectoryPageError = "DirectoryPageError";
+    export var BugBashError = "BugBashError";
+    export var BugBashItemError = "BugBashItemError";
+    export var BugBashSettingsError = "BugBashSettingsError";
+}

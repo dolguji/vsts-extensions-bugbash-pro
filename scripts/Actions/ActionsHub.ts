@@ -17,6 +17,7 @@ export module BugBashActionsHub {
     export var UpdateBugBash = new Action<IBugBash>();
     export var DeleteBugBash = new Action<string>();
     export var CreateBugBash = new Action<IBugBash>();
+    export var FireStoreChange = new Action<void>();
 }
 
 export module BugBashItemCommentActionsHub {
@@ -37,6 +38,6 @@ export module BugBashItemActionsHub {
 }
 
 export module BugBashErrorMessageActionsHub {
-    export var PushErrorMessage = new Action<string>();
-    export var DismissErrorMessage = new Action<void>();
+    export var PushErrorMessage = new Action<{errorMessage: string, errorKey: string}>();
+    export var DismissErrorMessage = new Action<string>();
 }

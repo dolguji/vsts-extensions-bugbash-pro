@@ -11,8 +11,9 @@ import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 import { UrlActions } from "../Constants";
 import { BugBashItemActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
-import { IBugBashItem, IBugBash, IBugBashItemComment } from "../Interfaces";
+import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { BugBashItemHelpers } from "../Helpers";
+import { BugBash } from "../ViewModels/BugBash";
 
 export module BugBashItemActions {
     export async function initializeItems(bugBashId: string) {
@@ -185,13 +186,13 @@ export module BugBashItemActions {
         let acceptTemplate: WorkItemTemplate;
 
         // read bug bash wit template
-        if (bugBash.acceptTemplate && bugBash.acceptTemplate.team && bugBash.acceptTemplate.templateId) {
+        if (bugBash.originalModel.acceptTemplate && bugBash.originalModel.acceptTemplate.team && bugBash.originalModel.acceptTemplate.templateId) {
             try {
-                await WorkItemTemplateItemActions.initializeWorkItemTemplateItem(bugBash.acceptTemplate.team, bugBash.acceptTemplate.templateId);
-                acceptTemplate = StoresHub.workItemTemplateItemStore.getItem(bugBash.acceptTemplate.templateId);
+                await WorkItemTemplateItemActions.initializeWorkItemTemplateItem(bugBash.originalModel.acceptTemplate.team, bugBash.originalModel.acceptTemplate.templateId);
+                acceptTemplate = StoresHub.workItemTemplateItemStore.getItem(bugBash.originalModel.acceptTemplate.templateId);
             }
             catch (e) {
-                throw `Bug bash template '${bugBash.acceptTemplate.templateId}' does not exist in team '${bugBash.acceptTemplate.team}'`;
+                throw `Bug bash template '${bugBash.originalModel.acceptTemplate.templateId}' does not exist in team '${bugBash.originalModel.acceptTemplate.team}'`;
             }
         }
 
@@ -213,7 +214,7 @@ export module BugBashItemActions {
         const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedBugBashItem.teamId);
         let fieldValues = acceptTemplate ? {...acceptTemplate.fields} : {};
         fieldValues["System.Title"] = updatedBugBashItem.title;
-        fieldValues[bugBash.itemDescriptionField] = updatedBugBashItem.description;            
+        fieldValues[bugBash.originalModel.itemDescriptionField] = updatedBugBashItem.description;            
         fieldValues[teamFieldValue.field.referenceName] = teamFieldValue.defaultValue;        
 
         if (fieldValues["System.Tags-Add"]) {
@@ -225,7 +226,7 @@ export module BugBashItemActions {
 
         try {
             // create work item
-            savedWorkItem = await WorkItemActions.createWorkItem(bugBash.workItemType, fieldValues);
+            savedWorkItem = await WorkItemActions.createWorkItem(bugBash.originalModel.workItemType, fieldValues);
         }
         catch (e) {
             BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
@@ -253,7 +254,7 @@ export module BugBashItemActions {
         WorkItemActions.updateWorkItem(workItemId, fieldValues);
     }
 
-    function getAcceptedItemComment(bugBash: IBugBash, bugBashItem: IBugBashItem): string {
+    function getAcceptedItemComment(bugBash: BugBash, bugBashItem: IBugBashItem): string {
         const pageContext = Context.getPageContext();
         const navigation = pageContext.navigation;
         const webContext = VSS.getWebContext();
@@ -262,7 +263,7 @@ export module BugBashItemActions {
         const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
 
         let commentToSave = `
-            Created from <a href='${bugBashUrl}' target='_blank'>${bugBash.title}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
+            Created from <a href='${bugBashUrl}' target='_blank'>${bugBash.originalModel.title}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
 
         let discussionComments = StoresHub.bugBashItemCommentStore.getItem(bugBashItem.id);
