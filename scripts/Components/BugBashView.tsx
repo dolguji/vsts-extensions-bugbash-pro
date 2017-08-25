@@ -23,7 +23,7 @@ import { confirmAction, BugBashItemHelpers } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { UrlActions, Events, ChartsView, ResultsView } from "../Constants";
+import { UrlActions, Events, ChartsView, ResultsView, BugBashFieldNames } from "../Constants";
 import { BugBash } from "../ViewModels/BugBash";
 import * as BugBashEditor_Async from "./BugBashEditor";
 import * as BugBashResults_Async from "./BugBashResults";
@@ -176,73 +176,68 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _renderHub(): React.ReactNode {
-        const updatedBugBash = this.state.bugBash.updatedModel;
+        const bugBash = this.state.bugBash;
 
-        if (updatedBugBash) {
-            let title = updatedBugBash.title;
-            let className = "bugbash-hub";
-            if (this.state.bugBash.isDirty()) {
-                className += " is-dirty";
-                title = "* " + title;
-            }
+        let title = bugBash.getFieldValue<string>(BugBashFieldNames.Title);
+        let className = "bugbash-hub";
+        if (this.state.bugBash.isDirty()) {
+            className += " is-dirty";
+            title = "* " + title;
+        }
 
-            return <Hub 
-                className={className}
-                onTitleRender={() => this._onTitleRender(title)}
-                pivotProps={{
-                    onPivotClick: async (selectedPivotKey: string) => {
-                        this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
-                        let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                        navigationService.updateHistoryEntry(selectedPivotKey, null, false, true, null, true);
-                    },
-                    initialSelectedKey: this.state.selectedPivot,
-                    onRenderPivotContent: (key: string) => {
-                        switch (key) {
-                            case "edit":
-                                return <div className="bugbash-hub-contents bugbash-editor-hub-contents">
-                                    {this._renderEditor()}
-                                </div>;
-                            case "results":
-                                const extraCss = this.state.bugBash.isNew() ? "new-bugbash" : "";
-                                return <div className={`bugbash-hub-contents bugbash-results-hub-contents ${extraCss}`}>
-                                    {this._renderResults()}
-                                </div>;
-                            case "charts":
-                                return <div className="bugbash-hub-contents bugbash-charts-hub-contents">
-                                    {this._renderCharts()}
-                                </div>;
+        return <Hub 
+            className={className}
+            onTitleRender={() => this._onTitleRender(title)}
+            pivotProps={{
+                onPivotClick: async (selectedPivotKey: string) => {
+                    this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
+                    let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+                    navigationService.updateHistoryEntry(selectedPivotKey, null, false, true, null, true);
+                },
+                initialSelectedKey: this.state.selectedPivot,
+                onRenderPivotContent: (key: string) => {
+                    switch (key) {
+                        case "edit":
+                            return <div className="bugbash-hub-contents bugbash-editor-hub-contents">
+                                {this._renderEditor()}
+                            </div>;
+                        case "results":
+                            const extraCss = this.state.bugBash.isNew() ? "new-bugbash" : "";
+                            return <div className={`bugbash-hub-contents bugbash-results-hub-contents ${extraCss}`}>
+                                {this._renderResults()}
+                            </div>;
+                        case "charts":
+                            return <div className="bugbash-hub-contents bugbash-charts-hub-contents">
+                                {this._renderCharts()}
+                            </div>;
+                    }
+                },
+                pivots: [
+                    {
+                        key: "results",
+                        text: "Results",
+                        commands: this._getResultViewCommands(),
+                        farCommands: this._getResultViewFarCommands(),
+                        filterProps: {
+                            showFilter: true,
+                            onFilterChange: this._onFilterTextChange,
+                            filterPosition: FilterPosition.Left
                         }
                     },
-                    pivots: [
-                        {
-                            key: "results",
-                            text: "Results",
-                            commands: this._getResultViewCommands(),
-                            farCommands: this._getResultViewFarCommands(),
-                            filterProps: {
-                                showFilter: true,
-                                onFilterChange: this._onFilterTextChange,
-                                filterPosition: FilterPosition.Left
-                            }
-                        },
-                        {
-                            key: "edit",
-                            text: "Editor",
-                            commands: this._getEditorViewCommands(),
-                        },
-                        {
-                            key: "charts",
-                            text: "Charts",
-                            commands: this._getChartsViewCommands(),
-                            farCommands: this._getChartsViewFarCommands()
-                        }
-                    ]
-                }}
-            />;
-        }
-        else {
-            return null;
-        }
+                    {
+                        key: "edit",
+                        text: "Editor",
+                        commands: this._getEditorViewCommands(),
+                    },
+                    {
+                        key: "charts",
+                        text: "Charts",
+                        commands: this._getChartsViewCommands(),
+                        farCommands: this._getChartsViewFarCommands()
+                    }
+                ]
+            }}
+        />;
     }    
 
     private _renderEditor(): JSX.Element {

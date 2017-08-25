@@ -1,31 +1,46 @@
-export module UrlActions {
-    export var ACTION_ALL = "all";
-    export var ACTION_RESULTS = "results";
-    export var ACTION_EDIT = "edit";
-    export var ACTION_CHARTS = "charts";
+export namespace UrlActions {
+    export const ACTION_ALL = "all";
+    export const ACTION_RESULTS = "results";
+    export const ACTION_EDIT = "edit";
+    export const ACTION_CHARTS = "charts";
 }
 
-export module Events {
-    export var NewItem = "new-item";
-    export var RefreshItems = "refresh-items";
+export namespace Events {
+    export const NewItem = "new-item";
+    export const RefreshItems = "refresh-items";
 }
 
-export module ChartsView {
-    export var All = "All Items";
-    export var PendingItemsOnly = "Pending Items";
-    export var RejectedItemsOnly = "Rejected Items";
-    export var AcceptedItemsOnly = "Accepted Items";
+export namespace ChartsView {
+    export const All = "All Items";
+    export const PendingItemsOnly = "Pending Items";
+    export const RejectedItemsOnly = "Rejected Items";
+    export const AcceptedItemsOnly = "Accepted Items";
 }
 
-export module ResultsView {
-    export var PendingItemsOnly = "Pending Items";
-    export var RejectedItemsOnly = "Rejected Items";
-    export var AcceptedItemsOnly = "Accepted Items";
+export namespace ResultsView {
+    export const PendingItemsOnly = "Pending Items";
+    export const RejectedItemsOnly = "Rejected Items";
+    export const AcceptedItemsOnly = "Accepted Items";
 }
 
-export module ErrorKeys {
-    export var DirectoryPageError = "DirectoryPageError";
-    export var BugBashError = "BugBashError";
-    export var BugBashItemError = "BugBashItemError";
-    export var BugBashSettingsError = "BugBashSettingsError";
+export namespace ErrorKeys {
+    export const DirectoryPageError = "DirectoryPageError";
+    export const BugBashError = "BugBashError";
+    export const BugBashItemError = "BugBashItemError";
+    export const BugBashSettingsError = "BugBashSettingsError";
+}
+
+export enum BugBashFieldNames {
+    ID = "id",
+    Version = "__etag",
+    Title = "title",
+    WorkItemType = "workItemType",
+    ProjectId = "projectId",
+    ItemDescriptionField = "itemDescriptionField",
+    AutoAccept = "autoAccept",
+    Description = "description",
+    StartTime = "startTime",
+    EndTime = "endTime",
+    AcceptTemplateTeam = "acceptTemplateTeam",
+    AcceptTemplateId = "acceptTemplateId"
 }

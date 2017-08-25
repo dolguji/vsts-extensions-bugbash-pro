@@ -17,7 +17,7 @@ import { IBugBashItem, INameValuePair } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemHelpers } from "../Helpers";
-import { ChartsView } from "../Constants";
+import { ChartsView, BugBashFieldNames } from "../Constants";
 import { SettingsActions } from "../Actions/SettingsActions";
 import { BugBash } from "../ViewModels/BugBash";
 import * as ExcelExporter_Async from "../ExcelExporter";
@@ -182,7 +182,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                         <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
                          <PrimaryButton className="export-excel" onClick={() => {
                             requirejs(["scripts/ExcelExporter"], (ExcelExporter: typeof ExcelExporter_Async) => {
-                                new ExcelExporter.ExcelExporter(assignedToTeamData).export(`${this.props.bugBash.originalModel.title} - Assigned To Team.xlsx`);          
+                                new ExcelExporter.ExcelExporter(assignedToTeamData).export(`${this.props.bugBash.getFieldValue<string>(BugBashFieldNames.Title, true)} - Assigned To Team.xlsx`);          
                             })
                         }}>
                             Export
@@ -214,7 +214,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                         />
                          <PrimaryButton className="export-excel" onClick={() => {
                             requirejs(["scripts/ExcelExporter"], (ExcelExporter: typeof ExcelExporter_Async) => {
-                                new ExcelExporter.ExcelExporter(createdByData).export(`${this.props.bugBash.originalModel.title} - Created By.xlsx`);          
+                                new ExcelExporter.ExcelExporter(createdByData).export(`${this.props.bugBash.getFieldValue<string>(BugBashFieldNames.Title, true)} - Created By.xlsx`);          
                             })
                         }}>
                             Export

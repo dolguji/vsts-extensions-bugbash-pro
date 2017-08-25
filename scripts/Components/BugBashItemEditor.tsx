@@ -25,6 +25,7 @@ import { buildGitPush, BugBashItemHelpers } from "../Helpers";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
+import { BugBashFieldNames } from "../Constants";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
     bugBashItem: IBugBashItem;
@@ -325,7 +326,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
             const extension = metaPart.split(";")[0].split("/").pop();
             const fileName = `pastedImage_${Date.now().toString()}.${extension}`;
-            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.props.bugBashItem.bugBashId).originalModel.title.replace(" ", "_")}/pastedImages/${fileName}`;
+            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.props.bugBashItem.bugBashId).getFieldValue<string>(BugBashFieldNames.Title, true).replace(" ", "_")}/pastedImages/${fileName}`;
             const projectId = VSS.getWebContext().project.id;
 
             try {

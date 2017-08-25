@@ -9,12 +9,8 @@ export interface IBugBash {
     description?: string;    
     startTime?: Date;
     endTime?: Date;
-    acceptTemplate?: IBugBashAcceptTemplate;
-}
-
-export interface IBugBashAcceptTemplate {
-    team: string;
-    templateId: string
+    acceptTemplateTeam?: string;
+    acceptTemplateId?: string;
 }
 
 export interface IBugBashItem {

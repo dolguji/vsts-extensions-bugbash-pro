@@ -25,10 +25,9 @@ import { WorkItemTypeActions } from "VSTS_Extension/Flux/Actions/WorkItemTypeAct
 import { WorkItemTemplateActions } from "VSTS_Extension/Flux/Actions/WorkItemTemplateActions";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { IBugBash } from "../Interfaces";
 import { RichEditorComponent } from "./RichEditorComponent";
 import { BugBash } from "../ViewModels/BugBash";
-import { ErrorKeys } from "../Constants";
+import { ErrorKeys, BugBashFieldNames } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
@@ -98,7 +97,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             ];
             let filteredTemplates = StoresHub.workItemTemplateStore
                 .getAll()
-                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.updatedModel.workItemType || "", true));
+                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType) || "", true));
 
             const templates = emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference) => {
                 return {
@@ -128,7 +127,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }      
 
     public componentWillReceiveProps(nextProps: IBugBashEditorProps) {
-        if (nextProps.bugBash.updatedModel.workItemType != this.props.bugBash.updatedModel.workItemType) {
+        const currentWIT = this.props.bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
+        const nextWIT = nextProps.bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
+
+        if (currentWIT != nextWIT) {
             let emptyTemplateItem = [
                 {   
                     key: "", text: "<No template>"
@@ -136,7 +138,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             ];
             let filteredTemplates = StoresHub.workItemTemplateStore
                 .getAll()
-                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.updatedModel.workItemType || "", true));
+                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, currentWIT || "", true));
 
             const templates = emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference) => {
                 return {
@@ -176,21 +178,28 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
     private _renderEditor(): JSX.Element {
         const bugBash = this.props.bugBash;        
+        const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title);
+        const workItemType = bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
+        const bugBashDescription = bugBash.getFieldValue<string>(BugBashFieldNames.Description);
+        const startTime = bugBash.getFieldValue<Date>(BugBashFieldNames.StartTime);
+        const endTime = bugBash.getFieldValue<Date>(BugBashFieldNames.EndTime);
+        const itemDescriptionField = bugBash.getFieldValue<string>(BugBashFieldNames.ItemDescriptionField);
+        const acceptTemplateId = bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateId);
 
         return <div className="bugbash-editor-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
             <div className="first-section">                        
                 <TextField 
-                    label='Title' 
-                    value={bugBash.updatedModel.title} 
-                    onChanged={this._updateTitle} />
+                    label="Title"
+                    value={bugBashTitle} 
+                    onChanged={(newValue: string) => this._onChange(BugBashFieldNames.Title, newValue)} />
                 
-                { (bugBash.updatedModel.title == null || bugBash.updatedModel.title.trim() === "") && <InputError error="Title is required." /> }
-                { bugBash.updatedModel.title && bugBash.updatedModel.title.length > 256 && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBash.updatedModel.title.length}.`} /> }
+                { (bugBashTitle == null || bugBashTitle.trim() === "") && <InputError error="Title is required." /> }
+                { bugBashTitle && bugBashTitle.length > 256 && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBashTitle.length}.`} /> }
 
                 <Label>Description</Label>
                 <RichEditorComponent 
                     containerId="bugbash-description-editor" 
-                    data={bugBash.updatedModel.description} 
+                    data={bugBashDescription} 
                     editorOptions={{
                         svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.png`,
                         btns: [
@@ -203,15 +212,15 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                             ['fullscreen']
                         ]
                     }}
-                    onChange={this._updateDescription} />
+                    onChange={(newValue: string) => this._onChange(BugBashFieldNames.Description, newValue)} />
             </div>
             <div className="second-section">
                 <div className="checkbox-container">                            
                     <Checkbox 
                         className="auto-accept"
                         label=""
-                        checked={bugBash.updatedModel.autoAccept}
-                        onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._updateAutoAccept(isChecked) } />
+                        checked={bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept)}
+                        onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._onChange(BugBashFieldNames.AutoAccept, isChecked) } />
 
                     <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
                 </div>
@@ -220,47 +229,47 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     label="Start Date" 
                     allowTextInput={true} 
                     isRequired={false} 
-                    value={bugBash.updatedModel.startTime}
-                    onSelectDate={this._updateStartTime} />
+                    value={startTime}
+                    onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.StartTime, newValue)} />
 
                 <DatePicker 
                     label="Finish Date" 
                     allowTextInput={true}
                     isRequired={false} 
-                    value={bugBash.updatedModel.endTime} 
-                    onSelectDate={this._updateEndTime} />
+                    value={endTime} 
+                    onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.EndTime, newValue)} />
 
-                { bugBash.updatedModel.startTime && bugBash.updatedModel.endTime && Utils_Date.defaultComparer(bugBash.updatedModel.startTime, bugBash.updatedModel.endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
+                { startTime && endTime && Utils_Date.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
                 <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
                 <Dropdown 
-                    selectedKey={bugBash.updatedModel.workItemType.toLowerCase()}
+                    selectedKey={workItemType.toLowerCase()}
                     onRenderList={this._onRenderCallout}
-                    className={!bugBash.updatedModel.workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
+                    className={!workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
                     required={true} 
                     options={this.state.workItemTypes}                            
-                    onChanged={(option: IDropdownOption) => this._updateWorkItemType(option.key as string)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.WorkItemType, option.key as string)} />
 
-                { !bugBash.updatedModel.workItemType && <InputError error="A work item type is required." /> }
+                { !workItemType && <InputError error="A work item type is required." /> }
 
                 <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
                 <Dropdown 
-                    selectedKey={bugBash.updatedModel.itemDescriptionField.toLowerCase()}
+                    selectedKey={itemDescriptionField.toLowerCase()}
                     onRenderList={this._onRenderCallout}
-                    className={!bugBash.updatedModel.itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
+                    className={!itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
                     required={true} 
                     options={this.state.htmlFields} 
-                    onChanged={(option: IDropdownOption) => this._updateDescriptionField(option.key as string)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.ItemDescriptionField, option.key as string)} />
 
-                { !bugBash.updatedModel.itemDescriptionField && <InputError error="A description field is required." /> }     
+                { !itemDescriptionField && <InputError error="A description field is required." /> }     
 
                 <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
                 <Dropdown 
-                    selectedKey={bugBash.updatedModel.acceptTemplate.templateId.toLowerCase()}
+                    selectedKey={acceptTemplateId.toLowerCase()}
                     onRenderList={this._onRenderCallout}
                     className="editor-dropdown"
                     options={this.state.templates} 
-                    onChanged={(option: IDropdownOption) => this._updateAcceptTemplate(option.key as string)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string)} />
             </div>
         </div>;
     }
@@ -284,66 +293,13 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
     }
 
-    private _onChange(updatedModel: IBugBash) {
+    private _onChange<T>(fieldName: BugBashFieldNames, fieldVavlue: T) {
         if (this._updateBugBashDelayedFunction) {
             this._updateBugBashDelayedFunction.cancel();
         }
 
         this._updateBugBashDelayedFunction = delay(this, 200, () => {
-            this.props.bugBash.update(updatedModel);
+            this.props.bugBash.setFieldValue<T>(fieldName, fieldVavlue);
         });
-    }
-
-    @autobind
-    private _updateTitle(newTitle: string) {
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.title = newTitle;
-        this._onChange(updatedModel);
-    }
-
-    private _updateWorkItemType(newType: string) {
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.workItemType = newType;
-        updatedModel.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: ""};  // reset template
-        this._onChange(updatedModel);
-    }
-
-    @autobind
-    private _updateDescription(newDescription: string) {
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.description = newDescription;
-        this._onChange(updatedModel);
-    }
-
-    private _updateDescriptionField(fieldRefName: string) {
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.itemDescriptionField = fieldRefName;
-        this._onChange(updatedModel);
-    }
-
-    @autobind
-    private _updateStartTime(newStartTime: Date) {
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.startTime = newStartTime;
-        this._onChange(updatedModel);
-    }
-
-    @autobind
-    private _updateEndTime(newEndTime: Date) {        
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.endTime = newEndTime;
-        this._onChange(updatedModel);
-    }
-
-    private _updateAutoAccept(autoAccept: boolean) {        
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.autoAccept = autoAccept;
-        this._onChange(updatedModel);
-    }
-
-    private _updateAcceptTemplate(templateId: string) {
-        let updatedModel = {...this.props.bugBash.updatedModel};
-        updatedModel.acceptTemplate = {team: VSS.getWebContext().team.id, templateId: templateId};
-        this._onChange(updatedModel);
-    }
+    }    
 }

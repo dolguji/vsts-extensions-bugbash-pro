@@ -8,7 +8,7 @@ import Context = require("VSS/Context");
 import Utils_Date = require("VSS/Utils/Date");
 import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 
-import { UrlActions } from "../Constants";
+import { UrlActions, BugBashFieldNames } from "../Constants";
 import { BugBashItemActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
@@ -186,13 +186,16 @@ export module BugBashItemActions {
         let acceptTemplate: WorkItemTemplate;
 
         // read bug bash wit template
-        if (bugBash.originalModel.acceptTemplate && bugBash.originalModel.acceptTemplate.team && bugBash.originalModel.acceptTemplate.templateId) {
+        const acceptTemplateId = bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateId, true);
+        const acceptTemplateTeam = bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateTeam, true);
+
+        if (acceptTemplateTeam && acceptTemplateId) {
             try {
-                await WorkItemTemplateItemActions.initializeWorkItemTemplateItem(bugBash.originalModel.acceptTemplate.team, bugBash.originalModel.acceptTemplate.templateId);
-                acceptTemplate = StoresHub.workItemTemplateItemStore.getItem(bugBash.originalModel.acceptTemplate.templateId);
+                await WorkItemTemplateItemActions.initializeWorkItemTemplateItem(acceptTemplateTeam, acceptTemplateId);
+                acceptTemplate = StoresHub.workItemTemplateItemStore.getItem(acceptTemplateId);
             }
             catch (e) {
-                throw `Bug bash template '${bugBash.originalModel.acceptTemplate.templateId}' does not exist in team '${bugBash.originalModel.acceptTemplate.team}'`;
+                throw `Bug bash template '${acceptTemplateId}' does not exist in team '${acceptTemplateTeam}'`;
             }
         }
 
@@ -211,10 +214,13 @@ export module BugBashItemActions {
             throw "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
         }
 
+        const itemDescriptionField = bugBash.getFieldValue<string>(BugBashFieldNames.ItemDescriptionField, true);
+        const workItemType = bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType, true);
         const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedBugBashItem.teamId);
+
         let fieldValues = acceptTemplate ? {...acceptTemplate.fields} : {};
         fieldValues["System.Title"] = updatedBugBashItem.title;
-        fieldValues[bugBash.originalModel.itemDescriptionField] = updatedBugBashItem.description;            
+        fieldValues[itemDescriptionField] = updatedBugBashItem.description;            
         fieldValues[teamFieldValue.field.referenceName] = teamFieldValue.defaultValue;        
 
         if (fieldValues["System.Tags-Add"]) {
@@ -226,7 +232,7 @@ export module BugBashItemActions {
 
         try {
             // create work item
-            savedWorkItem = await WorkItemActions.createWorkItem(bugBash.originalModel.workItemType, fieldValues);
+            savedWorkItem = await WorkItemActions.createWorkItem(workItemType, fieldValues);
         }
         catch (e) {
             BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
@@ -261,9 +267,10 @@ export module BugBashItemActions {
         const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_RESULTS}&id=${bugBash.id}`;
         
         const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
+        const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title, true);
 
         let commentToSave = `
-            Created from <a href='${bugBashUrl}' target='_blank'>${bugBash.originalModel.title}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
+            Created from <a href='${bugBashUrl}' target='_blank'>${bugBashTitle}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
 
         let discussionComments = StoresHub.bugBashItemCommentStore.getItem(bugBashItem.id);

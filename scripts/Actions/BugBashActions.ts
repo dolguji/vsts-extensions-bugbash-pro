@@ -216,5 +216,13 @@ export module BugBashActions {
                 bugBashModel.endTime = new Date(bugBashModel.endTime);
             }
         }
+
+        // convert old format of accept template to new one
+        if (bugBashModel["acceptTemplate"] != null) {
+            bugBashModel.acceptTemplateId = bugBashModel["acceptTemplate"].templateId;
+            bugBashModel.acceptTemplateTeam = bugBashModel["acceptTemplate"].team;
+
+            delete bugBashModel["acceptTemplate"];
+        }
     }  
 }

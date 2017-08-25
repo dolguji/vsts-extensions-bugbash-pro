@@ -3,6 +3,7 @@ import { BugBashActions } from "../Actions/BugBashActions";
 
 import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
+import { BugBashFieldNames } from "../Constants";
 
 export class BugBash {
     public static getNewBugBashModel(): IBugBash {
@@ -15,23 +16,13 @@ export class BugBash {
             itemDescriptionField: "",
             autoAccept: false,
             description: "",
-            acceptTemplate: {
-                team: VSS.getWebContext().team.id,
-                templateId: ""
-            }
+            acceptTemplateTeam: VSS.getWebContext().team.id,
+            acceptTemplateId: ""
         };
     }
 
     private _originalModel: IBugBash;
-    private _updatedModel: IBugBash;
-
-    get originalModel(): IBugBash {
-        return {...this._originalModel};
-    }
-    
-    get updatedModel(): IBugBash {
-        return {...this._updatedModel};
-    }
+    private _updates: IBugBash;
 
     get id(): string {
         return this._originalModel.id;
@@ -48,31 +39,42 @@ export class BugBash {
     constructor(model?: IBugBash) {
         const bugBashModel = model || BugBash.getNewBugBashModel();
         this._originalModel = {...bugBashModel};
-        this._updatedModel = {...bugBashModel};
+        this._updates = {} as IBugBash;
     }
 
-    public update(model: IBugBash, fireChange: boolean = true) {
-        this._updatedModel = {...model};
+    public setFieldValue<T>(fieldName: BugBashFieldNames, fieldValue: T, fireChange: boolean = true) {
+        this._updates[fieldName] = fieldValue;
 
         if (fireChange) {
             BugBashActions.fireStoreChange();
         }        
     }
 
+    public getFieldValue<T>(fieldName: BugBashFieldNames, original?: boolean): T {
+        if (original) {
+            return this._originalModel[fieldName] as T;
+        }
+        else {
+            return (this._updates[fieldName] || this._originalModel[fieldName]) as T;
+        }
+    }
+
     public async save() {
         if (this.isDirty() && this.isValid()) {
+            const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
             if (this.isNew()) {
-                BugBashActions.createBugBash(this._updatedModel);
+                BugBashActions.createBugBash(updatedModel);
             }
             else {
-                BugBashActions.updateBugBash(this._updatedModel);
+                BugBashActions.updateBugBash(updatedModel);
             }
         }
     }
 
     public reset(fireChange: boolean = true) {
-        if (this.isDirty()) {
-            this.update(this._originalModel, fireChange);
+        this._updates = {} as IBugBash;
+        if (fireChange) {
+            BugBashActions.fireStoreChange();
         }
     }
 
@@ -93,23 +95,22 @@ export class BugBash {
     }
 
     public isDirty(): boolean {
-        const updatedModel = this._updatedModel;
-        const originalModel = this._originalModel;
+        const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
 
-        return !Utils_String.equals(updatedModel.title, originalModel.title)
-            || !Utils_String.equals(updatedModel.workItemType, originalModel.workItemType, true)
-            || !Utils_String.equals(updatedModel.description, originalModel.description)
-            || !Utils_Date.equals(updatedModel.startTime, originalModel.startTime)
-            || !Utils_Date.equals(updatedModel.endTime, originalModel.endTime)
-            || !Utils_String.equals(updatedModel.itemDescriptionField, originalModel.itemDescriptionField, true)
-            || updatedModel.autoAccept !== originalModel.autoAccept
-            || !Utils_String.equals(updatedModel.acceptTemplate.team, originalModel.acceptTemplate.team)
-            || !Utils_String.equals(updatedModel.acceptTemplate.templateId, originalModel.acceptTemplate.templateId);
+        return !Utils_String.equals(updatedModel.title, this._originalModel.title)
+            || !Utils_String.equals(updatedModel.workItemType, this._originalModel.workItemType, true)
+            || !Utils_String.equals(updatedModel.description, this._originalModel.description)
+            || !Utils_Date.equals(updatedModel.startTime, this._originalModel.startTime)
+            || !Utils_Date.equals(updatedModel.endTime, this._originalModel.endTime)
+            || !Utils_String.equals(updatedModel.itemDescriptionField, this._originalModel.itemDescriptionField, true)
+            || updatedModel.autoAccept !== this._originalModel.autoAccept
+            || !Utils_String.equals(updatedModel.acceptTemplateTeam, this._originalModel.acceptTemplateTeam, true)
+            || !Utils_String.equals(updatedModel.acceptTemplateId, this._originalModel.acceptTemplateId, true);
 
     }
 
     public isValid(): boolean {
-        const updatedModel = this._updatedModel;
+        const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
 
         return updatedModel.title.trim().length > 0
             && updatedModel.title.length <= 256

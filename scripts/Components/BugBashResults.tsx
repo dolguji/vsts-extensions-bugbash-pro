@@ -34,7 +34,7 @@ import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { Events, ResultsView } from "../Constants";
+import { Events, ResultsView, BugBashFieldNames } from "../Constants";
 import { BugBash } from "../ViewModels/BugBash";
 
 interface IBugBashResultsState extends IBaseComponentState {
@@ -258,7 +258,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     private _getItemEditorFarCommands(): IContextualMenuItem[] {
         let bugBash = StoresHub.bugBashStore.getItem(this.props.bugBash.id);
 
-        if (!bugBash.originalModel.autoAccept) {
+        if (!bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept, true)) {
             if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
                 return [];
             }
@@ -406,7 +406,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 if (this.state.selectedBugBashItemViewModel.newComment != null && this.state.selectedBugBashItemViewModel.newComment.trim() !== "") {
                     await BugBashItemCommentActions.createComment(updatedItem.id, this.state.selectedBugBashItemViewModel.newComment);
                 }
-                if (this.props.bugBash.originalModel.autoAccept) {
+                if (this.props.bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept, true)) {
                     updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, updatedItem);
                 }
                 this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
