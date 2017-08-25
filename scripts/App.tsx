@@ -4,26 +4,28 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 
 import { Fabric } from "OfficeFabric/Fabric";
+import { autobind } from "OfficeFabric/Utilities";
+
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { getAsyncLoadedComponent } from "VSTS_Extension/Components/Common/AsyncLoadedComponent";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-import { getAsyncLoadedComponent } from "VSS/Flux/AsyncLoadedComponent";
 
 import { UrlActions } from "./Constants";
 import { BugBashView } from "./Components/BugBashView";
 import * as AllBugBashesView_Async from "./Components/AllBugBashesView";
 
-export enum HubViewMode {
+export enum AppViewMode {
     All,
     New,
-    View,
+    Results,
     Edit,
     Charts
 }
 
-export interface IHubState extends IBaseComponentState {
-    hubViewMode: HubViewMode;
+export interface IAppState extends IBaseComponentState {
+    appViewMode: AppViewMode;
     bugBashId?: string;
 }
 
@@ -32,10 +34,12 @@ const AsyncAllBugBashView = getAsyncLoadedComponent(
     (m: typeof AllBugBashesView_Async) => m.AllBugBashesView,
     () => <Loading />);
 
-export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
+export class App extends BaseComponent<IBaseComponentProps, IAppState> {
+    private _navigationService: HostNavigationService;
+
     protected initializeState() {
         this.state = {
-            hubViewMode: null
+            appViewMode: null
         };
     }
 
@@ -44,25 +48,30 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
         this._initialize();
     }
 
+    public componentWillUnmount() { 
+        super.componentWillUnmount();
+        this._detachNavigate();
+    }
+
     public render(): JSX.Element {
         let view;
 
-        if (this.state.hubViewMode == null) {
+        if (this.state.appViewMode == null) {
             view = <Loading />;
         }
         else {
-            switch (this.state.hubViewMode) {            
-                case HubViewMode.All:
+            switch (this.state.appViewMode) {            
+                case AppViewMode.All:
                     view = <AsyncAllBugBashView />;
                     break;
-                case HubViewMode.New:
-                case HubViewMode.Edit:
+                case AppViewMode.New:
+                case AppViewMode.Edit:
                     view = <BugBashView pivotKey={UrlActions.ACTION_EDIT} bugBashId={this.state.bugBashId} />;
                     break;
-                case HubViewMode.View:
+                case AppViewMode.Results:
                     view = <BugBashView pivotKey={UrlActions.ACTION_RESULTS} bugBashId={this.state.bugBashId} />;
                     break;
-                case HubViewMode.Charts:
+                case AppViewMode.Charts:
                     view = <BugBashView pivotKey={UrlActions.ACTION_CHARTS} bugBashId={this.state.bugBashId} />;
                     break;
                 default:
@@ -76,42 +85,58 @@ export class Hub extends BaseComponent<IBaseComponentProps, IHubState> {
                 {view}
             </Fabric>
         );
-    }
+    }    
 
     private async _initialize() {
-        this._attachNavigate();
-
-        const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-        const state = await navigationService.getCurrentState();
+        this._navigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+        this._attachNavigate();    
+        
+        const state = await this._navigationService.getCurrentState();
         if (!state.action) {
-            navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null, true);
+            this._navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null, true);
         }        
     }
 
-    private async _attachNavigate() {        
-        const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+    private _attachNavigate() {
+        this._navigationService.attachNavigate(UrlActions.ACTION_ALL, this._navigateToHome, true);
+        this._navigationService.attachNavigate(UrlActions.ACTION_EDIT, this._navigateToEditor, true);
+        this._navigationService.attachNavigate(UrlActions.ACTION_RESULTS, this._navigateToResults, true);
+        this._navigationService.attachNavigate(UrlActions.ACTION_CHARTS, this._navigateToCharts, true);
+    }
 
-        navigationService.attachNavigate(UrlActions.ACTION_ALL, () => {
-            this.updateState({ hubViewMode: HubViewMode.All, bugBashId: null });
-        }, true);
+    private _detachNavigate() {
+        if (this._navigationService) {
+            this._navigationService.detachNavigate(UrlActions.ACTION_ALL, this._navigateToHome);
+            this._navigationService.detachNavigate(UrlActions.ACTION_EDIT, this._navigateToEditor);
+            this._navigationService.detachNavigate(UrlActions.ACTION_RESULTS, this._navigateToResults);
+            this._navigationService.detachNavigate(UrlActions.ACTION_CHARTS, this._navigateToCharts);
+        }        
+    }
 
-        navigationService.attachNavigate(UrlActions.ACTION_EDIT, async () => {
-            const state = await navigationService.getCurrentState();
-            this.updateState({ hubViewMode: HubViewMode.Edit, bugBashId: state.id || null });
-        }, true);
+    @autobind
+    private _navigateToHome() {
+        this.updateState({ appViewMode: AppViewMode.All, bugBashId: null });
+    }
 
-        navigationService.attachNavigate(UrlActions.ACTION_RESULTS, async () => {
-            const state = await navigationService.getCurrentState();
-            this.updateState({ hubViewMode: HubViewMode.View, bugBashId: state.id || null });
-        }, true);
+    @autobind
+    private async _navigateToEditor() {
+        const state = await this._navigationService.getCurrentState();
+        this.updateState({ appViewMode: AppViewMode.Edit, bugBashId: state.id || null });
+    }
 
-        navigationService.attachNavigate(UrlActions.ACTION_CHARTS, async () => {
-            const state = await navigationService.getCurrentState();
-            this.updateState({ hubViewMode: HubViewMode.Charts, bugBashId: state.id || null });
-        }, true);
+    @autobind
+    private async _navigateToResults() {
+        const state = await this._navigationService.getCurrentState();
+        this.updateState({ appViewMode: AppViewMode.Results, bugBashId: state.id || null });
+    }
+
+    @autobind
+    private async _navigateToCharts() {
+        const state = await this._navigationService.getCurrentState();
+        this.updateState({ appViewMode: AppViewMode.Charts, bugBashId: state.id || null });
     }
 }
 
 export function init() {
-    ReactDOM.render(<Hub />, $("#ext-container")[0]);
+    ReactDOM.render(<App />, $("#ext-container")[0]);
 }

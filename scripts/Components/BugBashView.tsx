@@ -5,8 +5,8 @@ import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 import * as EventsService from "VSS/Events/Services";
 import Context = require("VSS/Context");
 import { delay, DelayedFunction } from "VSS/Utils/Core";
-import { getAsyncLoadedComponent } from "VSS/Flux/AsyncLoadedComponent";
 
+import { getAsyncLoadedComponent } from "VSTS_Extension/Components/Common/AsyncLoadedComponent";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
 import { Loading } from "VSTS_Extension/Components/Common/Loading";
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";

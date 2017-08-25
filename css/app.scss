@@ -34,3 +34,21 @@ button[disabled], button[disabled]:hover, button[disabled]:focus {
     white-space: nowrap;
     word-wrap: normal;
 }
+
+.bugbash-badge {
+    position: fixed;
+    top: 7px;
+    right: 25px;    
+}
+
+.bugbash-badge-callout {
+    padding: 18px 24px 12px;
+
+    .badge-callout-header {
+        margin-bottom: 10px;
+        font-size: 21px;
+        font-weight: 100;
+        color: #333333;
+        font-weight: 500;
+    }
+}

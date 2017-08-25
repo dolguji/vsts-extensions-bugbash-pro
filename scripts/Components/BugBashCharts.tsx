@@ -58,7 +58,7 @@ const CustomTooltip: React.StatelessComponent<any> =
         }
         else {
             return <div className="chart-tooltip">
-                <div className="team-name">{data["name"]}</div>
+                <div className="team-name"><span className="tooltip-key">{data["name"]}</span> : <span className="tooltip-value">{data["value"]}</span></div>
                 { data.members.map((member: INameValuePair) => {
                     return <div key={member.name}><span className="tooltip-key">{member.name}</span> : <span className="tooltip-value">{member.value}</span></div>
                 })}
