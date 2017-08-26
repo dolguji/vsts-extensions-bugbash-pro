@@ -220,7 +220,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         className="auto-accept"
                         label=""
                         checked={bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept)}
-                        onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._onChange(BugBashFieldNames.AutoAccept, isChecked) } />
+                        onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._onChange(BugBashFieldNames.AutoAccept, isChecked, true) } />
 
                     <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
                 </div>
@@ -248,7 +248,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     className={!workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
                     required={true} 
                     options={this.state.workItemTypes}                            
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.WorkItemType, option.key as string)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.WorkItemType, option.key as string, true)} />
 
                 { !workItemType && <InputError error="A work item type is required." /> }
 
@@ -259,7 +259,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     className={!itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
                     required={true} 
                     options={this.state.htmlFields} 
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.ItemDescriptionField, option.key as string)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.ItemDescriptionField, option.key as string, true)} />
 
                 { !itemDescriptionField && <InputError error="A description field is required." /> }     
 
@@ -269,7 +269,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     onRenderList={this._onRenderCallout}
                     className="editor-dropdown"
                     options={this.state.templates} 
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
             </div>
         </div>;
     }
@@ -293,13 +293,18 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
     }
 
-    private _onChange<T>(fieldName: BugBashFieldNames, fieldVavlue: T) {
+    private _onChange<T>(fieldName: BugBashFieldNames, fieldValue: T, immediate?: boolean) {
         if (this._updateBugBashDelayedFunction) {
             this._updateBugBashDelayedFunction.cancel();
         }
 
-        this._updateBugBashDelayedFunction = delay(this, 200, () => {
-            this.props.bugBash.setFieldValue<T>(fieldName, fieldVavlue);
-        });
+        if (immediate) {
+            this.props.bugBash.setFieldValue<T>(fieldName, fieldValue);
+        }
+        else {
+            this._updateBugBashDelayedFunction = delay(this, 200, () => {
+                this.props.bugBash.setFieldValue<T>(fieldName, fieldValue);
+            });
+        }        
     }    
 }

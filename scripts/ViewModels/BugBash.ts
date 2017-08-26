@@ -55,7 +55,8 @@ export class BugBash {
             return this._originalModel[fieldName] as T;
         }
         else {
-            return (this._updates[fieldName] || this._originalModel[fieldName]) as T;
+            const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
+            return updatedModel[fieldName] as T;
         }
     }
 
