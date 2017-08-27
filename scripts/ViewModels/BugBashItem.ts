@@ -1,8 +1,9 @@
+import Utils_String = require("VSS/Utils/String");
+
 import { IBugBashItem } from "../Interfaces";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { StoresHub } from "../Stores/StoresHub";
-
-import Utils_String = require("VSS/Utils/String");
+import { BugBashItemFieldNames } from "../Constants";
 
 export class BugBashItem {
     public static getNewBugBashItemModel(bugBashId?: string): IBugBashItem {
@@ -49,36 +50,51 @@ export class BugBashItem {
     constructor(model?: IBugBashItem) {
         const bugBashItemModel = model || BugBashItem.getNewBugBashItemModel();
         this._originalModel = {...bugBashItemModel};
-        this._updatedModel = {...bugBashItemModel};
+        this._updates = {} as IBugBashItem;
         this._newComment = "";
     }
 
-    public update(model: IBugBashItem, newComment?: string, fireChange: boolean = true) {
-        this._updatedModel = {...model};
+    public setFieldValue<T>(fieldName: BugBashItemFieldNames, fieldValue: T, fireChange: boolean = true) {
+        this._updates[fieldName] = fieldValue;
 
-        if (newComment != null) {
-            this._newComment = newComment;
-        }
-        
         if (fireChange) {
             BugBashItemActions.fireStoreChange();
         }        
     }
 
+    public getFieldValue<T>(fieldName: BugBashItemFieldNames, original?: boolean): T {
+        if (original) {
+            return this._originalModel[fieldName] as T;
+        }
+        else {
+            const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
+            return updatedModel[fieldName] as T;
+        }
+    }
+
+    public setComment(newComment: string) {
+        this._newComment = newComment;
+        BugBashItemActions.fireStoreChange();
+    }
+
     public async save(bugBashId: string) {
         if (this.isDirty() && this.isValid()) {
+            const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
+
             if (this.isNew()) {
-                BugBashItemActions.createBugBashItem(bugBashId, this._updatedModel);
+                BugBashItemActions.createBugBashItem(bugBashId, updatedModel);
             }
             else {
-                BugBashItemActions.updateBugBashItem(this.bugBashId, this._updatedModel);
+                BugBashItemActions.updateBugBashItem(this.bugBashId, updatedModel);
             }
         }
     }
 
     public reset(fireChange: boolean = true) {
-        if (this.isDirty()) {
-            this.update(this._originalModel, "", fireChange);
+        this._updates = {} as IBugBashItem;
+        this._newComment = "";
+        if (fireChange) {
+            BugBashItemActions.fireStoreChange();
         }
     }
 
@@ -109,20 +125,18 @@ export class BugBashItem {
     }
 
     public isDirty(): boolean {
-        const updatedModel = this._updatedModel;
-        const originalModel = this._originalModel
-        const newComment = this._newComment;
+        const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
 
-        return !Utils_String.equals(updatedModel.title, originalModel.title)
-            || !Utils_String.equals(updatedModel.teamId, originalModel.teamId)
-            || !Utils_String.equals(updatedModel.description, originalModel.description)
-            || !Utils_String.equals(updatedModel.rejectReason, originalModel.rejectReason)
-            || Boolean(updatedModel.rejected) !== Boolean(originalModel.rejected)
-            || (newComment != null && newComment.trim() !== "");
+        return !Utils_String.equals(updatedModel.title, this._originalModel.title)
+            || !Utils_String.equals(updatedModel.teamId, this._originalModel.teamId)
+            || !Utils_String.equals(updatedModel.description, this._originalModel.description)
+            || !Utils_String.equals(updatedModel.rejectReason, this._originalModel.rejectReason)
+            || Boolean(updatedModel.rejected) !== Boolean(this._originalModel.rejected)
+            || (this._newComment != null && this._newComment.trim() !== "");
     }
 
     public isValid(): boolean {       
-        const updatedModel = this._updatedModel;
+        const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
 
         let dataValid = updatedModel.title.trim().length > 0 
             && updatedModel.title.trim().length <= 256 
