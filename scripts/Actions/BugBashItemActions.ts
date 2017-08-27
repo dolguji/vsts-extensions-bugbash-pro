@@ -13,6 +13,7 @@ import { BugBashItemActionsHub, BugBashErrorMessageActionsHub } from "./ActionsH
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { BugBash } from "../ViewModels/BugBash";
+import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
 
 export module BugBashItemActions {
     export function fireStoreChange() {
@@ -55,6 +56,9 @@ export module BugBashItemActions {
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
 
             BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
+
+            // clear all comments
+            BugBashItemCommentActions.clearComments();
         }
     } 
 
@@ -72,6 +76,9 @@ export module BugBashItemActions {
                 });
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
+
+                // refresh comments for this bug bash item
+                BugBashItemCommentActions.refreshComments(bugBashItemId);
             }
             else {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
@@ -83,7 +90,7 @@ export module BugBashItemActions {
         }
     }
 
-    export async function updateBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem) {
+    export async function updateBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem, newComment?: string) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItemModel.id)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashItemModel.id);
 
@@ -97,6 +104,10 @@ export module BugBashItemActions {
                 });
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
+
+                if (newComment != null && newComment.trim() !== "") {
+                    BugBashItemCommentActions.createComment(updatedBugBashItemModel.id, newComment);
+                }                
             }
             catch (e) {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
@@ -108,11 +119,12 @@ export module BugBashItemActions {
         }
     }
 
-    export async function createBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem) {
+    export async function createBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem, newComment?: string) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             try {
                 let cloneBugBashItemModel = {...bugBashItemModel};
                 cloneBugBashItemModel.id = `${bugBashId}_${Date.now().toString()}`;
+                cloneBugBashItemModel.bugBashId = bugBashId;
                 cloneBugBashItemModel.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
                 cloneBugBashItemModel.createdDate = new Date(Date.now());
                 
@@ -125,6 +137,10 @@ export module BugBashItemActions {
                 });
 
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
+
+                if (newComment != null && newComment.trim() !== "") {
+                    BugBashItemCommentActions.createComment(createdBugBashItemModel.id, newComment);
+                }
             }
             catch (e) {
                 BugBashErrorMessageActionsHub.PushErrorMessage.invoke({

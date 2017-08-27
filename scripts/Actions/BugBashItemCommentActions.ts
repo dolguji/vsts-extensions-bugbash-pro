@@ -18,7 +18,7 @@ export module BugBashItemCommentActions {
 
             const comments = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), false);
             for(let comment of comments) {
-                translateDates(comment);
+                preProcessModel(comment);
             }
             
             BugBashItemCommentActionsHub.InitializeComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
@@ -32,7 +32,7 @@ export module BugBashItemCommentActions {
 
             const comments = await ExtensionDataManager.readDocuments<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), false);
             for(let comment of comments) {
-                translateDates(comment);
+                preProcessModel(comment);
             }
             
             BugBashItemCommentActionsHub.RefreshComments.invoke({bugBashItemId: bugBashItemId, comments: comments});
@@ -54,7 +54,7 @@ export module BugBashItemCommentActions {
                 };
 
                 const savedComment = await ExtensionDataManager.createDocument<IBugBashItemComment>(getBugBashItemCollectionKey(bugBashItemId), bugBashItemComment, false);
-                translateDates(savedComment);
+                preProcessModel(savedComment);
                                 
                 BugBashItemCommentActionsHub.CreateComment.invoke({bugBashItemId: bugBashItemId, comment: savedComment});
                 StoresHub.bugBashItemCommentStore.setLoading(false, bugBashItemId);
@@ -70,7 +70,7 @@ export module BugBashItemCommentActions {
         return `BugBashItemCollection_${bugBashItemId}`;
     }
 
-    function translateDates(bugBashItemComment: IBugBashItemComment) {
+    function preProcessModel(bugBashItemComment: IBugBashItemComment) {
         if (typeof bugBashItemComment.createdDate === "string") {
             if ((bugBashItemComment.createdDate as string).trim() === "") {
                 bugBashItemComment.createdDate = undefined;

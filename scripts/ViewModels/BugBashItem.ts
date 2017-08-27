@@ -77,15 +77,15 @@ export class BugBashItem {
         BugBashItemActions.fireStoreChange();
     }
 
-    public async save(bugBashId: string) {
+    public save(bugBashId: string) {
         if (this.isDirty() && this.isValid()) {
             const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
 
             if (this.isNew()) {
-                BugBashItemActions.createBugBashItem(bugBashId, updatedModel);
+                BugBashItemActions.createBugBashItem(bugBashId, updatedModel, this.newComment);
             }
             else {
-                BugBashItemActions.updateBugBashItem(this.bugBashId, updatedModel);
+                BugBashItemActions.updateBugBashItem(this.bugBashId, updatedModel, this.newComment);
             }
         }
     }
@@ -104,13 +104,13 @@ export class BugBashItem {
         }        
     }
 
-    public async refresh() {
+    public refresh() {
         if (!this.isNew()) {
             BugBashItemActions.refreshItem(this.bugBashId, this.id);  
         }
     }
 
-    public async accept() {
+    public accept() {
         if (!this.isDirty() && !this.isNew()) {
             BugBashItemActions.acceptBugBashItem(this.bugBashId, this._originalModel); 
         }

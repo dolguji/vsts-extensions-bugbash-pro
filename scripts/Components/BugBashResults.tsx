@@ -1,11 +1,11 @@
-import "../../css/BugBashResults.scss";
+import '../../css/BugBashResults.scss';
 
-import * as React from "react";
+import * as React from 'react';
 
-import Utils_Date = require("VSS/Utils/Date");
-import Utils_String = require("VSS/Utils/String");
+import Utils_Date = require('VSS/Utils/Date');
+import Utils_String = require('VSS/Utils/String');
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-import * as EventsService from "VSS/Events/Services";
+import * as EventsService from 'VSS/Events/Services';
 import { delay, DelayedFunction } from "VSS/Utils/Core";
 
 import { Label } from "OfficeFabric/Label";
@@ -28,19 +28,19 @@ import { Hub } from "VSTS_Extension/Components/Common/Hub/Hub";
 
 import SplitterLayout from "rc-split-layout";
 
-import { IBugBashItem, IBugBashItemViewModel } from "../Interfaces";
-import { BugBashItemHelpers, confirmAction } from "../Helpers";
+import { IBugBashItem } from "../Interfaces";
+import { confirmAction } from "../Helpers";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { Events, ResultsView, BugBashFieldNames } from "../Constants";
+import { BugBashFieldNames, BugBashItemFieldNames, Events, ResultsView } from '../Constants';
 import { BugBash } from "../ViewModels/BugBash";
+import { BugBashItem } from "../ViewModels/BugBashItem";
 
 interface IBugBashResultsState extends IBaseComponentState {
     itemIdToIndexMap: IDictionaryStringTo<number>;
-    bugBashItemViewModels: IBugBashItemViewModel[];
-    selectedBugBashItemViewModel?: IBugBashItemViewModel;
+    bugBashItems: BugBashItem[];
+    selectedBugBashItem?: BugBashItem;
     bugBashItemEditorError?: string;
     gridKeyCounter: number;
 }
@@ -57,8 +57,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     protected initializeState() {
         this.state = {
             itemIdToIndexMap: {},
-            bugBashItemViewModels: null,
-            selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id),
+            bugBashItems: null,
+            selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
             loading: true,
             gridKeyCounter: 0
         };
@@ -72,7 +72,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id);
 
         return {
-            bugBashItemViewModels: bugBashItems ? bugBashItems.map(item => BugBashItemHelpers.getViewModel(item)) : null,
+            bugBashItems: bugBashItems,
             itemIdToIndexMap: this._prepareIdToIndexMap(bugBashItems),
             loading: StoresHub.teamStore.isLoading() || StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id)
         } as IBugBashResultsState;
@@ -99,21 +99,21 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             if (StoresHub.bugBashItemStore.isLoaded(nextProps.bugBash.id)) {
                 const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(nextProps.bugBash.id);
                 this.updateState({
-                    bugBashItemViewModels: bugBashItems.map(item => BugBashItemHelpers.getViewModel(item)),
+                    bugBashItems: bugBashItems,
                     itemIdToIndexMap: this._prepareIdToIndexMap(bugBashItems),
                     loading: false,
                     bugBashItemEditorError: null,
-                    selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id),
+                    selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
                     gridKeyCounter: this.state.gridKeyCounter + 1
                 } as IBugBashResultsState);
             }
             else {
                 this.updateState({
                     loading: true,
-                    bugBashItemViewModels: null,
+                    bugBashItems: null,
                     itemIdToIndexMap: {},
                     bugBashItemEditorError: null,
-                    selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(nextProps.bugBash.id),
+                    selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
                     gridKeyCounter: this.state.gridKeyCounter + 1
                 } as IBugBashResultsState);
 
@@ -128,7 +128,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         }
         return (
             <div className="bugbash-results">
-                { this.state.bugBashItemViewModels && StoresHub.teamStore.isLoaded() &&
+                { this.state.bugBashItems && StoresHub.teamStore.isLoaded() &&
                     <SplitterLayout 
                         primaryIndex={0}
                         primaryMinSize={500}
@@ -151,12 +151,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     private _clearSelectedItem() {
         this.updateState({
             bugBashItemEditorError: null, 
-            selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id),
+            selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
             gridKeyCounter: this.state.gridKeyCounter + 1
         } as IBugBashResultsState);
     }
 
-    private _prepareIdToIndexMap(bugBashItems: IBugBashItem[]): IDictionaryStringTo<number> {
+    private _prepareIdToIndexMap(bugBashItems: BugBashItem[]): IDictionaryStringTo<number> {
         let map = {};
         if (bugBashItems == null) {
             return {};
@@ -174,7 +174,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         
         switch (this.props.view) {            
             case ResultsView.AcceptedItemsOnly:
-                const acceptedWorkItemIds = this.state.bugBashItemViewModels.filter(viewModel => BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem)).map(viewModel => viewModel.originalBugBashItem.workItemId);
+                const acceptedWorkItemIds = this.state.bugBashItems.filter(item => item.isAccepted).map(item => item.workItemId);
                 pivotContent = <WorkItemGrid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
@@ -187,7 +187,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 />;                
                 break;
             case ResultsView.RejectedItemsOnly:
-                const rejectedBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && viewModel.originalBugBashItem.rejected);
+                const rejectedBugBashItemViewModels = this.state.bugBashItems.filter(item => !item.isAccepted && item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true));
                 pivotContent = <Grid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
@@ -203,7 +203,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 />;
                 break;
             default:
-                const pendingBugBashItemViewModels = this.state.bugBashItemViewModels.filter(viewModel => !BugBashItemHelpers.isAccepted(viewModel.originalBugBashItem) && !viewModel.originalBugBashItem.rejected);
+                const pendingBugBashItemViewModels = this.state.bugBashItems.filter(item => !item.isAccepted && !item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true));
                 pivotContent = <Grid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
@@ -235,17 +235,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 pivotProps={{
                     initialSelectedKey: "addedititem",
                     onRenderPivotContent: () => {
-                        return <BugBashItemEditor 
-                            bugBashItem={this.state.selectedBugBashItemViewModel.updatedBugBashItem}
-                            error={this.state.bugBashItemEditorError}
-                            newComment={this.state.selectedBugBashItemViewModel.newComment}
-                            save={this._saveSelectedItem}
-                            onChange={this._onItemChange} />;
+                        return <BugBashItemEditor bugBashItem={this.state.selectedBugBashItem} />;
                     },
                     pivots: [
                         {
                             key: "addedititem",
-                            text: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem) ? "New Item" : "Edit Item",
+                            text: this.state.selectedBugBashItem.isNew() ? "New Item" : "Edit Item",
                             commands: this._getItemEditorCommands(),
                             farCommands: this._getItemEditorFarCommands()
                         }
@@ -259,12 +254,11 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         let bugBash = StoresHub.bugBashStore.getItem(this.props.bugBash.id);
 
         if (!bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept, true)) {
-            if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
+            if (this.state.selectedBugBashItem.isAccepted) {
                 return [];
             }
 
-            const isMenuDisabled = BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel) 
-                || BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem);
+            const isMenuDisabled = this.state.selectedBugBashItem.isDirty() || this.state.selectedBugBashItem.isNew();
 
             return [
                 {
@@ -276,10 +270,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     key: "Reject",
                     onRender:() => {
                         return <Checkbox
-                                    disabled={BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)}
+                                    disabled={this.state.selectedBugBashItem.isNew()}
                                     className="reject-menu-item-checkbox"
                                     label="Reject"
-                                    checked={this.state.selectedBugBashItemViewModel.updatedBugBashItem.rejected === true}
+                                    checked={this.state.selectedBugBashItem.getFieldValue<boolean>(BugBashItemFieldNames.Rejected)}
                                     onChange={this._rejectBugBashItem} />;
                     }
                 }
@@ -295,7 +289,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }    
 
     private _getItemEditorCommands(): IContextualMenuItem[] {
-        if (BugBashItemHelpers.isAccepted(this.state.selectedBugBashItemViewModel.originalBugBashItem)) {
+        if (this.state.selectedBugBashItem.isAccepted) {
             return [];
         }
 
@@ -303,41 +297,33 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             {
                 key: "save", name: "", 
                 iconProps: {iconName: "Save"}, 
-                disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)
-                        || !BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel),
+                disabled: !this.state.selectedBugBashItem.isDirty()
+                        || !this.state.selectedBugBashItem.isValid(),
                 onClick: this._saveSelectedItem
             },
             {
                 key: "refresh", name: "", 
                 iconProps: {iconName: "Refresh"}, 
-                disabled: BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem),
+                disabled: this.state.selectedBugBashItem.isNew(),
                 onClick: this._refreshBugBashItem
             },
             {
                 key: "undo", name: "", 
                 title: "Undo changes", iconProps: {iconName: "Undo"}, 
-                disabled: !BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel),
+                disabled: !this.state.selectedBugBashItem.isDirty(),
                 onClick: this._revertBugBashItem
             }
         ];
     }
 
     @autobind
-    private async _acceptBugBashItem() {
-        if (!BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel)) {
-            try {
-                const updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem);                                               
-                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
-            }
-            catch (e) {
-                this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
-            }
-        }
+    private _acceptBugBashItem() {
+        this.state.selectedBugBashItem.accept();
     }
 
     @autobind
     private _rejectBugBashItem() {
-        let updatedItem = {...this.state.selectedBugBashItemViewModel.updatedBugBashItem};
+        let updatedItem = {...this.state.selectedBugBashItem.updatedBugBashItem};
         updatedItem.rejected = !updatedItem.rejected;
         updatedItem.rejectedBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
         updatedItem.rejectReason = "";
@@ -345,14 +331,14 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }
 
     @autobind
-    private async _refreshBugBashItem() {
-        if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItemViewModel.originalBugBashItem)){
-            const confirm = await confirmAction(BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
+    private _refreshBugBashItem() {
+        if (!BugBashItemHelpers.isNew(this.state.selectedBugBashItem.originalBugBashItem)){
+            const confirm = await confirmAction(this.state.selectedBugBashItem.isDirty(), "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
             if (confirm) {
                 try {
-                    const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
-                    BugBashItemCommentActions.refreshComments(this.state.selectedBugBashItemViewModel.originalBugBashItem.id);
-                    this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+                    const updatedItem = await BugBashItemActions.refreshItem(this.props.bugBash.id, this.state.selectedBugBashItem.originalBugBashItem.id);
+        
+                    this.updateState({bugBashItemEditorError: null, selectedBugBashItem: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
                 }
                 catch (e) {
                     this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
@@ -365,51 +351,49 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     private async _revertBugBashItem() {
         const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
         if (confirm) {
-            this._onItemChange(this.state.selectedBugBashItemViewModel.originalBugBashItem, "");
+            this._onItemChange(this.state.selectedBugBashItem.originalBugBashItem, "");
         }
     }
 
     @autobind
     private _onItemChange(changedItem: IBugBashItem, newComment?: string) {
         if (!BugBashItemHelpers.isNew(changedItem)) {
-            const newViewModels = this.state.bugBashItemViewModels;
+            const newViewModels = this.state.bugBashItems;
             const index = this.state.itemIdToIndexMap[changedItem.id];
-            if (index >= 0 && index < this.state.bugBashItemViewModels.length) {
+            if (index >= 0 && index < this.state.bugBashItems.length) {
                 newViewModels[index].updatedBugBashItem = {...changedItem};
                 if (newComment != null) {
                     newViewModels[index].newComment = newComment;
                 }
                 this.updateState({
-                    bugBashItemViewModels: newViewModels, 
-                    selectedBugBashItemViewModel: newViewModels[index]
+                    bugBashItems: newViewModels, 
+                    selectedBugBashItem: newViewModels[index]
                 } as IBugBashResultsState);
             }
         }
         else {
-            let newSelectedBugBashItemViewModel = {...this.state.selectedBugBashItemViewModel};
+            let newSelectedBugBashItemViewModel = {...this.state.selectedBugBashItem};
             newSelectedBugBashItemViewModel.updatedBugBashItem = {...changedItem};
             if (newComment != null) {
                 newSelectedBugBashItemViewModel.newComment = newComment;
             }
 
             this.updateState({
-                selectedBugBashItemViewModel: newSelectedBugBashItemViewModel
+                selectedBugBashItem: newSelectedBugBashItemViewModel
             } as IBugBashResultsState);
         }
     }
 
     @autobind
     private async _saveSelectedItem() {
-        if (BugBashItemHelpers.isDirty(this.state.selectedBugBashItemViewModel) && BugBashItemHelpers.isValid(this.state.selectedBugBashItemViewModel)) {
+        if (this.state.selectedBugBashItem.isDirty() && BugBashItemHelpers.isValid(this.state.selectedBugBashItem)) {
             try {
-                let updatedItem = await BugBashItemActions.saveItem(this.props.bugBash.id, this.state.selectedBugBashItemViewModel.updatedBugBashItem);
-                if (this.state.selectedBugBashItemViewModel.newComment != null && this.state.selectedBugBashItemViewModel.newComment.trim() !== "") {
-                    await BugBashItemCommentActions.createComment(updatedItem.id, this.state.selectedBugBashItemViewModel.newComment);
-                }
+                let updatedItem = await BugBashItemActions.saveItem(this.props.bugBash.id, this.state.selectedBugBashItem.updatedBugBashItem);
+                
                 if (this.props.bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept, true)) {
                     updatedItem = await BugBashItemActions.acceptBugBashItem(this.props.bugBash.id, updatedItem);
                 }
-                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItem: BugBashItemHelpers.getViewModel(updatedItem)} as IBugBashResultsState);
             }
             catch (e) {
                 this.updateState({bugBashItemEditorError: e} as IBugBashResultsState);
@@ -419,7 +403,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
     private _getExtraWorkItemGridColumns(): IExtraWorkItemGridColumn[] {
         let workItemIdToItemMap: IDictionaryNumberTo<IBugBashItem> = {};
-        for (const bugBashItemViewModel of this.state.bugBashItemViewModels) {
+        for (const bugBashItemViewModel of this.state.bugBashItems) {
             if (BugBashItemHelpers.isAccepted(bugBashItemViewModel.originalBugBashItem)) {
                 workItemIdToItemMap[bugBashItemViewModel.originalBugBashItem.workItemId] = bugBashItemViewModel.originalBugBashItem;
             }
@@ -463,10 +447,10 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
         this._itemInvokedDelayedFunction = delay(this, 100, () => {
             if (bugBashItemViewModels == null || bugBashItemViewModels.length !== 1) {
-                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id)} as IBugBashResultsState);
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItem: BugBashItemHelpers.getNewViewModel(this.props.bugBash.id)} as IBugBashResultsState);
             }
             else {
-                this.updateState({bugBashItemEditorError: null, selectedBugBashItemViewModel: {...bugBashItemViewModels[0]}} as IBugBashResultsState);
+                this.updateState({bugBashItemEditorError: null, selectedBugBashItem: {...bugBashItemViewModels[0]}} as IBugBashResultsState);
             }
         });
     }

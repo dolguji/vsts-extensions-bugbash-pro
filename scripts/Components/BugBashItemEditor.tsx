@@ -21,18 +21,15 @@ import Utils_Date = require("VSS/Utils/Date");
 import { WebApiTeam } from "TFS/Core/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
-import { buildGitPush, BugBashItemHelpers } from "../Helpers";
+import { buildGitPush } from "../Helpers";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
 import { BugBashFieldNames } from "../Constants";
+import { BugBashItem } from "../ViewModels/BugBashItem";
 
 export interface IBugBashItemEditorProps extends IBaseComponentProps {
-    bugBashItem: IBugBashItem;
-    newComment?: string;
-    error?: string;
-    onChange: (updatedBugBashItem: IBugBashItem, newComment?: string) => void;
-    save: () => void;
+    bugBashItem: BugBashItem;    
 }
 
 export interface IBugBashItemEditorState extends IBaseComponentState {    

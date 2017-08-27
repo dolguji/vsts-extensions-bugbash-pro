@@ -22,7 +22,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<BugBashItem[
         this._newBugBashItem = new BugBashItem();
     }
 
-    public getNewBugBash(): BugBashItem {
+    public getNewBugBashItem(): BugBashItem {
         return this._newBugBashItem;
     }
 
