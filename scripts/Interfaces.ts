@@ -36,12 +36,6 @@ export interface IBugBashItemComment {
     createdBy: string;
 }
 
-export interface IBugBashItemViewModel {
-    originalBugBashItem: IBugBashItem;
-    updatedBugBashItem: IBugBashItem;
-    newComment?: string;
-}
-
 export interface IBugBashSettings {
     gitMediaRepo: string;
 }
@@ -56,4 +50,19 @@ export interface INameValuePair {
     name: string;
     value: number;
     members?: INameValuePair[];
+}
+
+export interface IBugBashItemsActionData {
+    bugBashId: string;
+    bugBashItemModels: IBugBashItem[];
+}
+
+export interface IBugBashItemActionData {
+    bugBashId: string;
+    bugBashItemModel: IBugBashItem;
+}
+
+export interface IBugBashItemIdActionData {
+    bugBashId: string;
+    bugBashItemId: string;
 }

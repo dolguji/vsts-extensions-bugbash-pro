@@ -1,6 +1,6 @@
 import { Action } from "VSS/Flux/Action";
 
-import { IUserSettings, IBugBashSettings, IBugBash, IBugBashItemComment, IBugBashItem } from "../Interfaces";
+import { IUserSettings, IBugBashSettings, IBugBash, IBugBashItemComment, IBugBashItemActionData, IBugBashItemsActionData, IBugBashItemIdActionData } from "../Interfaces";
 
 export namespace SettingsActionsHub {
     export const InitializeBugBashSettings = new Action<IBugBashSettings>();
@@ -28,13 +28,14 @@ export namespace BugBashItemCommentActionsHub {
 }
 
 export namespace BugBashItemActionsHub {
-    export const InitializeBugBashItems = new Action<{bugBashId: string, bugBashItems: IBugBashItem[]}>();
-    export const RefreshBugBashItems = new Action<{bugBashId: string, bugBashItems: IBugBashItem[]}>();
-    export const RefreshBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-    export const CreateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-    export const UpdateBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
-    export const DeleteBugBashItem = new Action<{bugBashId: string, bugBashItemId: string}>();
-    export const AcceptBugBashItem = new Action<{bugBashId: string, bugBashItem: IBugBashItem}>();
+    export const InitializeBugBashItems = new Action<IBugBashItemsActionData>();
+    export const RefreshBugBashItems = new Action<IBugBashItemsActionData>();
+    export const RefreshBugBashItem = new Action<IBugBashItemActionData>();
+    export const CreateBugBashItem = new Action<IBugBashItemActionData>();
+    export const UpdateBugBashItem = new Action<IBugBashItemActionData>();
+    export const DeleteBugBashItem = new Action<IBugBashItemIdActionData>();
+    export const AcceptBugBashItem = new Action<IBugBashItemActionData>();
+    export const FireStoreChange = new Action<void>();
 }
 
 export namespace BugBashErrorMessageActionsHub {

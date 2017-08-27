@@ -8,14 +8,17 @@ import Context = require("VSS/Context");
 import Utils_Date = require("VSS/Utils/Date");
 import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 
-import { UrlActions, BugBashFieldNames } from "../Constants";
-import { BugBashItemActionsHub } from "./ActionsHub";
+import { UrlActions, BugBashFieldNames, ErrorKeys } from "../Constants";
+import { BugBashItemActionsHub, BugBashErrorMessageActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
-import { BugBashItemHelpers } from "../Helpers";
 import { BugBash } from "../ViewModels/BugBash";
 
 export module BugBashItemActions {
+    export function fireStoreChange() {
+        BugBashItemActionsHub.FireStoreChange.invoke(null);
+    }
+
     export async function initializeItems(bugBashId: string) {
         if (StoresHub.bugBashItemStore.isLoaded(bugBashId)) {
             BugBashItemActionsHub.InitializeBugBashItems.invoke(null);
@@ -23,12 +26,15 @@ export module BugBashItemActions {
         else if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashId);
 
-            const bugBashItems = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
-            for(let bugBashItem of bugBashItems) {
-                translateDates(bugBashItem);
+            const bugBashItemModels = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
+            for(let bugBashItemModel of bugBashItemModels) {
+                preProcessModel(bugBashItemModel);
             }
             
-            BugBashItemActionsHub.InitializeBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
+            BugBashItemActionsHub.InitializeBugBashItems.invoke({
+                bugBashId: bugBashId,
+                bugBashItemModels: bugBashItemModels
+            });
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
         }
     } 
@@ -37,92 +43,96 @@ export module BugBashItemActions {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashId);
 
-            const bugBashItems = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
-            for(let bugBashItem of bugBashItems) {
-                translateDates(bugBashItem);
+            const bugBashItemModels = await ExtensionDataManager.readDocuments<IBugBashItem>(getBugBashCollectionKey(bugBashId), false);
+            for(let bugBashItemModel of bugBashItemModels) {
+                preProcessModel(bugBashItemModel);
             }
             
-            BugBashItemActionsHub.RefreshBugBashItems.invoke({bugBashId: bugBashId, bugBashItems: bugBashItems});
+            BugBashItemActionsHub.RefreshBugBashItems.invoke({
+                bugBashId: bugBashId,
+                bugBashItemModels: bugBashItemModels
+            });
             StoresHub.bugBashItemStore.setLoading(false, bugBashId);
+
+            BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
         }
     } 
 
-    export async function refreshItem(bugBashId: string, bugBashItemId: string): Promise<IBugBashItem> {
+    export async function refreshItem(bugBashId: string, bugBashItemId: string) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItemId)) {
             StoresHub.bugBashItemStore.setLoading(true, bugBashItemId);
-            const bugBashItem = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), bugBashItemId, null, false);
+            const bugBashItemModel = await ExtensionDataManager.readDocument<IBugBashItem>(getBugBashCollectionKey(bugBashId), bugBashItemId, null, false);
 
-            if (bugBashItem) {
-                translateDates(bugBashItem);
+            if (bugBashItemModel) {
+                preProcessModel(bugBashItemModel);
                 
-                BugBashItemActionsHub.RefreshBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: bugBashItem});
+                BugBashItemActionsHub.RefreshBugBashItem.invoke({
+                    bugBashId: bugBashId,
+                    bugBashItemModel: bugBashItemModel
+                });
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
-
-                return bugBashItem;
+                BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
             }
             else {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
-                throw "This instance of bug bash item does not exist.";
+                BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
+                    errorMessage: "This instance of bug bash item does not exist.",
+                    errorKey: ErrorKeys.BugBashItemError
+                });
             }
-        }
-
-        return null;
-    } 
-
-    export async function saveItem(bugBashId: string, bugBashItem: IBugBashItem): Promise<IBugBashItem> {
-        const isNew = BugBashItemHelpers.isNew(bugBashItem);        
-
-        if (isNew) {
-            return this.createBugBashItem(bugBashId, bugBashItem);
-        }
-        else {
-            return this.updateBugBashItem(bugBashId, bugBashItem);
         }
     }
 
-    export async function updateBugBashItem(bugBashId: string, bugBashItem: IBugBashItem): Promise<IBugBashItem> {
-        if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItem.id)) {
-            StoresHub.bugBashItemStore.setLoading(true, bugBashItem.id);
+    export async function updateBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem) {
+        if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItemModel.id)) {
+            StoresHub.bugBashItemStore.setLoading(true, bugBashItemModel.id);
 
             try {
-                let savedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashId), bugBashItem, false);
-                translateDates(savedBugBashItem);
+                let updatedBugBashItemModel = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashId), bugBashItemModel, false);
+                preProcessModel(updatedBugBashItemModel);
                 
-                BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
-                StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
-
-                return savedBugBashItem;
+                BugBashItemActionsHub.UpdateBugBashItem.invoke({
+                    bugBashId: bugBashId,
+                    bugBashItemModel: updatedBugBashItemModel
+                });
+                StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
+                BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
             }
             catch (e) {
-                StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
-                throw "This bug bash item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
+                StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
+                BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
+                    errorMessage: "This bug bash item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.",
+                    errorKey: ErrorKeys.BugBashItemError
+                });
             }
         }
-
-        return null;
     }
 
-    export async function createBugBashItem(bugBashId: string, bugBashItem: IBugBashItem): Promise<IBugBashItem> {
+    export async function createBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem) {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             try {
-                let cloneBugBashItem = {...bugBashItem};
-                cloneBugBashItem.id = `${bugBashId}_${Date.now().toString()}`;
-                cloneBugBashItem.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
-                cloneBugBashItem.createdDate = new Date(Date.now());
+                let cloneBugBashItemModel = {...bugBashItemModel};
+                cloneBugBashItemModel.id = `${bugBashId}_${Date.now().toString()}`;
+                cloneBugBashItemModel.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
+                cloneBugBashItemModel.createdDate = new Date(Date.now());
                 
-                let savedBugBashItem = await ExtensionDataManager.createDocument(getBugBashCollectionKey(bugBashId), cloneBugBashItem, false);
-                translateDates(savedBugBashItem);         
+                let createdBugBashItemModel = await ExtensionDataManager.createDocument(getBugBashCollectionKey(bugBashId), cloneBugBashItemModel, false);
+                preProcessModel(createdBugBashItemModel);         
                 
-                BugBashItemActionsHub.CreateBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: savedBugBashItem});
+                BugBashItemActionsHub.CreateBugBashItem.invoke({
+                    bugBashId: bugBashId,
+                    bugBashItemModel: createdBugBashItemModel
+                });
 
-                return savedBugBashItem;
+                BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
             }
             catch (e) {
-                throw e.message;
+                BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
+                    errorMessage: e.message,
+                    errorKey: ErrorKeys.BugBashItemError
+                });
             }
         }
-
-        return null;
     }
 
     export async function deleteBugBashItem(bugBashId: string, bugBashItemId: string) {
@@ -136,37 +146,43 @@ export module BugBashItemActions {
                 // eat exception
             }
 
-            BugBashItemActionsHub.DeleteBugBashItem.invoke({bugBashId: bugBashId, bugBashItemId: bugBashItemId});
+            BugBashItemActionsHub.DeleteBugBashItem.invoke({
+                bugBashId: bugBashId, 
+                bugBashItemId: bugBashItemId
+            });
             StoresHub.bugBashItemStore.setLoading(false, bugBashItemId);
         }
     }
-    
-    export async function acceptBugBashItem(bugBashId: string, bugBashItem: IBugBashItem): Promise<IBugBashItem> {
-        if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItem.id)) {
-            StoresHub.bugBashItemStore.setLoading(true, bugBashItem.id);
+
+    export async function acceptBugBashItem(bugBashId: string, bugBashItemModel: IBugBashItem) {
+        if (!StoresHub.bugBashItemStore.isLoading(bugBashId) && !StoresHub.bugBashItemStore.isLoading(bugBashItemModel.id)) {
+            StoresHub.bugBashItemStore.setLoading(true, bugBashItemModel.id);
 
             try {
-                let acceptedBugBashItem = await acceptItem(bugBashItem);
+                let acceptedBugBashItemModel = await acceptItem(bugBashItemModel);
                 
-                BugBashItemActionsHub.AcceptBugBashItem.invoke({bugBashId: bugBashId, bugBashItem: acceptedBugBashItem});
-                StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
-
-                return acceptedBugBashItem;
+                BugBashItemActionsHub.AcceptBugBashItem.invoke({
+                    bugBashId: bugBashId,
+                    bugBashItemModel: acceptedBugBashItemModel
+                });
+                StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
+                BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
             }
             catch (e) {
-                StoresHub.bugBashItemStore.setLoading(false, bugBashItem.id);
-                throw e;
+                StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
+                BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
+                    errorMessage: e,
+                    errorKey: ErrorKeys.BugBashItemError
+                });
             }
         }
-
-        return null;
-    }
+    }    
 
     function getBugBashCollectionKey(bugBashId: string): string {
         return `BugBashCollection_${bugBashId}`;
     }
 
-    function translateDates(bugBashItem: IBugBashItem) {
+    function preProcessModel(bugBashItem: IBugBashItem) {
         if (typeof bugBashItem.createdDate === "string") {
             if ((bugBashItem.createdDate as string).trim() === "") {
                 bugBashItem.createdDate = undefined;
@@ -235,7 +251,7 @@ export module BugBashItemActions {
             savedWorkItem = await WorkItemActions.createWorkItem(workItemType, fieldValues);
         }
         catch (e) {
-            BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItem: updatedBugBashItem});
+            BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItemModel: updatedBugBashItem});
             throw e.message;
         }
         
