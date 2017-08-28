@@ -13,20 +13,20 @@ import { Label } from "OfficeFabric/Label";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { Bar, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
-import { IBugBashItem, INameValuePair } from "../Interfaces";
+import { INameValuePair } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { BugBashItemHelpers } from "../Helpers";
-import { ChartsView, BugBashFieldNames } from "../Constants";
+import { ChartsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
 import { SettingsActions } from "../Actions/SettingsActions";
 import { BugBash } from "../ViewModels/BugBash";
 import * as ExcelExporter_Async from "../ExcelExporter";
+import { BugBashItem } from "../ViewModels/BugBashItem";
 
 interface IBugBashChartsState extends IBaseComponentState {
-    allBugBashItems: IBugBashItem[];
-    pendingBugBashItems: IBugBashItem[];
-    acceptedBugBashItems: IBugBashItem[];
-    rejectedBugBashItems: IBugBashItem[];   
+    allBugBashItems: BugBashItem[];
+    pendingBugBashItems: BugBashItem[];
+    acceptedBugBashItems: BugBashItem[];
+    rejectedBugBashItems: BugBashItem[];   
     groupedByTeam?: boolean; 
 }
 
@@ -88,9 +88,9 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         return {
             loading: StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id) || StoresHub.teamStore.isLoading() || StoresHub.userSettingsStore.isLoading(),
             allBugBashItems: bugBashItems,
-            pendingBugBashItems: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && !b.rejected) : null,
-            acceptedBugBashItems: bugBashItems ? bugBashItems.filter(b => BugBashItemHelpers.isAccepted(b)) : null,
-            rejectedBugBashItems: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && b.rejected) : null
+            pendingBugBashItems: bugBashItems ? bugBashItems.filter(b => !b.isAccepted && !b.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)) : null,
+            acceptedBugBashItems: bugBashItems ? bugBashItems.filter(b => b.isAccepted) : null,
+            rejectedBugBashItems: bugBashItems ? bugBashItems.filter(b => !b.isAccepted && b.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)) : null
         } as IBugBashChartsState;
     }
 

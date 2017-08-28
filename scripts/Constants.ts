@@ -44,3 +44,18 @@ export enum BugBashFieldNames {
     AcceptTemplateTeam = "acceptTemplateTeam",
     AcceptTemplateId = "acceptTemplateId"
 }
+
+export enum BugBashItemFieldNames {
+    ID = "id",
+    Version = "__etag",
+    Title = "title",
+    Description = "description",
+    BugBashId = "bugBashId",
+    WorkItemId = "workItemId",
+    TeamId = "teamId",
+    CreatedDate = "createdDate",
+    CreatedBy = "createdBy",
+    Rejected = "rejected",
+    RejectReason = "rejectReason",
+    RejectedBy = "rejectedBy",
+}

@@ -60,7 +60,7 @@ export class BugBash {
         }
     }
 
-    public async save() {
+    public save() {
         if (this.isDirty() && this.isValid()) {
             const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
             if (this.isNew()) {
@@ -79,7 +79,7 @@ export class BugBash {
         }
     }
 
-    public async refresh() {
+    public refresh() {
         if (!this.isNew()) {
             BugBashActions.refreshBugBash(this.id);
         }

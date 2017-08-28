@@ -19,11 +19,10 @@ import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { confirmAction, BugBashItemHelpers } from "../Helpers";
+import { confirmAction } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { UrlActions, Events, ChartsView, ResultsView, BugBashFieldNames } from "../Constants";
+import { UrlActions, Events, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
 import { BugBash } from "../ViewModels/BugBash";
 import * as BugBashEditor_Async from "./BugBashEditor";
 import * as BugBashResults_Async from "./BugBashResults";
@@ -85,9 +84,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         return {
             loading: this.props.bugBashId ? StoresHub.bugBashStore.isLoading(this.props.bugBashId) : StoresHub.bugBashStore.isLoading(),
             bugBash: this.props.bugBashId ? StoresHub.bugBashStore.getItem(this.props.bugBashId) : StoresHub.bugBashStore.getNewBugBash(),
-            pendingItemsCount: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && !b.rejected).length : 0,
-            acceptedItemsCount: bugBashItems ? bugBashItems.filter(b => BugBashItemHelpers.isAccepted(b)).length : 0,
-            rejectedItemsCount: bugBashItems ? bugBashItems.filter(b => !BugBashItemHelpers.isAccepted(b) && b.rejected).length : 0
+            pendingItemsCount: bugBashItems ? bugBashItems.filter(b => !b.isAccepted && !b.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)).length : 0,
+            acceptedItemsCount: bugBashItems ? bugBashItems.filter(b => b.isAccepted).length : 0,
+            rejectedItemsCount: bugBashItems ? bugBashItems.filter(b => !b.isAccepted && b.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)).length : 0
         } as IBugBashViewState;
     }
 
@@ -417,7 +416,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
         if (confirm) {                        
             await BugBashItemActions.refreshItems(this.props.bugBashId);
-            BugBashItemCommentActions.clearComments();
+            
             EventsService.getService().fire(Events.RefreshItems);
         }
     }
