@@ -4,7 +4,7 @@ import Utils_Array = require("VSS/Utils/Array");
 import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBashItem, IBugBashItemActionData, IBugBashItemIdActionData, IBugBashItemsActionData } from "../Interfaces";
 import { BugBashItemActionsHub } from "../Actions/ActionsHub";
-import { BugBashItem } from "scripts/ViewModels/BugBashItem";
+import { BugBashItem } from "../ViewModels/BugBashItem";
 
 export interface BugBashItemStoreKey {
     bugBashId: string;

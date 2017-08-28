@@ -174,7 +174,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     @autobind
     private _dismissErrorMessage() {
         BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashError);
-    };
+    }
 
     private _renderEditor(): JSX.Element {
         const bugBash = this.props.bugBash;        
@@ -305,6 +305,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             this._updateBugBashDelayedFunction = delay(this, 200, () => {
                 this.props.bugBash.setFieldValue<T>(fieldName, fieldValue);
             });
-        }        
+        }
     }    
 }

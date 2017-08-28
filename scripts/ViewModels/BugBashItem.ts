@@ -47,6 +47,10 @@ export class BugBashItem {
         return this._originalModel.__etag;
     }
 
+    get isAccepted(): boolean {
+        return this.workItemId != null && this.workItemId > 0;
+    }
+
     constructor(model?: IBugBashItem) {
         const bugBashItemModel = model || BugBashItem.getNewBugBashItemModel();
         this._originalModel = {...bugBashItemModel};
@@ -118,11 +122,7 @@ export class BugBashItem {
 
     public isNew(): boolean {
         return this.id == null || this.id.trim() === "";
-    }
-    
-    public isAccepted(): boolean {
-        return this.workItemId != null && this.workItemId > 0;
-    }
+    }    
 
     public isDirty(): boolean {
         const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
