@@ -15,17 +15,15 @@ import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
 
 import { delegate, delay, DelayedFunction } from "VSS/Utils/Core";
-import { VersionControlChangeType, ItemContentType } from "TFS/VersionControl/Contracts";
-import * as GitClient from "TFS/VersionControl/GitRestClient";
 import Utils_Date = require("VSS/Utils/Date");
 import { WebApiTeam } from "TFS/Core/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
-import { buildGitPush } from "../Helpers";
+import { copyImageToGitRepo } from "../Helpers";
 import { IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { BugBashFieldNames, BugBashItemFieldNames, ErrorKeys } from "../Constants";
+import { BugBashItemFieldNames, ErrorKeys, BugBashFieldNames } from "../Constants";
 import { BugBashItem } from "../ViewModels/BugBashItem";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
@@ -107,53 +105,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     public componentWillUnmount() {
         $(window).off("imagepasted", this._imagePastedHandler);
-    } 
-
-    @autobind
-    private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
-        if (e.ctrlKey && e.keyCode === 83) {
-            e.preventDefault();
-            this.props.bugBashItem.save(this.props.bugBashId);
-        }
-    }
-
-    private _onChange<T>(fieldName: BugBashItemFieldNames, fieldValue: T, immediate?: boolean) {
-        if (this._updateBugBashItemDelayedFunction) {
-            this._updateBugBashItemDelayedFunction.cancel();
-        }
-
-        if (immediate) {
-            this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
-        }
-        else {
-            this._updateBugBashItemDelayedFunction = delay(this, 200, () => {
-                this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
-            });
-        }
-    } 
-
-    @autobind
-    private _onCommentChange(newComment: string) {
-        if (this._updateBugBashItemDelayedFunction) {
-            this._updateBugBashItemDelayedFunction.cancel();
-        }
-
-        this._updateBugBashItemDelayedFunction = delay(this, 200, () => {
-            this.props.bugBashItem.setComment(newComment);
-        });        
-    }
-
-    @autobind
-    private _onTeamChange(newTeamName: string) {
-        const newTeam = StoresHub.teamStore.getItem(newTeamName);
-        const teamId = newTeam ? newTeam.id : newTeamName;
-        this._onChange(BugBashItemFieldNames.TeamId, teamId);
-    }
-
-    @autobind
-    private _dismissErrorMessage() {
-        BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashItemError);
-    }
+    }    
 
     public render(): JSX.Element {
         const item = this.props.bugBashItem;
@@ -316,36 +268,54 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         return null;
     }
 
-    private async _onImagePaste(_event, args) {
-        const data = args.data;
-        const callback = args.callback;
+    private _onImagePaste(_event, args) {
+        const gitPath = StoresHub.bugBashStore.getItem(this.props.bugBashId).getFieldValue<string>(BugBashFieldNames.Title, true).replace(" ", "_")
+        copyImageToGitRepo(args.data, gitPath, args.callback);        
+    }   
 
-        const settings = StoresHub.bugBashSettingsStore.getAll();
-        if (settings && settings.gitMediaRepo) {
-            const dataStartIndex = data.indexOf(",") + 1;
-            const metaPart = data.substring(5, dataStartIndex - 1);
-            const dataPart = data.substring(dataStartIndex);
+    @autobind
+    private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
+        if (e.ctrlKey && e.keyCode === 83) {
+            e.preventDefault();
+            this.props.bugBashItem.save(this.props.bugBashId);
+        }
+    }
 
-            const extension = metaPart.split(";")[0].split("/").pop();
-            const fileName = `pastedImage_${Date.now().toString()}.${extension}`;
-            const gitPath = `BugBash_${StoresHub.bugBashStore.getItem(this.props.bugBashItem.bugBashId).getFieldValue<string>(BugBashFieldNames.Title, true).replace(" ", "_")}/pastedImages/${fileName}`;
-            const projectId = VSS.getWebContext().project.id;
+    private _onChange<T>(fieldName: BugBashItemFieldNames, fieldValue: T, immediate?: boolean) {
+        if (this._updateBugBashItemDelayedFunction) {
+            this._updateBugBashItemDelayedFunction.cancel();
+        }
 
-            try {
-                const gitClient = GitClient.getClient();
-                const gitItem = await gitClient.getItem(settings.gitMediaRepo, "/", projectId);
-                const pushModel = buildGitPush(gitPath, gitItem.commitId, VersionControlChangeType.Add, dataPart, ItemContentType.Base64Encoded);
-                await gitClient.createPush(pushModel, settings.gitMediaRepo, projectId);
-
-                const imageUrl = `${VSS.getWebContext().collection.uri}/${VSS.getWebContext().project.id}/_api/_versioncontrol/itemContent?repositoryId=${settings.gitMediaRepo}&path=${gitPath}&version=GBmaster&contentOnly=true`;
-                callback(imageUrl);
-            }
-            catch (e) {
-                callback(null);
-            }
+        if (immediate) {
+            this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
         }
         else {
-            callback(null);
+            this._updateBugBashItemDelayedFunction = delay(this, 200, () => {
+                this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
+            });
         }
-    }   
+    } 
+
+    @autobind
+    private _onCommentChange(newComment: string) {
+        if (this._updateBugBashItemDelayedFunction) {
+            this._updateBugBashItemDelayedFunction.cancel();
+        }
+
+        this._updateBugBashItemDelayedFunction = delay(this, 200, () => {
+            this.props.bugBashItem.setComment(newComment);
+        });        
+    }
+
+    @autobind
+    private _onTeamChange(newTeamName: string) {
+        const newTeam = StoresHub.teamStore.getItem(newTeamName);
+        const teamId = newTeam ? newTeam.id : newTeamName;
+        this._onChange(BugBashItemFieldNames.TeamId, teamId);
+    }
+
+    @autobind
+    private _dismissErrorMessage() {
+        BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashItemError);
+    }
 }

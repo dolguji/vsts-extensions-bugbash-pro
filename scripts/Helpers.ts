@@ -1,4 +1,7 @@
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
+import * as GitClient from "TFS/VersionControl/GitRestClient";
+import { StoresHub } from "./Stores/StoresHub";
+import { BugBashFieldNames } from "./Constants";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {
@@ -16,7 +19,37 @@ export async function confirmAction(condition: boolean, msg: string): Promise<bo
     return true;
 }
 
-export function buildGitPush(path: string, oldObjectId: string, changeType: VersionControlChangeType, content: string, contentType: ItemContentType): GitPush {
+export async function copyImageToGitRepo(imageData: any, gitFolderSuffix: string, callback) {
+    const settings = StoresHub.bugBashSettingsStore.getAll();
+    if (settings && settings.gitMediaRepo) {
+        const dataStartIndex = imageData.indexOf(",") + 1;
+        const metaPart = imageData.substring(5, dataStartIndex - 1);
+        const dataPart = imageData.substring(dataStartIndex);
+
+        const extension = metaPart.split(";")[0].split("/").pop();
+        const fileName = `pastedImage_${Date.now().toString()}.${extension}`;
+        const gitPath = `BugBash_${gitFolderSuffix}/pastedImages/${fileName}`;
+        const projectId = VSS.getWebContext().project.id;
+
+        try {
+            const gitClient = GitClient.getClient();
+            const gitItem = await gitClient.getItem(settings.gitMediaRepo, "/", projectId);
+            const pushModel = buildGitPush(gitPath, gitItem.commitId, VersionControlChangeType.Add, dataPart, ItemContentType.Base64Encoded);
+            await gitClient.createPush(pushModel, settings.gitMediaRepo, projectId);
+
+            const imageUrl = `${VSS.getWebContext().collection.uri}/${VSS.getWebContext().project.id}/_api/_versioncontrol/itemContent?repositoryId=${settings.gitMediaRepo}&path=${gitPath}&version=GBmaster&contentOnly=true`;
+            callback(imageUrl);
+        }
+        catch (e) {
+            callback(null);
+        }
+    }
+    else {
+        callback(null);
+    }
+}
+
+function buildGitPush(path: string, oldObjectId: string, changeType: VersionControlChangeType, content: string, contentType: ItemContentType): GitPush {
     const commits = [{
     comment: "Adding new image from bug bash pro extension",
     changes: [

@@ -29,6 +29,7 @@ import { RichEditorComponent } from "./RichEditorComponent";
 import { BugBash } from "../ViewModels/BugBash";
 import { ErrorKeys, BugBashFieldNames } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
+import { copyImageToGitRepo } from "scripts/Helpers";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
     bugBash: BugBash;
@@ -95,11 +96,8 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     key: "", text: "<No template>"
                 }
             ];
-            let filteredTemplates = StoresHub.workItemTemplateStore
-                .getAll()
-                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, this.props.bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType) || "", true));
 
-            const templates = emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference) => {
+            const templates = emptyTemplateItem.concat(StoresHub.workItemTemplateStore.getAll().map((template: WorkItemTemplateReference) => {
                 return {
                     key: template.id.toLowerCase(),
                     text: template.name
@@ -124,31 +122,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     public componentWillUnmount() {
         super.componentWillUnmount();
         $(window).off("imagepasted", this._imagePastedHandler);
-    }      
-
-    public componentWillReceiveProps(nextProps: IBugBashEditorProps) {
-        const currentWIT = this.props.bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
-        const nextWIT = nextProps.bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
-
-        if (currentWIT != nextWIT) {
-            let emptyTemplateItem = [
-                {   
-                    key: "", text: "<No template>"
-                }
-            ];
-            let filteredTemplates = StoresHub.workItemTemplateStore
-                .getAll()
-                .filter((t: WorkItemTemplateReference) => Utils_String.equals(t.workItemTypeName, currentWIT || "", true));
-
-            const templates = emptyTemplateItem.concat(filteredTemplates.map((template: WorkItemTemplateReference) => {
-                return {
-                    key: template.id.toLowerCase(),
-                    text: template.name
-                }
-            }));
-
-            this.updateState({templates: templates} as IBugBashEditorState);
-        }
     }
 
     public render(): JSX.Element {
@@ -282,9 +255,9 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     private _onImagePaste(_event, args) {
-        args.callback(null);
-    }
-
+        copyImageToGitRepo(args.data, "Description", args.callback);        
+    }    
+    
     @autobind
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
         if (e.ctrlKey && e.keyCode === 83) {
