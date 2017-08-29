@@ -2,6 +2,10 @@ import { Action } from "VSS/Flux/Action";
 
 import { IUserSettings, IBugBashSettings, IBugBash, IBugBashItemComment, IBugBashItemActionData, IBugBashItemsActionData, IBugBashItemIdActionData } from "../Interfaces";
 
+export namespace BugBashClientActionsHub {
+    export const SelectedBugBashItemChanged = new Action<string>();
+}
+
 export namespace SettingsActionsHub {
     export const InitializeBugBashSettings = new Action<IBugBashSettings>();
     export const UpdateBugBashSettings = new Action<IBugBashSettings>();

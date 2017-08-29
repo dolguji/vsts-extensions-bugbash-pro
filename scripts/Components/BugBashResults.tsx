@@ -5,7 +5,6 @@ import * as React from 'react';
 import Utils_Date = require('VSS/Utils/Date');
 import Utils_String = require('VSS/Utils/String');
 import { WorkItem } from "TFS/WorkItemTracking/Contracts";
-import * as EventsService from 'VSS/Events/Services';
 import { delay, DelayedFunction } from "VSS/Utils/Core";
 
 import { Label } from "OfficeFabric/Label";
@@ -32,9 +31,10 @@ import { confirmAction } from "../Helpers";
 import { BugBashItemEditor } from "./BugBashItemEditor";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { BugBashFieldNames, BugBashItemFieldNames, Events, ResultsView } from '../Constants';
+import { BugBashFieldNames, BugBashItemFieldNames, ResultsView } from '../Constants';
 import { BugBash } from "../ViewModels/BugBash";
 import { BugBashItem } from "../ViewModels/BugBashItem";
+import { BugBashClientActionsHub } from "../Actions/ActionsHub";
 
 interface IBugBashResultsState extends IBaseComponentState {
     bugBashItems: BugBashItem[];
@@ -77,8 +77,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     public componentDidMount() {
         super.componentDidMount();
         
-        EventsService.getService().attachEvent(Events.NewItem, this._clearSelectedItem);
-        EventsService.getService().attachEvent(Events.RefreshItems, this._clearSelectedItem);
+        BugBashClientActionsHub.SelectedBugBashItemChanged.addListener(this._setSelectedItem);
+
         TeamActions.initializeTeams();
         BugBashItemActions.initializeItems(this.props.bugBash.id);
     }
@@ -86,8 +86,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     public componentWillUnmount() {
         super.componentWillUnmount();
 
-        EventsService.getService().detachEvent(Events.NewItem, this._clearSelectedItem);
-        EventsService.getService().detachEvent(Events.RefreshItems, this._clearSelectedItem);
+        BugBashClientActionsHub.SelectedBugBashItemChanged.removeListener(this._setSelectedItem);
     }
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashResultsProps>) {
@@ -142,10 +141,16 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     }
 
     @autobind
-    private _clearSelectedItem() {
+    private _setSelectedItem(bugBashItemId: string) {
+        let selectedItem: BugBashItem = null;
+
+        if (bugBashItemId) {
+            selectedItem = StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, bugBashItemId);
+        }
+        
         this.updateState({
-            selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
-            gridKeyCounter: this.state.gridKeyCounter + 1
+            selectedBugBashItem: selectedItem || StoresHub.bugBashItemStore.getNewBugBashItem(),
+            gridKeyCounter: selectedItem ? this.state.gridKeyCounter : this.state.gridKeyCounter + 1
         } as IBugBashResultsState);
     }
 

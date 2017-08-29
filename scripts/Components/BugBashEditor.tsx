@@ -11,7 +11,6 @@ import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
 
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
-import Utils_String = require("VSS/Utils/String");
 import Utils_Date = require("VSS/Utils/Date");
 import { delegate, delay, DelayedFunction } from "VSS/Utils/Core";
 
@@ -29,7 +28,7 @@ import { RichEditorComponent } from "./RichEditorComponent";
 import { BugBash } from "../ViewModels/BugBash";
 import { ErrorKeys, BugBashFieldNames } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
-import { copyImageToGitRepo } from "scripts/Helpers";
+import { copyImageToGitRepo } from "../Helpers";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
     bugBash: BugBash;

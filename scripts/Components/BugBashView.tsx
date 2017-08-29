@@ -2,7 +2,6 @@ import "../../css/BugBashView.scss";
 
 import * as React from "react";
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-import * as EventsService from "VSS/Events/Services";
 import Context = require("VSS/Context");
 import { delay, DelayedFunction } from "VSS/Utils/Core";
 
@@ -22,8 +21,9 @@ import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { UrlActions, Events, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
+import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
 import { BugBash } from "../ViewModels/BugBash";
+import { BugBashClientActionsHub } from "../Actions/ActionsHub";
 import * as BugBashEditor_Async from "./BugBashEditor";
 import * as BugBashResults_Async from "./BugBashResults";
 import * as BugBashCharts_Async from "./BugBashCharts";
@@ -36,7 +36,6 @@ export interface IBugBashViewProps extends IBaseComponentProps {
 export interface IBugBashViewState extends IBaseComponentState {
     bugBash: BugBash;
     selectedPivot?: string;
-    isAnyBugBashItemDirty?: boolean;
     filterText?: string;
     selectedChartsView?: string;
     selectedResultsView?: string;
@@ -302,7 +301,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 key: "newitem", name: "New Item", iconProps: {iconName: "Add"}, 
                 disabled: this.state.bugBash.isNew(),
                 onClick: () => {
-                    EventsService.getService().fire(Events.RefreshItems);
+                    BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);                    
                 }
             }            
         ];
@@ -413,11 +412,13 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     @autobind
     private async _refreshBugBashItems() {
-        const confirm = await confirmAction(this.state.isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
+        const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
+        const isAnyBugBashItemDirty = items.some(item => item.isDirty());
+        const confirm = await confirmAction(isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
         if (confirm) {                        
             await BugBashItemActions.refreshItems(this.props.bugBashId);
             
-            EventsService.getService().fire(Events.RefreshItems);
+            BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);
         }
     }
 

@@ -1,7 +1,6 @@
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 import * as GitClient from "TFS/VersionControl/GitRestClient";
 import { StoresHub } from "./Stores/StoresHub";
-import { BugBashFieldNames } from "./Constants";
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {

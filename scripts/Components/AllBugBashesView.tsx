@@ -2,6 +2,7 @@ import "../../css/AllBugBashes.scss";
 
 import * as React from "react";
 
+import { autobind } from "OfficeFabric/Utilities";
 import { SelectionMode } from "OfficeFabric/utilities/selection";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
 import { Label } from "OfficeFabric/Label";
@@ -111,9 +112,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         onPivotClick: (selectedPivotKey: string) => {
                             this.updateState({selectedPivot: selectedPivotKey} as IAllBugBashesViewState);
                         },
-                        onRenderPivotContent: (key: string) => {
-                            return this._getContents(key);
-                        },
+                        onRenderPivotContent: (key: string) => this._getContents(key),
                         pivots: [
                             {
                                 key: "ongoing",
@@ -143,13 +142,18 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         isOpen={true}
                         type={PanelType.smallFixedFar}
                         isLightDismiss={true} 
-                        onDismiss={() => this.updateState({settingsPanelOpen: false} as IAllBugBashesViewState)}>
+                        onDismiss={this._dismissSettingsPanel}>
 
                         <AsyncSettingsPanel />
                     </Panel>
                 }
             </div>
         );
+    }
+
+    @autobind
+    private _dismissSettingsPanel() {
+        this.updateState({settingsPanelOpen: false} as IAllBugBashesViewState);
     }
 
     private _renderBadge(): JSX.Element {
@@ -177,7 +181,8 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         return null;
     }
 
-    private _dismissErrorMessage = () => {
+    @autobind
+    private _dismissErrorMessage() {
         BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.DirectoryPageError);
     };
 

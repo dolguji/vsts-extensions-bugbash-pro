@@ -9,7 +9,7 @@ import Utils_Date = require("VSS/Utils/Date");
 import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 
 import { UrlActions, BugBashFieldNames, ErrorKeys } from "../Constants";
-import { BugBashItemActionsHub, BugBashErrorMessageActionsHub } from "./ActionsHub";
+import { BugBashItemActionsHub, BugBashErrorMessageActionsHub, BugBashClientActionsHub } from "./ActionsHub";
 import { StoresHub } from "../Stores/StoresHub";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { BugBash } from "../ViewModels/BugBash";
@@ -136,6 +136,7 @@ export module BugBashItemActions {
                     bugBashItemModel: createdBugBashItemModel
                 });
 
+                BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(createdBugBashItemModel.id);
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
 
                 if (newComment != null && newComment.trim() !== "") {
@@ -309,9 +310,7 @@ export module BugBashItemActions {
 
         if (discussionComments && discussionComments.length > 0) {
             discussionComments = discussionComments.slice();
-            discussionComments = discussionComments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => {
-                return Utils_Date.defaultComparer(c1.createdDate, c2.createdDate);
-            });
+            discussionComments = discussionComments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => Utils_Date.defaultComparer(c1.createdDate, c2.createdDate));
 
             commentToSave += "<div style='margin: 15px 0;font-size: 15px; font-weight: bold; text-decoration: underline;'>Discussions :</div>";
 

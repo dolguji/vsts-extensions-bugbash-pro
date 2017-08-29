@@ -5,11 +5,6 @@ export namespace UrlActions {
     export const ACTION_CHARTS = "charts";
 }
 
-export namespace Events {
-    export const NewItem = "new-item";
-    export const RefreshItems = "refresh-items";
-}
-
 export namespace ChartsView {
     export const All = "All Items";
     export const PendingItemsOnly = "Pending Items";
