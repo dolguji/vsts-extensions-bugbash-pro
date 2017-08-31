@@ -4,12 +4,12 @@ import * as React from "react";
 import { GitRepository } from "TFS/VersionControl/Contracts";
 import { WebApiTeam } from "TFS/Core/Contracts";
 
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { GitRepoActions } from "VSTS_Extension/Flux/Actions/GitRepoActions";
-import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { GitRepoActions } from "MB/Flux/Actions/GitRepoActions";
+import { TeamActions } from "MB/Flux/Actions/TeamActions";
+import { Loading } from "MB/Components/Loading";
+import { InfoLabel } from "MB/Components/InfoLabel";
 
 import { autobind } from "OfficeFabric/Utilities";
 import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";

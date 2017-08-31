@@ -1,7 +1,7 @@
-import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
+import { StringUtils } from "MB/Utils/String";
+import { ArrayUtils } from "MB/Utils/Array";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
 
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { IBugBashItem, IBugBashItemActionData, IBugBashItemIdActionData, IBugBashItemsActionData } from "../Interfaces";
 import { BugBashItemActionsHub } from "../Actions/ActionsHub";
 import { BugBashItem } from "../ViewModels/BugBashItem";
@@ -118,7 +118,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<BugBashItem[
 
         const bugBashItem = new BugBashItem(bugBashItemModel);
         this._itemsIdMap[bugBashId.toLowerCase()][bugBashItemModel.id.toLowerCase()] = bugBashItem;
-        const existingIndex = Utils_Array.findIndex(this.items[bugBashId.toLowerCase()], (existingBugBashItem: BugBashItem) => Utils_String.equals(bugBashItemModel.id, existingBugBashItem.id, true));
+        const existingIndex = ArrayUtils.findIndex(this.items[bugBashId.toLowerCase()], (existingBugBashItem: BugBashItem) => StringUtils.equals(bugBashItemModel.id, existingBugBashItem.id, true));
         if (existingIndex !== -1) {
             this.items[bugBashId.toLowerCase()][existingIndex] = bugBashItem;
         }
@@ -136,7 +136,7 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<BugBashItem[
             delete this._itemsIdMap[bugBashId.toLowerCase()][bugBashItemId.toLowerCase()];
         }
 
-        const existingBugBashItemIndex = Utils_Array.findIndex(this.items[bugBashId.toLowerCase()], (existingBugBashItem: BugBashItem) => Utils_String.equals(bugBashItemId, existingBugBashItem.id, true));
+        const existingBugBashItemIndex = ArrayUtils.findIndex(this.items[bugBashId.toLowerCase()], (existingBugBashItem: BugBashItem) => StringUtils.equals(bugBashItemId, existingBugBashItem.id, true));
 
         if (existingBugBashItemIndex !== -1) {
             this.items[bugBashId.toLowerCase()].splice(existingBugBashItemIndex, 1);

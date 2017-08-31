@@ -1,6 +1,7 @@
 import { HostNavigationService } from 'VSS/SDK/Services/Navigation';
-import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
-import * as Utils_String from 'VSS/Utils/String';
+
+import { ExtensionDataManager } from "MB/Utils/ExtensionDataManager";
+import { StringUtils } from "MB/Utils/String";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActionsHub, BugBashErrorMessageActionsHub } from "./ActionsHub";
@@ -19,7 +20,7 @@ export module BugBashActions {
         else if (!StoresHub.bugBashStore.isLoading()) {
             StoresHub.bugBashStore.setLoading(true);
             let bugBashModels = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
-            bugBashModels = bugBashModels.filter(b => Utils_String.equals(VSS.getWebContext().project.id, b.projectId, true));
+            bugBashModels = bugBashModels.filter(b => StringUtils.equals(VSS.getWebContext().project.id, b.projectId, true));
 
             for (let bugBashModel of bugBashModels) {
                 preProcessModel(bugBashModel);
@@ -39,14 +40,14 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true, bugBashId);
             let bugBashModel = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
 
-            if (bugBashModel && Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
+            if (bugBashModel && StringUtils.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
                 preProcessModel(bugBashModel);
                 BugBashActionsHub.InitializeBugBash.invoke(bugBashModel);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
 
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashError);
             }
-            else if (bugBashModel && !Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
+            else if (bugBashModel && !StringUtils.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
                 BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
                     errorMessage: `Bug Bash "${bugBashId}" is out of scope of current project.`, 
@@ -79,14 +80,14 @@ export module BugBashActions {
 
             let bugBashModel = await ExtensionDataManager.readDocument<IBugBash>("bugbashes", bugBashId, null, false);
 
-            if (bugBashModel && Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
+            if (bugBashModel && StringUtils.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
                 preProcessModel(bugBashModel);
                 BugBashActionsHub.RefreshBugBash.invoke(bugBashModel);
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
 
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashError);
             }
-            else if (bugBashModel && !Utils_String.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
+            else if (bugBashModel && !StringUtils.equals(VSS.getWebContext().project.id, bugBashModel.projectId, true)) {
                 StoresHub.bugBashStore.setLoading(false, bugBashId);
                 BugBashErrorMessageActionsHub.PushErrorMessage.invoke({
                     errorMessage: `Bug Bash "${bugBashId}" is out of scope of current project.`, 
@@ -118,7 +119,7 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true);
 
             let bugBashModels = await ExtensionDataManager.readDocuments<IBugBash>("bugbashes", false);
-            bugBashModels = bugBashModels.filter(b => Utils_String.equals(VSS.getWebContext().project.id, b.projectId, true));
+            bugBashModels = bugBashModels.filter(b => StringUtils.equals(VSS.getWebContext().project.id, b.projectId, true));
 
             for(let bugBashModel of bugBashModels) {
                 preProcessModel(bugBashModel);

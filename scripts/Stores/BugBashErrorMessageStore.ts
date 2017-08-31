@@ -1,4 +1,4 @@
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
 import { BugBashErrorMessageActionsHub } from "../Actions/ActionsHub";
 
 export class BugBashErrorMessageStore extends BaseStore<IDictionaryStringTo<string>, string, string> {

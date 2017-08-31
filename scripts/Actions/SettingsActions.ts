@@ -1,4 +1,4 @@
-import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+import { ExtensionDataManager } from "MB/Utils/ExtensionDataManager";
 
 import { SettingsActionsHub, BugBashErrorMessageActionsHub } from "./ActionsHub";
 import { IUserSettings, IBugBashSettings } from "../Interfaces";

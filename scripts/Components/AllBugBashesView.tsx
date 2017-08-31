@@ -10,21 +10,19 @@ import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/Cont
 import { Panel, PanelType } from "OfficeFabric/Panel";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { Grid } from "VSTS_Extension/Components/Grids/Grid";
-import { IContextMenuProps, GridColumn } from "VSTS_Extension/Components/Grids/Grid.Props";
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { Hub } from "VSTS_Extension/Components/Common/Hub/Hub";
-import { getAsyncLoadedComponent } from "VSTS_Extension/Components/Common/AsyncLoadedComponent";
-import { Badge } from "VSTS_Extension/Components/Common/Badge";
+import { Loading } from "MB/Components/Loading";
+import { Grid, IContextMenuProps, GridColumn } from "MB/Components/Grid";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { Hub } from "MB/Components/Hub";
+import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
+import { Badge } from "MB/Components/Badge";
+import { DateUtils } from "MB/Utils/Date";
+import { StringUtils } from "MB/Utils/String";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-import Utils_Date = require("VSS/Utils/Date");
-import Utils_String = require("VSS/Utils/String");
-import Context = require("VSS/Context");
 
-import { confirmAction } from "../Helpers";
+import { confirmAction, getBugBashUrl } from "../Helpers";
 import { UrlActions, ErrorKeys, BugBashFieldNames } from "../Constants";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActions } from "../Actions/BugBashActions";
@@ -79,7 +77,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
 
     protected getStoresState(): IAllBugBashesViewState {        
         const allBugBashes = (StoresHub.bugBashStore.getAll() || [])
-            .filter(bugBash => Utils_String.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
+            .filter(bugBash => StringUtils.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
         const currentTime = new Date();
         
         return {
@@ -237,7 +235,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         overflowMode={TooltipOverflowMode.Parent}
                         directionalHint={DirectionalHint.bottomLeftEdge}>
                         <Label className="bugbash-grid-cell">
-                            <a href={this._getBugBashUrl(bugBash, UrlActions.ACTION_RESULTS)} onClick={(e: React.MouseEvent<HTMLElement>) => this._onRowClick(e, bugBash)}>{ title }</a>
+                            <a href={getBugBashUrl(bugBash.id, UrlActions.ACTION_RESULTS)} onClick={(e: React.MouseEvent<HTMLElement>) => this._onRowClick(e, bugBash)}>{ title }</a>
                         </Label>
                     </TooltipHost>;
                 }
@@ -249,7 +247,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 maxWidth: 600,
                 onRenderCell: (bugBash: BugBash) => {
                     const startTime = bugBash.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
-                    const label = startTime ? Utils_Date.format(startTime, "dddd, MMMM dd, yyyy") : "N/A";
+                    const label = startTime ? DateUtils.format(startTime, "dddd, MMMM dd, yyyy") : "N/A";
                     return <TooltipHost 
                         content={label}
                         delay={TooltipDelay.medium}
@@ -266,7 +264,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 maxWidth: 600,
                 onRenderCell: (bugBash: BugBash) => {
                     const endTime = bugBash.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
-                    const label = endTime ? Utils_Date.format(endTime, "dddd, MMMM dd, yyyy") : "N/A";
+                    const label = endTime ? DateUtils.format(endTime, "dddd, MMMM dd, yyyy") : "N/A";
 
                     return <TooltipHost 
                         content={label}
@@ -341,13 +339,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
          ];
     }
 
-    private _getBugBashUrl(bugBash: BugBash, viewName?: string): string {
-        const pageContext = Context.getPageContext();
-        const navigation = pageContext.navigation;
-        const webContext = VSS.getWebContext();
-        return `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${viewName}&id=${bugBash.id}`;
-    }
-
     private async _onRowClick(e: React.MouseEvent<HTMLElement>, bugBash: BugBash) {
         if (!e.ctrlKey) {
             e.preventDefault();
@@ -359,11 +350,11 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     private _getPastBugBashes(list: BugBash[], currentTime: Date): BugBash[] {
         return list.filter((bugBash: BugBash) => {
             const endTime = bugBash.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
-            return endTime && Utils_Date.defaultComparer(endTime, currentTime) < 0;
+            return endTime && DateUtils.defaultComparer(endTime, currentTime) < 0;
         }).sort((b1: BugBash, b2: BugBash) => {
             const endTime1 = b1.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
             const endTime2 = b2.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
-            return Utils_Date.defaultComparer(endTime1, endTime2);
+            return DateUtils.defaultComparer(endTime1, endTime2);
         });
     }
 
@@ -376,29 +367,29 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 return true;
             }
             else if(!startTime && endTime) {
-                return Utils_Date.defaultComparer(endTime, currentTime) >= 0;
+                return DateUtils.defaultComparer(endTime, currentTime) >= 0;
             }
             else if (startTime && !endTime) {
-                return Utils_Date.defaultComparer(startTime, currentTime) <= 0;
+                return DateUtils.defaultComparer(startTime, currentTime) <= 0;
             }
             else {
-                return Utils_Date.defaultComparer(startTime, currentTime) <= 0 && Utils_Date.defaultComparer(endTime, currentTime) >= 0;
+                return DateUtils.defaultComparer(startTime, currentTime) <= 0 && DateUtils.defaultComparer(endTime, currentTime) >= 0;
             }
         }).sort((b1: BugBash, b2: BugBash) => {
             const startTime1 = b1.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
             const startTime2 = b2.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
-            return Utils_Date.defaultComparer(startTime1, startTime2);
+            return DateUtils.defaultComparer(startTime1, startTime2);
         });
     }
 
     private _getUpcomingBugBashes(list: BugBash[], currentTime: Date): BugBash[] {
         return list.filter((bugBash: BugBash) => {
             const startTime = bugBash.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
-            return startTime && Utils_Date.defaultComparer(startTime, currentTime) > 0;
+            return startTime && DateUtils.defaultComparer(startTime, currentTime) > 0;
         }).sort((b1: BugBash, b2: BugBash) => {
             const startTime1 = b1.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
             const startTime2 = b2.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
-            return Utils_Date.defaultComparer(startTime1, startTime2);
+            return DateUtils.defaultComparer(startTime1, startTime2);
         });
     }
 }

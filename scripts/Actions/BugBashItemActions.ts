@@ -1,11 +1,10 @@
-import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
-import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
-import { WorkItemTemplateItemActions } from "VSTS_Extension/Flux/Actions/WorkItemTemplateItemActions";
-import { TeamFieldActions } from "VSTS_Extension/Flux/Actions/TeamFieldActions";
-import { WorkItemActions } from "VSTS_Extension/Flux/Actions/WorkItemActions";
+import { ExtensionDataManager } from "MB/Utils/ExtensionDataManager";
+import { parseUniquefiedIdentityName } from "MB/Components/IdentityView";
+import { WorkItemTemplateItemActions } from "MB/Flux/Actions/WorkItemTemplateItemActions";
+import { TeamFieldActions } from "MB/Flux/Actions/TeamFieldActions";
+import { WorkItemActions } from "MB/Flux/Actions/WorkItemActions";
+import { DateUtils } from "MB/Utils/Date";
 
-import Context = require("VSS/Context");
-import Utils_Date = require("VSS/Utils/Date");
 import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 
 import { UrlActions, BugBashFieldNames, ErrorKeys } from "../Constants";
@@ -14,6 +13,7 @@ import { StoresHub } from "../Stores/StoresHub";
 import { IBugBashItem, IBugBashItemComment } from "../Interfaces";
 import { BugBash } from "../ViewModels/BugBash";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
+import { getBugBashUrl } from "../Helpers";
 
 export module BugBashItemActions {
     export function fireStoreChange() {
@@ -294,23 +294,18 @@ export module BugBashItemActions {
     }
 
     function getAcceptedItemComment(bugBash: BugBash, bugBashItem: IBugBashItem): string {
-        const pageContext = Context.getPageContext();
-        const navigation = pageContext.navigation;
-        const webContext = VSS.getWebContext();
-        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_RESULTS}&id=${bugBash.id}`;
-        
         const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
         const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title, true);
 
         let commentToSave = `
-            Created from <a href='${bugBashUrl}' target='_blank'>${bugBashTitle}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
+            Created from <a href='${getBugBashUrl(bugBash.id, UrlActions.ACTION_RESULTS)}' target='_blank'>${bugBashTitle}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
 
         let discussionComments = StoresHub.bugBashItemCommentStore.getItem(bugBashItem.id);
 
         if (discussionComments && discussionComments.length > 0) {
             discussionComments = discussionComments.slice();
-            discussionComments = discussionComments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => Utils_Date.defaultComparer(c1.createdDate, c2.createdDate));
+            discussionComments = discussionComments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => DateUtils.defaultComparer(c1.createdDate, c2.createdDate));
 
             commentToSave += "<div style='margin: 15px 0;font-size: 15px; font-weight: bold; text-decoration: underline;'>Discussions :</div>";
 

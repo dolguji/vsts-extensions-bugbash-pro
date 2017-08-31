@@ -1,4 +1,4 @@
-import { Action } from "VSS/Flux/Action";
+import { Action } from "MB/Flux/Actions/Action";
 
 import { IUserSettings, IBugBashSettings, IBugBash, IBugBashItemComment, IBugBashItemActionData, IBugBashItemsActionData, IBugBashItemIdActionData } from "../Interfaces";
 

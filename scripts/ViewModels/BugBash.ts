@@ -1,9 +1,9 @@
 import { IBugBash } from "../Interfaces";
 import { BugBashActions } from "../Actions/BugBashActions";
-
-import Utils_String = require("VSS/Utils/String");
-import Utils_Date = require("VSS/Utils/Date");
 import { BugBashFieldNames } from "../Constants";
+
+import { StringUtils } from "MB/Utils/String";
+import { DateUtils } from "MB/Utils/Date";
 
 export class BugBash {
     public static getNewBugBashModel(): IBugBash {
@@ -98,15 +98,15 @@ export class BugBash {
     public isDirty(): boolean {
         const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
 
-        return !Utils_String.equals(updatedModel.title, this._originalModel.title)
-            || !Utils_String.equals(updatedModel.workItemType, this._originalModel.workItemType, true)
-            || !Utils_String.equals(updatedModel.description, this._originalModel.description)
-            || !Utils_Date.equals(updatedModel.startTime, this._originalModel.startTime)
-            || !Utils_Date.equals(updatedModel.endTime, this._originalModel.endTime)
-            || !Utils_String.equals(updatedModel.itemDescriptionField, this._originalModel.itemDescriptionField, true)
+        return !StringUtils.equals(updatedModel.title, this._originalModel.title)
+            || !StringUtils.equals(updatedModel.workItemType, this._originalModel.workItemType, true)
+            || !StringUtils.equals(updatedModel.description, this._originalModel.description)
+            || !DateUtils.equals(updatedModel.startTime, this._originalModel.startTime)
+            || !DateUtils.equals(updatedModel.endTime, this._originalModel.endTime)
+            || !StringUtils.equals(updatedModel.itemDescriptionField, this._originalModel.itemDescriptionField, true)
             || updatedModel.autoAccept !== this._originalModel.autoAccept
-            || !Utils_String.equals(updatedModel.acceptTemplateTeam, this._originalModel.acceptTemplateTeam, true)
-            || !Utils_String.equals(updatedModel.acceptTemplateId, this._originalModel.acceptTemplateId, true);
+            || !StringUtils.equals(updatedModel.acceptTemplateTeam, this._originalModel.acceptTemplateTeam, true)
+            || !StringUtils.equals(updatedModel.acceptTemplateId, this._originalModel.acceptTemplateId, true);
 
     }
 
@@ -117,6 +117,6 @@ export class BugBash {
             && updatedModel.title.length <= 256
             && updatedModel.workItemType.trim().length > 0
             && updatedModel.itemDescriptionField.trim().length > 0
-            && (!updatedModel.startTime || !updatedModel.endTime || Utils_Date.defaultComparer(updatedModel.startTime, updatedModel.endTime) < 0);
+            && (!updatedModel.startTime || !updatedModel.endTime || DateUtils.defaultComparer(updatedModel.startTime, updatedModel.endTime) < 0);
     }
 }

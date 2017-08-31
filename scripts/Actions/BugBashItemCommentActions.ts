@@ -1,4 +1,4 @@
-import { ExtensionDataManager } from "VSTS_Extension/Utilities/ExtensionDataManager";
+import { ExtensionDataManager } from "MB/Utils/ExtensionDataManager";
 
 import { BugBashItemCommentActionsHub } from "./ActionsHub";
 import { IBugBashItemComment } from "../Interfaces";

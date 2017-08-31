@@ -1,7 +1,7 @@
-import Utils_String = require("VSS/Utils/String");
-import Utils_Array = require("VSS/Utils/Array");
+import { StringUtils } from "MB/Utils/String";
+import { ArrayUtils } from "MB/Utils/Array";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
 
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
 import { BugBash } from "../ViewModels/BugBash";
 import { BugBashActionsHub } from "../Actions/ActionsHub";
 import { IBugBash } from "../Interfaces";
@@ -110,7 +110,7 @@ export class BugBashStore extends BaseStore<BugBash[], BugBash, string> {
         const bugBash = new BugBash(bugBashModel);
         this._itemIdMap[bugBashModel.id.toLowerCase()] = bugBash;
 
-        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: BugBash) => Utils_String.equals(bugBashModel.id, existingBugBash.id, true));
+        const existingBugBashIndex = ArrayUtils.findIndex(this.items, (existingBugBash: BugBash) => StringUtils.equals(bugBashModel.id, existingBugBash.id, true));
         if (existingBugBashIndex !== -1) {
             this.items[existingBugBashIndex] = bugBash;
         }
@@ -126,7 +126,7 @@ export class BugBashStore extends BaseStore<BugBash[], BugBash, string> {
 
         delete this._itemIdMap[bugBashId.toLowerCase()];
 
-        const existingBugBashIndex = Utils_Array.findIndex(this.items, (existingBugBash: BugBash) => Utils_String.equals(bugBashId, existingBugBash.id, true));
+        const existingBugBashIndex = ArrayUtils.findIndex(this.items, (existingBugBash: BugBash) => StringUtils.equals(bugBashId, existingBugBash.id, true));
 
         if (existingBugBashIndex !== -1) {
             this.items.splice(existingBugBashIndex, 1);

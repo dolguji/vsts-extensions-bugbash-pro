@@ -1,5 +1,5 @@
-import saveAs = require("jszip/vendor/FileSaver");
-import XLSX = require("better-xlsx/dist/xlsx.min.js");
+import * as saveAs from "jszip/vendor/FileSaver";
+import * as XLSX from "better-xlsx/dist/xlsx.min.js";
 import { INameValuePair } from "./Interfaces";
 
 export class ExcelExporter {

@@ -1,13 +1,13 @@
-import { StoreFactory } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { WorkItemFieldStore } from "VSTS_Extension/Flux/Stores/WorkItemFieldStore";
-import { WorkItemTypeStore } from "VSTS_Extension/Flux/Stores/WorkItemTypeStore";
-import { WorkItemTemplateStore } from "VSTS_Extension/Flux/Stores/WorkItemTemplateStore";
-import { WorkItemTemplateItemStore } from "VSTS_Extension/Flux/Stores/WorkItemTemplateItemStore";
-import { WorkItemStateItemStore } from "VSTS_Extension/Flux/Stores/WorkItemStateItemStore";
-import { GitRepoStore } from "VSTS_Extension/Flux/Stores/GitRepoStore";
-import { TeamStore } from "VSTS_Extension/Flux/Stores/TeamStore";
-import { TeamFieldStore } from "VSTS_Extension/Flux/Stores/TeamFieldStore";
-import { WorkItemStore } from "VSTS_Extension/Flux/Stores/WorkItemStore";
+import { StoreFactory } from "MB/Flux/Stores/BaseStore";
+import { WorkItemFieldStore } from "MB/Flux/Stores/WorkItemFieldStore";
+import { WorkItemTypeStore } from "MB/Flux/Stores/WorkItemTypeStore";
+import { WorkItemTemplateStore } from "MB/Flux/Stores/WorkItemTemplateStore";
+import { WorkItemTemplateItemStore } from "MB/Flux/Stores/WorkItemTemplateItemStore";
+import { WorkItemStateItemStore } from "MB/Flux/Stores/WorkItemStateItemStore";
+import { GitRepoStore } from "MB/Flux/Stores/GitRepoStore";
+import { TeamStore } from "MB/Flux/Stores/TeamStore";
+import { TeamFieldStore } from "MB/Flux/Stores/TeamFieldStore";
+import { WorkItemStore } from "MB/Flux/Stores/WorkItemStore";
 
 import { BugBashStore } from "./BugBashStore";
 import { BugBashErrorMessageStore } from "./BugBashErrorMessageStore";

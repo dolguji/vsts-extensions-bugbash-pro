@@ -1,4 +1,4 @@
-import Utils_String = require("VSS/Utils/String");
+import { StringUtils } from "MB/Utils/String";
 
 import { IBugBashItem } from "../Interfaces";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
@@ -127,10 +127,10 @@ export class BugBashItem {
     public isDirty(): boolean {
         const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
 
-        return !Utils_String.equals(updatedModel.title, this._originalModel.title)
-            || !Utils_String.equals(updatedModel.teamId, this._originalModel.teamId)
-            || !Utils_String.equals(updatedModel.description, this._originalModel.description)
-            || !Utils_String.equals(updatedModel.rejectReason, this._originalModel.rejectReason)
+        return !StringUtils.equals(updatedModel.title, this._originalModel.title)
+            || !StringUtils.equals(updatedModel.teamId, this._originalModel.teamId)
+            || !StringUtils.equals(updatedModel.description, this._originalModel.description)
+            || !StringUtils.equals(updatedModel.rejectReason, this._originalModel.rejectReason)
             || Boolean(updatedModel.rejected) !== Boolean(this._originalModel.rejected)
             || (this._newComment != null && this._newComment.trim() !== "");
     }

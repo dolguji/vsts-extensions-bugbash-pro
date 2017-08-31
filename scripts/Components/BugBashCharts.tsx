@@ -1,11 +1,11 @@
 import "../../css/BugBashCharts.scss";
 
 import * as React from "react";
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { parseUniquefiedIdentityName } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
-import { TeamActions } from "VSTS_Extension/Flux/Actions/TeamActions";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { Loading } from "MB/Components/Loading";
+import { parseUniquefiedIdentityName } from "MB/Components/IdentityView";
+import { TeamActions } from "MB/Flux/Actions/TeamActions";
 
 import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";

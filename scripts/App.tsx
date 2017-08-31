@@ -6,9 +6,9 @@ import * as ReactDOM from "react-dom";
 import { Fabric } from "OfficeFabric/Fabric";
 import { autobind } from "OfficeFabric/Utilities";
 
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { getAsyncLoadedComponent } from "VSTS_Extension/Components/Common/AsyncLoadedComponent";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { Loading } from "MB/Components/Loading";
+import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 

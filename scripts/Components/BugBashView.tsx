@@ -2,14 +2,13 @@ import "../../css/BugBashView.scss";
 
 import * as React from "react";
 import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-import Context = require("VSS/Context");
-import { delay, DelayedFunction } from "VSS/Utils/Core";
 
-import { getAsyncLoadedComponent } from "VSTS_Extension/Components/Common/AsyncLoadedComponent";
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { Hub, FilterPosition } from "VSTS_Extension/Components/Common/Hub/Hub";
+import { CoreUtils } from "MB/Utils/Core";
+import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { Loading } from "MB/Components/Loading";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { Hub, FilterPosition } from "MB/Components/Hub";
 
 import { autobind } from "OfficeFabric/Utilities";
 import { Link } from "OfficeFabric/Link";
@@ -18,7 +17,7 @@ import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { confirmAction } from "../Helpers";
+import { confirmAction, getBugBashUrl } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
@@ -60,7 +59,7 @@ const AsyncBugBashCharts = getAsyncLoadedComponent(
     () => <Loading />);
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
-    private _filterChangeDelayedFunction: DelayedFunction;
+    private _filterChangeDelayedFunction: CoreUtils.DelayedFunction;
 
     protected initializeState() {
         this.state = {
@@ -145,14 +144,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _onTitleRender(title: string): React.ReactNode {
-        const pageContext = Context.getPageContext();
-        const navigation = pageContext.navigation;
-        const webContext = VSS.getWebContext();
-        const bugBashUrl = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}#_a=${UrlActions.ACTION_ALL}`;
         return (
             <div className="bugbash-hub-title">
                 <Link 
-                    href={bugBashUrl}
+                    href={getBugBashUrl(null, UrlActions.ACTION_ALL)}
                     onClick={async (e: React.MouseEvent<HTMLElement>) => {
                         if (!e.ctrlKey) {
                             e.preventDefault();
@@ -405,7 +400,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             this._filterChangeDelayedFunction.cancel();
         }
 
-        this._filterChangeDelayedFunction = delay(this, 200, () => {
+        this._filterChangeDelayedFunction = CoreUtils.delay(this, 200, () => {
             this.updateState({filterText: filterText} as IBugBashViewState);
         });        
     }

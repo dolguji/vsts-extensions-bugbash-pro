@@ -1,6 +1,21 @@
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 import * as GitClient from "TFS/VersionControl/GitRestClient";
+import * as Context from "VSS/Context";
+
 import { StoresHub } from "./Stores/StoresHub";
+
+export function getBugBashUrl(bugBashId: string, viewName?: string): string {
+    const pageContext = Context.getPageContext();
+    const navigation = pageContext.navigation;
+    const webContext = VSS.getWebContext();
+    let url = `${webContext.collection.uri}/${webContext.project.name}/_${navigation.currentController}/${navigation.currentAction}/${navigation.currentParameters}?_a=${viewName}`;
+
+    if (bugBashId) {
+        url += `&id=${bugBashId}`;
+    }
+
+    return url;
+}
 
 export async function confirmAction(condition: boolean, msg: string): Promise<boolean> {
     if (condition) {

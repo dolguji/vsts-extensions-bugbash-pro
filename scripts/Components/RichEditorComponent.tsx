@@ -1,9 +1,9 @@
 import * as React from "react";
 
-import { BaseComponent, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { RichEditor, IRichEditorProps } from "VSTS_Extension/Components/Common/RichEditor/RichEditor";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
+import { BaseComponent, IBaseComponentState } from "MB/Components/BaseComponent";
+import { RichEditor, IRichEditorProps } from "MB/Components/RichEditor";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { Loading } from "MB/Components/Loading";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { SettingsActions } from "../Actions/SettingsActions";

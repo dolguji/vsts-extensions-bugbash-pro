@@ -11,17 +11,17 @@ import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
 
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
-import Utils_Date = require("VSS/Utils/Date");
-import { delegate, delay, DelayedFunction } from "VSS/Utils/Core";
 
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { InputError } from "VSTS_Extension/Components/Common/InputError";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { InfoLabel } from "VSTS_Extension/Components/Common/InfoLabel";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { WorkItemFieldActions } from "VSTS_Extension/Flux/Actions/WorkItemFieldActions";
-import { WorkItemTypeActions } from "VSTS_Extension/Flux/Actions/WorkItemTypeActions";
-import { WorkItemTemplateActions } from "VSTS_Extension/Flux/Actions/WorkItemTemplateActions";
+import { DateUtils } from "MB/Utils/Date";
+import { CoreUtils } from "MB/Utils/Core";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { InputError } from "MB/Components/InputError";
+import { Loading } from "MB/Components/Loading";
+import { InfoLabel } from "MB/Components/InfoLabel";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { WorkItemFieldActions } from "MB/Flux/Actions/WorkItemFieldActions";
+import { WorkItemTypeActions } from "MB/Flux/Actions/WorkItemTypeActions";
+import { WorkItemTemplateActions } from "MB/Flux/Actions/WorkItemTemplateActions";
 
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditorComponent } from "./RichEditorComponent";
@@ -43,11 +43,11 @@ export interface IBugBashEditorState extends IBaseComponentState {
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
     private _imagePastedHandler: (event, data) => void;    
-    private _updateBugBashDelayedFunction: DelayedFunction;
+    private _updateBugBashDelayedFunction: CoreUtils.DelayedFunction;
 
     constructor(props: IBugBashEditorProps, context?: any) {
         super(props, context);
-        this._imagePastedHandler = delegate(this, this._onImagePaste);
+        this._imagePastedHandler = CoreUtils.delegate(this, this._onImagePaste);
     }
 
     protected initializeState() {
@@ -211,7 +211,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     value={endTime} 
                     onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.EndTime, newValue)} />
 
-                { startTime && endTime && Utils_Date.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
+                { startTime && endTime && DateUtils.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
                 <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
                 <Dropdown 
@@ -274,7 +274,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
             this.props.bugBash.setFieldValue<T>(fieldName, fieldValue);
         }
         else {
-            this._updateBugBashDelayedFunction = delay(this, 200, () => {
+            this._updateBugBashDelayedFunction = CoreUtils.delay(this, 200, () => {
                 this.props.bugBash.setFieldValue<T>(fieldName, fieldValue);
             });
         }

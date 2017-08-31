@@ -7,15 +7,15 @@ import { TextField } from "OfficeFabric/TextField";
 import { Overlay } from "OfficeFabric/Overlay";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
-import { ComboBox } from "VSTS_Extension/Components/Common/Combo/Combobox";
-import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "VSTS_Extension/Components/Common/BaseComponent";
-import { Loading } from "VSTS_Extension/Components/Common/Loading";
-import { InputError } from "VSTS_Extension/Components/Common/InputError";
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
-import { IdentityView } from "VSTS_Extension/Components/WorkItemControls/IdentityView";
+import { ComboBox } from "MB/Components/Combobox";
+import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
+import { Loading } from "MB/Components/Loading";
+import { InputError } from "MB/Components/InputError";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
+import { IdentityView } from "MB/Components/IdentityView";
+import { DateUtils } from "MB/Utils/Date";
+import { CoreUtils } from "MB/Utils/Core";
 
-import { delegate, delay, DelayedFunction } from "VSS/Utils/Core";
-import Utils_Date = require("VSS/Utils/Date");
 import { WebApiTeam } from "TFS/Core/Contracts";
 
 import { RichEditorComponent } from "./RichEditorComponent";
@@ -40,12 +40,12 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
     private _imagePastedHandler: (event, data) => void;
-    private _updateBugBashItemDelayedFunction: DelayedFunction;
+    private _updateBugBashItemDelayedFunction: CoreUtils.DelayedFunction;
 
     constructor(props: IBugBashItemEditorProps, context?: any) {
         super(props, context);
 
-        this._imagePastedHandler = delegate(this, this._onImagePaste);
+        this._imagePastedHandler = CoreUtils.delegate(this, this._onImagePaste);
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
@@ -213,7 +213,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             else {
                 let comments = this.state.comments.slice();
                 comments = comments.sort((c1: IBugBashItemComment, c2: IBugBashItemComment) => {
-                    return -1 * Utils_Date.defaultComparer(c1.createdDate, c2.createdDate);
+                    return -1 * DateUtils.defaultComparer(c1.createdDate, c2.createdDate);
                 });
                 
                 return comments.map((comment: IBugBashItemComment, index: number) => {
@@ -221,7 +221,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                         <div className="item-comment" key={`${index}`}>
                             <div className="created-by">
                                 <IdentityView identityDistinctName={comment.createdBy} />
-                                <div className="created-date">{Utils_Date.friendly(comment.createdDate)}</div>
+                                <div className="created-date">{DateUtils.friendly(comment.createdDate)}</div>
                             </div>
                             <div className="message" dangerouslySetInnerHTML={{ __html: comment.content }} />                        
                         </div>
@@ -290,7 +290,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
         }
         else {
-            this._updateBugBashItemDelayedFunction = delay(this, 200, () => {
+            this._updateBugBashItemDelayedFunction = CoreUtils.delay(this, 200, () => {
                 this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
             });
         }
@@ -302,7 +302,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             this._updateBugBashItemDelayedFunction.cancel();
         }
 
-        this._updateBugBashItemDelayedFunction = delay(this, 200, () => {
+        this._updateBugBashItemDelayedFunction = CoreUtils.delay(this, 200, () => {
             this.props.bugBashItem.setComment(newComment);
         });        
     }

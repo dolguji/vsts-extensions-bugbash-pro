@@ -1,4 +1,4 @@
-import { BaseStore } from "VSTS_Extension/Flux/Stores/BaseStore";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
 import { IBugBashItemComment } from "../Interfaces";
 import { BugBashItemCommentActionsHub } from "../Actions/ActionsHub";
 
