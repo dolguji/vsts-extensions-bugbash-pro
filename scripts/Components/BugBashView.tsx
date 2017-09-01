@@ -100,6 +100,13 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         if (this.state.bugBash) {
             this.state.bugBash.reset();
         }
+
+        const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
+        for (const item of items) {
+            item.reset();
+        }
+
+        StoresHub.bugBashItemStore.getNewBugBashItem().reset();
     }
     
     public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>) {
@@ -150,7 +157,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     onClick={async (e: React.MouseEvent<HTMLElement>) => {
                         if (!e.ctrlKey) {
                             e.preventDefault();
-                            const confirm = await confirmAction(this.state.bugBash.isDirty(), "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
+                            const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
+                            const isAnyBugBashItemDirty = items.some(item => item.isDirty());
+                            const confirm = await confirmAction(this.state.bugBash.isDirty() || isAnyBugBashItemDirty || StoresHub.bugBashItemStore.getNewBugBashItem().isDirty(), 
+                                "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
 
                             if (confirm) {
                                 navigate(UrlActions.ACTION_ALL, null);
@@ -293,6 +303,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 key: "newitem", name: "New Item", iconProps: {iconName: "Add"}, 
                 disabled: this.state.bugBash.isNew(),
                 onClick: () => {
+                    StoresHub.bugBashItemStore.getNewBugBashItem().reset();
                     BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);
                 }
             }            
@@ -406,8 +417,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     private async _refreshBugBashItems() {
         const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
         const isAnyBugBashItemDirty = items.some(item => item.isDirty());
-        const confirm = await confirmAction(isAnyBugBashItemDirty, "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
-        if (confirm) {                        
+        const confirm = await confirmAction(isAnyBugBashItemDirty || StoresHub.bugBashItemStore.getNewBugBashItem().isDirty(), "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
+        if (confirm) {
+            StoresHub.bugBashItemStore.getNewBugBashItem().reset();            
             await BugBashItemActions.refreshItems(this.props.bugBashId);
             
             BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);

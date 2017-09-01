@@ -107,7 +107,9 @@ export module BugBashItemActions {
 
                 if (newComment != null && newComment.trim() !== "") {
                     BugBashItemCommentActions.createComment(updatedBugBashItemModel.id, newComment);
-                }                
+                }
+
+                BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(updatedBugBashItemModel.id);
             }
             catch (e) {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
@@ -184,6 +186,8 @@ export module BugBashItemActions {
                 });
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
+
+                BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(acceptedBugBashItemModel.id);
             }
             catch (e) {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);

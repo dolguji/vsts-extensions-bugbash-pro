@@ -36,6 +36,9 @@ import { BugBashClientActionsHub } from "../Actions/ActionsHub";
 
 interface IBugBashResultsState extends IBaseComponentState {
     bugBashItems: BugBashItem[];
+    pendingBugBashItems: BugBashItem[];
+    rejectedBugBashItems: BugBashItem[];
+    acceptedWorkItemIds: number[];
     selectedBugBashItem?: BugBashItem;
     gridKeyCounter: number;
 }
@@ -63,6 +66,9 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     protected initializeState() {
         this.state = {
             bugBashItems: null,
+            pendingBugBashItems: null,
+            rejectedBugBashItems: null,
+            acceptedWorkItemIds: null,
             selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
             loading: true,
             gridKeyCounter: 0
@@ -78,6 +84,9 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
         return {
             bugBashItems: bugBashItems,
+            pendingBugBashItems: (bugBashItems || []).filter(item => !item.isAccepted && !item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)),
+            rejectedBugBashItems: (bugBashItems || []).filter(item => !item.isAccepted && item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)),
+            acceptedWorkItemIds: (bugBashItems || []).filter(item => item.isAccepted).map(item => item.workItemId),
             selectedBugBashItem: this.state.selectedBugBashItem && this.state.selectedBugBashItem.id ? StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItem.id) : StoresHub.bugBashItemStore.getNewBugBashItem(),
             loading: StoresHub.teamStore.isLoading() || StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id)
         } as IBugBashResultsState;
@@ -104,6 +113,9 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(nextProps.bugBash.id);
                 this.updateState({
                     bugBashItems: bugBashItems,
+                    pendingBugBashItems: (bugBashItems || []).filter(item => !item.isAccepted && !item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)),
+                    rejectedBugBashItems: (bugBashItems || []).filter(item => !item.isAccepted && item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)),
+                    acceptedWorkItemIds: (bugBashItems || []).filter(item => item.isAccepted).map(item => item.workItemId),
                     loading: false,
                     bugBashItemEditorError: null,
                     selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
@@ -114,6 +126,9 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 this.updateState({
                     loading: true,
                     bugBashItems: null,
+                    pendingBugBashItems: null,
+                    rejectedBugBashItems: null,
+                    acceptedWorkItemIds: null,
                     bugBashItemEditorError: null,
                     selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
                     gridKeyCounter: this.state.gridKeyCounter + 1
@@ -147,50 +162,32 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 }
             </div>
         );
-    }
-
-    @autobind
-    private _setSelectedItem(bugBashItemId: string) {
-        let selectedItem: BugBashItem = null;
-
-        if (bugBashItemId) {
-            selectedItem = StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, bugBashItemId);
-        }
-    
-        if (selectedItem) {
-            this._selection.setKeySelected(selectedItem.id, true, true);
-        }
-        else {
-            this._selection.setAllSelected(false);
-        }
-    }
+    }    
 
     private _renderGrids(): JSX.Element {
         let pivotContent: JSX.Element;
         
         switch (this.props.view) {            
             case ResultsView.AcceptedItemsOnly:
-                const acceptedWorkItemIds = this.state.bugBashItems.filter(item => item.isAccepted).map(item => item.workItemId);
                 pivotContent = <WorkItemGrid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-work-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
-                    workItemIds={acceptedWorkItemIds}
+                    workItemIds={this.state.acceptedWorkItemIds}
                     fieldRefNames={["System.Id", "System.Title", "System.State", "System.AssignedTo", "System.AreaPath"]}
                     noResultsText="No Accepted items"
                     extraColumns={this._getExtraWorkItemGridColumns()}
                 />;                
                 break;
             case ResultsView.RejectedItemsOnly:
-                const rejectedBugBashItems = this.state.bugBashItems.filter(item => !item.isAccepted && item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true));
                 pivotContent = <Grid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-rejected-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
                     noResultsText="No Rejected items"
-                    items={rejectedBugBashItems}
+                    items={this.state.rejectedBugBashItems}
                     selectionMode={SelectionMode.none}
                     selection={this._selection}
                     getKey={(item: BugBashItem) => item.id}
@@ -198,13 +195,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 />;
                 break;
             default:
-                const pendingBugBashItems = this.state.bugBashItems.filter(item => !item.isAccepted && !item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true));
                 pivotContent = <Grid
                     filterText={this.props.filterText}
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-pending-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
-                    items={pendingBugBashItems}
+                    items={this.state.pendingBugBashItems}
                     selectionMode={SelectionMode.none}
                     columns={this._getBugBashItemGridColumns(false)}
                     selection={this._selection}
@@ -399,6 +395,37 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 this.updateState({selectedBugBashItem: bugBashItems[0]} as IBugBashResultsState);
             }
         });
+    }
+
+    @autobind
+    private _setSelectedItem(bugBashItemId: string) {
+        let selectedItem: BugBashItem = null;
+
+        if (this._itemInvokedDelayedFunction) {
+            this._itemInvokedDelayedFunction.cancel();
+        }
+
+        if (bugBashItemId) {
+            selectedItem = StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, bugBashItemId);
+        }
+    
+        if (selectedItem) {
+            if ((this._selection as any)._keyToIndexMap[selectedItem.id] >= 0) {
+                this._selection.setKeySelected(selectedItem.id, true, true);
+            }
+            else {
+                this.updateState({
+                    selectedBugBashItem: selectedItem,
+                    gridKeyCounter: this.state.gridKeyCounter + 1
+                } as IBugBashResultsState);
+            }
+        }
+        else {
+            this.updateState({
+                selectedBugBashItem: StoresHub.bugBashItemStore.getNewBugBashItem(),
+                gridKeyCounter: this.state.gridKeyCounter + 1
+            } as IBugBashResultsState);
+        }
     }
 
     private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {
