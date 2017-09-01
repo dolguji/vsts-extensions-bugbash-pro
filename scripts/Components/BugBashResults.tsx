@@ -7,7 +7,7 @@ import { WorkItem } from "TFS/WorkItemTracking/Contracts";
 import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
 import { TooltipHost, TooltipDelay, DirectionalHint, TooltipOverflowMode } from "OfficeFabric/Tooltip";
-import { SelectionMode } from "OfficeFabric/utilities/selection/interfaces";
+import { SelectionMode, ISelection, Selection } from "OfficeFabric/utilities/selection";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 import { Checkbox } from "OfficeFabric/Checkbox";
 
@@ -48,6 +48,17 @@ interface IBugBashResultsProps extends IBaseComponentProps {
 
 export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBashResultsState> {
     private _itemInvokedDelayedFunction: CoreUtils.DelayedFunction;
+    private _selection: ISelection;
+
+    constructor(props: IBugBashResultsProps, context?: any) {
+        super(props, context);
+        this._selection = new Selection({
+            getKey: (item: any) => item.id,
+            onSelectionChanged: () => {
+                this._onBugBashItemSelectionChanged(this._selection.getSelection() as BugBashItem[]);
+            }
+        });
+    }   
 
     protected initializeState() {
         this.state = {
@@ -145,11 +156,13 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         if (bugBashItemId) {
             selectedItem = StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, bugBashItemId);
         }
-        
-        this.updateState({
-            selectedBugBashItem: selectedItem || StoresHub.bugBashItemStore.getNewBugBashItem(),
-            gridKeyCounter: selectedItem ? this.state.gridKeyCounter : this.state.gridKeyCounter + 1
-        } as IBugBashResultsState);
+    
+        if (selectedItem) {
+            this._selection.setKeySelected(selectedItem.id, true, true);
+        }
+        else {
+            this._selection.setAllSelected(false);
+        }
     }
 
     private _renderGrids(): JSX.Element {
@@ -179,6 +192,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     noResultsText="No Rejected items"
                     items={rejectedBugBashItems}
                     selectionMode={SelectionMode.none}
+                    selection={this._selection}
+                    getKey={(item: BugBashItem) => item.id}
                     columns={this._getBugBashItemGridColumns(true)}
                 />;
                 break;
@@ -191,7 +206,9 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     className="bugbash-item-grid"
                     items={pendingBugBashItems}
                     selectionMode={SelectionMode.none}
-                    columns={this._getBugBashItemGridColumns(false)}  
+                    columns={this._getBugBashItemGridColumns(false)}
+                    selection={this._selection}
+                    getKey={(item: BugBashItem) => item.id}
                     noResultsText="No Pending items"
                 />;
                 break;
@@ -369,7 +386,6 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         ];
     }
     
-    @autobind
     private _onBugBashItemSelectionChanged(bugBashItems: BugBashItem[]) {
         if (this._itemInvokedDelayedFunction) {
             this._itemInvokedDelayedFunction.cancel();
@@ -504,9 +520,8 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     const createdDate = bugBashItem.getFieldValue<Date>(BugBashItemFieldNames.CreatedDate);
                     return (
                         <TooltipHost 
-                            content={DateUtils.format(createdDate, "M/d/yyyy h:mm tt")}
+                            content={DateUtils.format(createdDate, "m/d/yyyy h:mm tt")}
                             delay={TooltipDelay.medium}
-                            overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
                             <Label className={`${getCellClassName(bugBashItem)}`}>

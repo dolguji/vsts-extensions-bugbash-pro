@@ -187,14 +187,14 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
     }
 
     @autobind
-    private async _onSaveClick(): Promise<void> {
+    private _onSaveClick() {
         if (this._isSettingsDirty()) {
             SettingsActions.updateBugBashSettings(this.state.newBugBashSettings);
         }        
     }
 
     @autobind
-    private async _onSaveUserSettingClick(): Promise<void> {
+    private _onSaveUserSettingClick() {
         if (this._isUserSettingsDirty()) {
             SettingsActions.updateUserSettings(this.state.newUserSettings);
         }        

@@ -20,9 +20,7 @@ import { Badge } from "MB/Components/Badge";
 import { DateUtils } from "MB/Utils/Date";
 import { StringUtils } from "MB/Utils/String";
 
-import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-
-import { confirmAction, getBugBashUrl } from "../Helpers";
+import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
 import { UrlActions, ErrorKeys, BugBashFieldNames } from "../Constants";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActions } from "../Actions/BugBashActions";
@@ -247,7 +245,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 maxWidth: 600,
                 onRenderCell: (bugBash: BugBash) => {
                     const startTime = bugBash.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
-                    const label = startTime ? DateUtils.format(startTime, "dddd, MMMM dd, yyyy") : "N/A";
+                    const label = startTime ? DateUtils.format(startTime, "dddd, mmmm dd, yyyy") : "N/A";
                     return <TooltipHost 
                         content={label}
                         delay={TooltipDelay.medium}
@@ -264,7 +262,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 maxWidth: 600,
                 onRenderCell: (bugBash: BugBash) => {
                     const endTime = bugBash.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
-                    const label = endTime ? DateUtils.format(endTime, "dddd, MMMM dd, yyyy") : "N/A";
+                    const label = endTime ? DateUtils.format(endTime, "dddd, mmmm dd, yyyy") : "N/A";
 
                     return <TooltipHost 
                         content={label}
@@ -289,16 +287,14 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                 return [
                     {
                         key: "open", name: "View results", iconProps: {iconName: "ShowResults"}, 
-                        onClick: async () => {                    
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_RESULTS, {id: bugBash.id});
+                        onClick: () => {                    
+                            navigate(UrlActions.ACTION_RESULTS, {id: bugBash.id});
                         }
                     },
                     {
                         key: "edit", name: "Edit", iconProps: {iconName: "Edit"}, 
-                        onClick: async () => {                    
-                            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                            navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, {id: bugBash.id});
+                        onClick: () => {                    
+                            navigate(UrlActions.ACTION_EDIT, {id: bugBash.id});
                         }
                     },
                     {
@@ -319,31 +315,29 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
          return [
             {
                 key: "new", name: "New Bug Bash", iconProps: {iconName: "Add"},
-                onClick: async () => {
-                    let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                    navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT);
+                onClick: () => {
+                    navigate(UrlActions.ACTION_EDIT);
                 }
             },            
             {
                 key: "refresh", name: "Refresh", iconProps: {iconName: "Refresh"},
-                onClick: async () => {
+                onClick: () => {
                     BugBashActions.refreshAllBugBashes();
                 }
             },
             {
                 key: "settings", name: "Settings", iconProps: {iconName: "Settings"},
-                onClick: async () => {
+                onClick: () => {
                     this.updateState({settingsPanelOpen: !(this.state.settingsPanelOpen)} as IAllBugBashesViewState);
                 }
             }
          ];
     }
 
-    private async _onRowClick(e: React.MouseEvent<HTMLElement>, bugBash: BugBash) {
+    private _onRowClick(e: React.MouseEvent<HTMLElement>, bugBash: BugBash) {
         if (!e.ctrlKey) {
             e.preventDefault();
-            let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-            navigationService.updateHistoryEntry(UrlActions.ACTION_RESULTS, {id: bugBash.id});
+            navigate(UrlActions.ACTION_RESULTS, {id: bugBash.id});
         }      
     }
 

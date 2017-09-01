@@ -1,8 +1,14 @@
 import { VersionControlChangeType, ItemContentType, GitPush } from "TFS/VersionControl/Contracts";
 import * as GitClient from "TFS/VersionControl/GitRestClient";
 import * as Context from "VSS/Context";
+import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 
 import { StoresHub } from "./Stores/StoresHub";
+
+export async function navigate(action: string, data?: IDictionaryStringTo<any>, replaceHistoryEntry?: boolean, mergeWithCurrentState?: boolean, windowTitle?: string, suppressNavigate?: boolean) {
+    let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
+    navigationService.updateHistoryEntry(action, data, replaceHistoryEntry, mergeWithCurrentState, windowTitle, suppressNavigate);
+}
 
 export function getBugBashUrl(bugBashId: string, viewName?: string): string {
     const pageContext = Context.getPageContext();

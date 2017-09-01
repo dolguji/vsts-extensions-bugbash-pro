@@ -1,5 +1,3 @@
-import { HostNavigationService } from 'VSS/SDK/Services/Navigation';
-
 import { ExtensionDataManager } from "MB/Utils/ExtensionDataManager";
 import { StringUtils } from "MB/Utils/String";
 
@@ -7,6 +5,7 @@ import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActionsHub, BugBashErrorMessageActionsHub } from "./ActionsHub";
 import { IBugBash } from "../Interfaces";
 import { ErrorKeys, UrlActions } from "../Constants";
+import { navigate } from "../Helpers";
 
 export module BugBashActions {
     export function fireStoreChange() {
@@ -67,8 +66,7 @@ export module BugBashActions {
             }
 
             if (error) {
-                const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null, true);
+                navigate(UrlActions.ACTION_ALL, null, true);
             }
         }
     } 
@@ -108,8 +106,7 @@ export module BugBashActions {
             }
 
             if (error) {
-                const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null, true);
+                navigate(UrlActions.ACTION_ALL, null, true);
             }
         }
     } 
@@ -171,8 +168,7 @@ export module BugBashActions {
                 
                 BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashError);
                 
-                const navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                navigationService.updateHistoryEntry(UrlActions.ACTION_EDIT, { id: createdBugBashModel.id }, true);
+                navigate(UrlActions.ACTION_EDIT, { id: createdBugBashModel.id }, true);
             }
             catch (e) {
                 StoresHub.bugBashStore.setLoading(false);

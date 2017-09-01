@@ -12,7 +12,7 @@
                             for (var i = items.length -1; i >= 0; i += 1) {
                                 if (items[i].type.indexOf("image") === 0) {
                                     reader = new FileReader();
-                                    reader.onloadend = async (event) => {
+                                    reader.onloadend = (event) => {
                                         const data = event.target.result;
 
                                         $(window).trigger("imagepasted", { data: data, callback: (imageUrl: string) => {

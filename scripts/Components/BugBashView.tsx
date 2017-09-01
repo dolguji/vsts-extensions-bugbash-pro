@@ -1,7 +1,6 @@
 import "../../css/BugBashView.scss";
 
 import * as React from "react";
-import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 
 import { CoreUtils } from "MB/Utils/Core";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
@@ -17,7 +16,7 @@ import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { IContextualMenuItem } from "OfficeFabric/components/ContextualMenu/ContextualMenu.Props";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { confirmAction, getBugBashUrl } from "../Helpers";
+import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
@@ -154,8 +153,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             const confirm = await confirmAction(this.state.bugBash.isDirty(), "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
 
                             if (confirm) {
-                                let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                                navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null);
+                                navigate(UrlActions.ACTION_ALL, null);
                             } 
                         }
                     }}
@@ -182,10 +180,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             className={className}
             onTitleRender={() => this._onTitleRender(title)}
             pivotProps={{
-                onPivotClick: async (selectedPivotKey: string) => {
+                onPivotClick: (selectedPivotKey: string) => {
                     this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
-                    let navigationService: HostNavigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;
-                    navigationService.updateHistoryEntry(selectedPivotKey, null, false, true, null, true);
+                    navigate(selectedPivotKey, null, false, true, null, true);
                 },
                 initialSelectedKey: this.state.selectedPivot,
                 onRenderPivotContent: (key: string) => {
@@ -296,7 +293,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 key: "newitem", name: "New Item", iconProps: {iconName: "Add"}, 
                 disabled: this.state.bugBash.isNew(),
                 onClick: () => {
-                    BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);                    
+                    BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);
                 }
             }            
         ];

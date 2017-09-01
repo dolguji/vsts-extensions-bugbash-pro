@@ -3,6 +3,8 @@ import "../css/App.scss";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
+import { HostNavigationService } from "VSS/SDK/Services/Navigation";
+
 import { Fabric } from "OfficeFabric/Fabric";
 import { autobind } from "OfficeFabric/Utilities";
 
@@ -10,11 +12,10 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Comp
 import { Loading } from "MB/Components/Loading";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 
-import { HostNavigationService } from "VSS/SDK/Services/Navigation";
-
 import { UrlActions } from "./Constants";
 import { BugBashView } from "./Components/BugBashView";
 import * as AllBugBashesView_Async from "./Components/AllBugBashesView";
+import { navigate } from "./Helpers";
 
 export enum AppViewMode {
     All,
@@ -93,7 +94,7 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
         
         const state = await this._navigationService.getCurrentState();
         if (!state.action) {
-            this._navigationService.updateHistoryEntry(UrlActions.ACTION_ALL, null, true);
+            navigate(UrlActions.ACTION_ALL, null, true);
         }        
     }
 
