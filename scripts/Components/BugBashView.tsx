@@ -98,15 +98,15 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     public componentWillUnmount() {
         super.componentWillUnmount();
         if (this.state.bugBash) {
-            this.state.bugBash.reset();
+            this.state.bugBash.reset(false);
         }
 
         const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
         for (const item of items) {
-            item.reset();
+            item.reset(false);
         }
 
-        StoresHub.bugBashItemStore.getNewBugBashItem().reset();
+        StoresHub.bugBashItemStore.getNewBugBashItem().reset(false);
     }
     
     public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>) {
@@ -303,7 +303,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 key: "newitem", name: "New Item", iconProps: {iconName: "Add"}, 
                 disabled: this.state.bugBash.isNew(),
                 onClick: () => {
-                    StoresHub.bugBashItemStore.getNewBugBashItem().reset();
+                    StoresHub.bugBashItemStore.getNewBugBashItem().reset(false);
                     BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);
                 }
             }            
@@ -419,7 +419,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         const isAnyBugBashItemDirty = items.some(item => item.isDirty());
         const confirm = await confirmAction(isAnyBugBashItemDirty || StoresHub.bugBashItemStore.getNewBugBashItem().isDirty(), "You have some unsaved items in the list. Refreshing the page will remove all the unsaved data. Are you sure you want to do it?");
         if (confirm) {
-            StoresHub.bugBashItemStore.getNewBugBashItem().reset();            
+            StoresHub.bugBashItemStore.getNewBugBashItem().reset(false);            
             await BugBashItemActions.refreshItems(this.props.bugBashId);
             
             BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);
