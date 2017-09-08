@@ -23,7 +23,7 @@ import { copyImageToGitRepo } from "../Helpers";
 import { IBugBashItemComment } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemCommentActions } from "../Actions/BugBashItemCommentActions";
-import { BugBashItemFieldNames, ErrorKeys, BugBashFieldNames } from "../Constants";
+import { BugBashItemFieldNames, ErrorKeys, BugBashFieldNames, SizeLimits } from "../Constants";
 import { BugBashItem } from "../ViewModels/BugBashItem";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 
@@ -137,6 +137,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 { this.state.error && <MessageBar messageBarType={MessageBarType.error} onDismiss={this._dismissErrorMessage} className="message-panel">{this.state.error}</MessageBar> }
 
                 <TextField label="Title" 
+                    maxLength={SizeLimits.TitleFieldMaxLength}
                     value={title}
                     required={true} 
                     onChanged={(newValue: string) => this._onChange(BugBashItemFieldNames.Title, newValue)} />
@@ -160,10 +161,11 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
                 { rejected && 
                     <TextField label="Reject reason" 
-                            className="reject-reason-input"
-                            value={rejectReason}
-                            required={true} 
-                            onChanged={(newValue: string) => this._onChange(BugBashItemFieldNames.RejectReason, newValue)} />                        
+                        maxLength={SizeLimits.RejectFieldMaxLength}
+                        className="reject-reason-input"
+                        value={rejectReason}
+                        required={true} 
+                        onChanged={(newValue: string) => this._onChange(BugBashItemFieldNames.RejectReason, newValue)} />                        
                 }
 
                 { rejected && this._renderRejectReasonError(rejectReason) }
@@ -250,7 +252,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         if (title == null || title.trim() === "") {
             return <InputError error="Title is required." />;
         }
-        else if (title.length > 256) {
+        else if (title.length > SizeLimits.TitleFieldMaxLength) {
             return <InputError error={`The length of the title should be less than 257 characters, actual is ${title.length}.`} />;
         }
 
@@ -262,7 +264,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         if (value == null || value.trim().length == 0) {
             return <InputError error="Reject reason can not be empty." />;
         }
-        else if (value.length > 128) {
+        else if (value.length > SizeLimits.RejectFieldMaxLength) {
             return <InputError error={`The length of the reject reason should less than 129 characters, actual is ${value.length}.`} />;
         }
 

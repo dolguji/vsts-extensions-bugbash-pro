@@ -26,7 +26,7 @@ import { WorkItemTemplateActions } from "MB/Flux/Actions/WorkItemTemplateActions
 import { StoresHub } from "../Stores/StoresHub";
 import { RichEditorComponent } from "./RichEditorComponent";
 import { BugBash } from "../ViewModels/BugBash";
-import { ErrorKeys, BugBashFieldNames } from "../Constants";
+import { ErrorKeys, BugBashFieldNames, SizeLimits } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 import { copyImageToGitRepo } from "../Helpers";
 
@@ -166,7 +166,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                     onChanged={(newValue: string) => this._onChange(BugBashFieldNames.Title, newValue)} />
                 
                 { (bugBashTitle == null || bugBashTitle.trim() === "") && <InputError error="Title is required." /> }
-                { bugBashTitle && bugBashTitle.length > 256 && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBashTitle.length}.`} /> }
+                { bugBashTitle && bugBashTitle.length > SizeLimits.TitleFieldMaxLength && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBashTitle.length}.`} /> }
 
                 <Label>Description</Label>
                 <RichEditorComponent 

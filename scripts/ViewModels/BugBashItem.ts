@@ -3,7 +3,7 @@ import { StringUtils } from "MB/Utils/String";
 import { IBugBashItem } from "../Interfaces";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
 import { StoresHub } from "../Stores/StoresHub";
-import { BugBashItemFieldNames } from "../Constants";
+import { BugBashItemFieldNames, SizeLimits } from "../Constants";
 
 export class BugBashItem {
     public static getNewBugBashItemModel(bugBashId?: string): IBugBashItem {
@@ -139,9 +139,9 @@ export class BugBashItem {
         const updatedModel: IBugBashItem = {...this._originalModel, ...this._updates};
 
         let dataValid = updatedModel.title.trim().length > 0 
-            && updatedModel.title.trim().length <= 256 
+            && updatedModel.title.trim().length <= SizeLimits.TitleFieldMaxLength 
             && updatedModel.teamId.trim().length > 0
-            && (!updatedModel.rejected || (updatedModel.rejectReason != null && updatedModel.rejectReason.trim().length > 0 && updatedModel.rejectReason.trim().length <= 128));
+            && (!updatedModel.rejected || (updatedModel.rejectReason != null && updatedModel.rejectReason.trim().length > 0 && updatedModel.rejectReason.trim().length <= SizeLimits.RejectFieldMaxLength));
 
         if (dataValid) {
             dataValid = dataValid && StoresHub.teamStore.getItem(updatedModel.teamId) != null;

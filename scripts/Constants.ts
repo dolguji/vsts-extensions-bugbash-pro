@@ -54,3 +54,8 @@ export enum BugBashItemFieldNames {
     RejectReason = "rejectReason",
     RejectedBy = "rejectedBy",
 }
+
+export namespace SizeLimits {
+    export const TitleFieldMaxLength = 255;
+    export const RejectFieldMaxLength = 128;
+}

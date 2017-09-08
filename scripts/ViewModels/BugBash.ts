@@ -1,6 +1,6 @@
 import { IBugBash } from "../Interfaces";
 import { BugBashActions } from "../Actions/BugBashActions";
-import { BugBashFieldNames } from "../Constants";
+import { BugBashFieldNames, SizeLimits } from "../Constants";
 
 import { StringUtils } from "MB/Utils/String";
 import { DateUtils } from "MB/Utils/Date";
@@ -114,7 +114,7 @@ export class BugBash {
         const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
 
         return updatedModel.title.trim().length > 0
-            && updatedModel.title.length <= 256
+            && updatedModel.title.length <= SizeLimits.TitleFieldMaxLength
             && updatedModel.workItemType.trim().length > 0
             && updatedModel.itemDescriptionField.trim().length > 0
             && (!updatedModel.startTime || !updatedModel.endTime || DateUtils.defaultComparer(updatedModel.startTime, updatedModel.endTime) < 0);
