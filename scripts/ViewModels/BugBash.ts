@@ -16,7 +16,7 @@ export class BugBash {
             itemDescriptionField: "",
             autoAccept: false,
             description: "",
-            acceptTemplateTeam: VSS.getWebContext().team.id,
+            acceptTemplateTeam: "",
             acceptTemplateId: ""
         };
     }
@@ -117,6 +117,8 @@ export class BugBash {
             && updatedModel.title.length <= SizeLimits.TitleFieldMaxLength
             && updatedModel.workItemType.trim().length > 0
             && updatedModel.itemDescriptionField.trim().length > 0
+            && updatedModel.acceptTemplateId.trim().length > 0
+            && updatedModel.acceptTemplateTeam.trim().length > 0
             && (!updatedModel.startTime || !updatedModel.endTime || DateUtils.defaultComparer(updatedModel.startTime, updatedModel.endTime) < 0);
     }
 }

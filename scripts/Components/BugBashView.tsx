@@ -76,7 +76,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     protected getStoresState(): IBugBashViewState {
-        const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId);
+        const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId || "");
 
         return {
             loading: this.props.bugBashId ? StoresHub.bugBashStore.isLoading(this.props.bugBashId) : StoresHub.bugBashStore.isLoading(),
@@ -101,7 +101,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             this.state.bugBash.reset(false);
         }
 
-        const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
+        const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId || "") || [];
         for (const item of items) {
             item.reset(false);
         }
@@ -157,7 +157,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     onClick={async (e: React.MouseEvent<HTMLElement>) => {
                         if (!e.ctrlKey) {
                             e.preventDefault();
-                            const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId) || [];
+                            const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId || "") || [];
                             const isAnyBugBashItemDirty = items.some(item => item.isDirty());
                             const confirm = await confirmAction(this.state.bugBash.isDirty() || isAnyBugBashItemDirty || StoresHub.bugBashItemStore.getNewBugBashItem().isDirty(), 
                                 "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
