@@ -118,7 +118,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                             },
                             {
                                 key: "upcoming",
-                                text: "UpComing",
+                                text: "Upcoming",
                                 itemCount: this.state.upcomingBugBashes ? this.state.upcomingBugBashes.length : null,
                                 commands: this._getCommandBarItems()
                             },
