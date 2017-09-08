@@ -82,12 +82,20 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
     protected getStoresState(): IBugBashResultsState {
         const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBash.id);
 
+        let selectedBugBashItem = null;
+        if (this.state.selectedBugBashItem && this.state.selectedBugBashItem.id) {
+            selectedBugBashItem = StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItem.id);
+        }
+        if (selectedBugBashItem == null) {
+            selectedBugBashItem = StoresHub.bugBashItemStore.getNewBugBashItem()
+        }
+
         return {
             bugBashItems: bugBashItems,
             pendingBugBashItems: (bugBashItems || []).filter(item => !item.isAccepted && !item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)),
             rejectedBugBashItems: (bugBashItems || []).filter(item => !item.isAccepted && item.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)),
             acceptedWorkItemIds: (bugBashItems || []).filter(item => item.isAccepted).map(item => item.workItemId),
-            selectedBugBashItem: this.state.selectedBugBashItem && this.state.selectedBugBashItem.id ? StoresHub.bugBashItemStore.getBugBashItem(this.props.bugBash.id, this.state.selectedBugBashItem.id) : StoresHub.bugBashItemStore.getNewBugBashItem(),
+            selectedBugBashItem: selectedBugBashItem,
             loading: StoresHub.teamStore.isLoading() || StoresHub.bugBashItemStore.isLoading(this.props.bugBash.id)
         } as IBugBashResultsState;
     }
@@ -283,7 +291,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             return [];
         }
 
-        return [
+        let menuItems: IContextualMenuItem[] = [
             {
                 key: "save", name: "", 
                 iconProps: {iconName: "Save"}, 
@@ -302,8 +310,18 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 title: "Undo changes", iconProps: {iconName: "Undo"}, 
                 disabled: !this.state.selectedBugBashItem.isDirty(),
                 onClick: this._revertBugBashItem
-            }
+            }            
         ];
+
+        if (!this.state.selectedBugBashItem.isNew()) {
+            menuItems.push({
+                key: "delete", 
+                iconProps: {iconName: "Cancel", style: { color: "#da0a00", fontWeight: "bold" }},
+                title: "Delete item",
+                onClick: this._deleteBugBashItem
+            });
+        }
+        return menuItems;
     }
 
     @autobind
@@ -333,6 +351,14 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         const confirm = await confirmAction(true, "Are you sure you want to undo your changes to this item?");
         if (confirm) {
             this.state.selectedBugBashItem.reset();
+        }
+    }
+
+    @autobind
+    private async _deleteBugBashItem() {
+        const confirm = await confirmAction(true, "Are you sure you want to delete this item?");
+        if (confirm) {
+            this.state.selectedBugBashItem.delete();
         }
     }
 

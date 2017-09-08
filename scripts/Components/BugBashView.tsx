@@ -421,7 +421,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         if (confirm) {
             StoresHub.bugBashItemStore.getNewBugBashItem().reset(false);            
             await BugBashItemActions.refreshItems(this.props.bugBashId);
-            
+            StoresHub.workItemStore.clearStore();
             BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(null);
         }
     }
@@ -440,7 +440,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             "Refreshing the item will undo your unsaved changes. Are you sure you want to do that?");
 
         if (confirm) {
-            this.state.bugBash.refresh();                                  
+            this.state.bugBash.refresh();
         }
     }
 
