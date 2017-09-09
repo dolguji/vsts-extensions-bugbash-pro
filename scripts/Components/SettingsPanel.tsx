@@ -12,7 +12,7 @@ import { Loading } from "MB/Components/Loading";
 import { InfoLabel } from "MB/Components/InfoLabel";
 
 import { autobind } from "OfficeFabric/Utilities";
-import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
+import { ComboBox, IComboBoxOption, IComboBoxProps } from "OfficeFabric/ComboBox";
 import { Label } from "OfficeFabric/Label";
 import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
@@ -28,8 +28,8 @@ interface ISettingsPanelState extends IBaseComponentState {
     newBugBashSettings: IBugBashSettings;
     origUserSettings: IUserSettings;
     newUserSettings: IUserSettings;
-    gitRepos: IDropdownOption[];
-    teams: IDropdownOption[];
+    gitRepos: IComboBoxOption[];
+    teams: IComboBoxOption[];
     error?: string;
 }
 
@@ -86,7 +86,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                 }
             ];
 
-            const teams: IDropdownOption[] = emptyItem.concat(StoresHub.teamStore.getAll().map((t: WebApiTeam) => {
+            const teams: IComboBoxOption[] = emptyItem.concat(StoresHub.teamStore.getAll().map((t: WebApiTeam) => {
                 return {
                     key: t.id,
                     text: t.name
@@ -103,7 +103,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                 }
             ];
 
-            const repos: IDropdownOption[] = emptyItem.concat(StoresHub.gitRepoStore.getAll().map((r: GitRepository) => {
+            const repos: IComboBoxOption[] = emptyItem.concat(StoresHub.gitRepoStore.getAll().map((r: GitRepository) => {
                 return {
                     key: r.id,
                     text: r.name
@@ -134,11 +134,13 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                     <Label className="settings-label">Project Settings</Label>
                     <div className="settings-control">
                         <InfoLabel label="Media Git Repo" info="Select a git repo to store media and attachments" />
-                        <Dropdown
+                        <ComboBox
                             options={this.state.gitRepos}
                             onRenderList={this._onRenderCallout}
+                            allowFreeform={false}
+                            autoComplete="on"
                             selectedKey={this.state.newBugBashSettings.gitMediaRepo}
-                            onChanged={(option?: IDropdownOption) => {
+                            onChanged={(option?: IComboBoxOption) => {
                                 let newSettings = {...this.state.newBugBashSettings};
                                 newSettings.gitMediaRepo = option.key as string;
                                 this.updateState({newBugBashSettings: newSettings} as ISettingsPanelState);
@@ -154,11 +156,13 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
                     <Label className="settings-label">User Settings</Label>
                     <div className="settings-control">
                         <InfoLabel label="Associated team" info="Select a team associated with you." />
-                        <Dropdown
+                        <ComboBox
                             options={this.state.teams}
                             onRenderList={this._onRenderCallout}
+                            allowFreeform={false}
+                            autoComplete="on"
                             selectedKey={this.state.newUserSettings.associatedTeam}
-                            onChanged={(option?: IDropdownOption) => {
+                            onChanged={(option?: IComboBoxOption) => {
                                 let newSettings = {...this.state.newUserSettings};
                                 newSettings.associatedTeam = option.key as string;
                                 this.updateState({newUserSettings: newSettings} as ISettingsPanelState);
@@ -201,7 +205,7 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
     }
 
     @autobind
-    private _onRenderCallout(props?: IDropdownProps, defaultRender?: (props?: IDropdownProps) => JSX.Element): JSX.Element {
+    private _onRenderCallout(props?: IComboBoxProps, defaultRender?: (props?: IComboBoxProps) => JSX.Element): JSX.Element {
         return <div className="callout-container">
                 {defaultRender(props)}
             </div>;        
