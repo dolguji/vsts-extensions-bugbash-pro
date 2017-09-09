@@ -16,7 +16,7 @@ export class BugBash {
             itemDescriptionField: "",
             autoAccept: false,
             description: "",
-            acceptTemplateTeam: "",
+            acceptTemplateTeam: VSS.getWebContext().team.id,
             acceptTemplateId: ""
         };
     }

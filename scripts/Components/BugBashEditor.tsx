@@ -8,7 +8,7 @@ import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
-import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
+import { ComboBox, IComboBoxOption, IComboBoxProps } from "OfficeFabric/ComboBox";
 
 import { WebApiTeam } from "TFS/Core/Contracts";
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
@@ -37,10 +37,10 @@ export interface IBugBashEditorProps extends IBaseComponentProps {
 }
 
 export interface IBugBashEditorState extends IBaseComponentState {
-    workItemTypes: IDropdownOption[];
-    htmlFields: IDropdownOption[];
-    templates: IDropdownOption[];
-    teams: IDropdownOption[];
+    workItemTypes: IComboBoxOption[];
+    htmlFields: IComboBoxOption[];
+    templates: IComboBoxOption[];
+    teams: IComboBoxOption[];
     error?: string;
 }
 
@@ -74,7 +74,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         } as IBugBashEditorState;
 
         if (StoresHub.workItemTypeStore.isLoaded() && !this.state.workItemTypes) {
-            const workItemTypes: IDropdownOption[] = StoresHub.workItemTypeStore.getAll().map((workItemType: WorkItemType) => {
+            const workItemTypes: IComboBoxOption[] = StoresHub.workItemTypeStore.getAll().map((workItemType: WorkItemType) => {
                 return {
                     key: workItemType.name.toLowerCase(),
                     text: workItemType.name
@@ -84,7 +84,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
 
         if (StoresHub.workItemFieldStore.isLoaded() && !this.state.htmlFields) {            
-            const htmlFields: IDropdownOption[] = StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map((field: WorkItemField) => {
+            const htmlFields: IComboBoxOption[] = StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map((field: WorkItemField) => {
                 return {
                     key: field.referenceName.toLowerCase(),
                     text: field.name
@@ -94,7 +94,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
 
         if (StoresHub.teamStore.isLoaded() && !this.state.teams) {            
-            const teams: IDropdownOption[] = StoresHub.teamStore.getAll().map((team: WebApiTeam) => {
+            const teams: IComboBoxOption[] = StoresHub.teamStore.getAll().map((team: WebApiTeam) => {
                 return {
                     key: team.id.toLowerCase(),
                     text: team.name
@@ -104,7 +104,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
 
         const acceptTemplateTeam = this.props.bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateTeam);
-        if (StoresHub.workItemTemplateStore.isLoaded(acceptTemplateTeam) && !this.state.templates) {
+        if (StoresHub.workItemTemplateStore.isLoaded(acceptTemplateTeam)) {
             const templates = StoresHub.workItemTemplateStore.getItem(acceptTemplateTeam).map((template: WorkItemTemplateReference) => {
                 return {
                     key: template.id.toLowerCase(),
@@ -243,24 +243,26 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 { startTime && endTime && DateUtils.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
                 <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
-                <Dropdown 
+                <ComboBox 
                     selectedKey={workItemType.toLowerCase()}
                     onRenderList={this._onRenderCallout}
                     className={!workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
-                    required={true} 
+                    allowFreeform={false}
+                    autoComplete="on"
                     options={this.state.workItemTypes}                            
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.WorkItemType, option.key as string, true)} />
+                    onChanged={(option: IComboBoxOption) => this._onChange(BugBashFieldNames.WorkItemType, option.key as string, true)} />
 
                 { !workItemType && <InputError error="A work item type is required." /> }
 
                 <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
-                <Dropdown 
+                <ComboBox 
                     selectedKey={itemDescriptionField.toLowerCase()}
                     onRenderList={this._onRenderCallout}
                     className={!itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
-                    required={true} 
+                    allowFreeform={false}
+                    autoComplete="on"
                     options={this.state.htmlFields} 
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.ItemDescriptionField, option.key as string, true)} />
+                    onChanged={(option: IComboBoxOption) => this._onChange(BugBashFieldNames.ItemDescriptionField, option.key as string, true)} />
 
                 { !itemDescriptionField && <InputError error="A description field is required." /> }                
             </div>
@@ -276,25 +278,29 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 </div>
 
                 <InfoLabel label="Template Team" info="Select a team to pull its templates." />
-                <Dropdown 
+                <ComboBox 
                     selectedKey={acceptTemplateTeam.toLowerCase()}
+                    allowFreeform={false}
+                    autoComplete="on"
                     onRenderList={this._onRenderCallout}
                     className="editor-dropdown"
                     options={this.state.teams} 
-                    onChanged={(option: IDropdownOption) => {
+                    onChanged={(option: IComboBoxOption) => {
                         this.props.bugBash.setFieldValue<string>(BugBashFieldNames.AcceptTemplateId, "", false);
-                        this._onChange(BugBashFieldNames.AcceptTemplateTeam, option.key as string, true)}
-                     } />
+                        this._onChange(BugBashFieldNames.AcceptTemplateTeam, option.key as string, true);
+                    }} />
                     
                 { !acceptTemplateTeam && <InputError error="A template team is required." /> }
 
                 <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
-                <Dropdown 
+                <ComboBox 
                     selectedKey={acceptTemplateId.toLowerCase()}
+                    allowFreeform={false}
+                    autoComplete="on"
                     onRenderList={this._onRenderCallout}
                     className="editor-dropdown"
                     options={this.state.templates} 
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
+                    onChanged={(option: IComboBoxOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
 
                 { !acceptTemplateId && <InputError error="A work item template is required." /> }
             </div>
@@ -302,7 +308,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     @autobind
-    private _onRenderCallout(props?: IDropdownProps, defaultRender?: (props?: IDropdownProps) => JSX.Element): JSX.Element {
+    private _onRenderCallout(props?: IComboBoxProps, defaultRender?: (props?: IComboBoxProps) => JSX.Element): JSX.Element {
         return <div className="callout-container">
                 {defaultRender(props)}
             </div>;        
