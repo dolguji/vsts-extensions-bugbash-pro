@@ -236,7 +236,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         type: "list",
                         mode: "drop",
                         allowEdit: true,
-                        source: this._workItemTypeNames
+                        source: this.state.workItemTypeNames
                     }} 
                     error={this._getWorkItemTypeError(workItemTypeName, workItemType)}
                     onChange={this._onWorkItemTypeChange}/>
@@ -248,7 +248,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         type: "list",
                         mode: "drop",
                         allowEdit: true,
-                        source: this._htmlFieldNames
+                        source: this.state.htmlFieldNames
                     }} 
                     error={this._getFieldError(itemDescriptionField, field)}
                     onChange={this._onFieldChange}/>
@@ -271,7 +271,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                         type: "list",
                         mode: "drop",
                         allowEdit: true,
-                        source: this._teamNames
+                        source: this.state.teamNames
                     }} 
                     error={this._getTeamError(acceptTemplateTeamId, team)}
                     onChange={this._onTeamChange}/>

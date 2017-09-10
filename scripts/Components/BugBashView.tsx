@@ -192,7 +192,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             pivotProps={{
                 onPivotClick: (selectedPivotKey: string) => {
                     this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
-                    navigate(selectedPivotKey, null, false, true, null, true);
+                    navigate(selectedPivotKey, null, false, true, null, true);                  
                 },
                 initialSelectedKey: this.state.selectedPivot,
                 onRenderPivotContent: (key: string) => {
@@ -210,6 +210,8 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                             return <div className="bugbash-hub-contents bugbash-charts-hub-contents">
                                 {this._renderCharts()}
                             </div>;
+                        case "details":
+                            return <div className="bugbash-hub-contents bugbash-details" dangerouslySetInnerHTML={{__html: this.state.bugBash.getFieldValue<string>(BugBashFieldNames.Description, true)}}></div>;
                     }
                 },
                 pivots: [
@@ -234,6 +236,12 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                         text: "Charts",
                         commands: this._getChartsViewCommands(),
                         farCommands: this._getChartsViewFarCommands()
+                    },
+                    {
+                        key: "details",
+                        text: "Details",
+                        commands: [],
+                        farCommands: []
                     }
                 ]
             }}

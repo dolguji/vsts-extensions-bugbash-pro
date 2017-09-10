@@ -22,7 +22,8 @@ export enum AppViewMode {
     New,
     Results,
     Edit,
-    Charts
+    Charts,
+    Details
 }
 
 export interface IAppState extends IBaseComponentState {
@@ -75,6 +76,9 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
                 case AppViewMode.Charts:
                     view = <BugBashView pivotKey={UrlActions.ACTION_CHARTS} bugBashId={this.state.bugBashId} />;
                     break;
+                case AppViewMode.Details:
+                    view = <BugBashView pivotKey={UrlActions.ACTION_DETAILS} bugBashId={this.state.bugBashId} />;
+                    break;
                 default:
                     view = <Loading />;
                     break;
@@ -103,6 +107,7 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
         this._navigationService.attachNavigate(UrlActions.ACTION_EDIT, this._navigateToEditor, true);
         this._navigationService.attachNavigate(UrlActions.ACTION_RESULTS, this._navigateToResults, true);
         this._navigationService.attachNavigate(UrlActions.ACTION_CHARTS, this._navigateToCharts, true);
+        this._navigationService.attachNavigate(UrlActions.ACTION_DETAILS, this._navigateToDetails, true);
     }
 
     private _detachNavigate() {
@@ -111,6 +116,7 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
             this._navigationService.detachNavigate(UrlActions.ACTION_EDIT, this._navigateToEditor);
             this._navigationService.detachNavigate(UrlActions.ACTION_RESULTS, this._navigateToResults);
             this._navigationService.detachNavigate(UrlActions.ACTION_CHARTS, this._navigateToCharts);
+            this._navigationService.detachNavigate(UrlActions.ACTION_DETAILS, this._navigateToDetails);
         }        
     }
 
@@ -135,6 +141,12 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
     private async _navigateToCharts() {
         const state = await this._navigationService.getCurrentState();
         this.updateState({ appViewMode: AppViewMode.Charts, bugBashId: state.id || null });
+    }
+
+    @autobind
+    private async _navigateToDetails() {
+        const state = await this._navigationService.getCurrentState();
+        this.updateState({ appViewMode: AppViewMode.Details, bugBashId: state.id || null });
     }
 }
 

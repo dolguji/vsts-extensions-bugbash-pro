@@ -3,6 +3,7 @@ export namespace UrlActions {
     export const ACTION_RESULTS = "results";
     export const ACTION_EDIT = "edit";
     export const ACTION_CHARTS = "charts";
+    export const ACTION_DETAILS = "details";
 }
 
 export namespace ChartsView {

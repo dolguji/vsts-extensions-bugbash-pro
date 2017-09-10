@@ -207,7 +207,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                         <Checkbox 
                             label="Group by team" 
                             checked={this.state.groupedByTeam}
-                            className="groupe-by-checkbox"
+                            className="group-by-checkbox"
                             onChange={() => {
                                 this.updateState({groupedByTeam: !this.state.groupedByTeam} as IBugBashChartsState);
                             }}
