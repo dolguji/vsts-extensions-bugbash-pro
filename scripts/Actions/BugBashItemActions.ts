@@ -273,7 +273,7 @@ export module BugBashItemActions {
         }
         catch (e) {
             BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItemModel: updatedBugBashItem});
-            throw e.message;
+            throw e;
         }
         
         // associate work item with bug bash item

@@ -39,6 +39,7 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
+    private _teamNames: string[];
     private _imagePastedHandler: (event, data) => void;
     private _updateBugBashItemDelayedFunction: CoreUtils.DelayedFunction;
 
@@ -46,6 +47,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         super(props, context);
 
         this._imagePastedHandler = CoreUtils.delegate(this, this._onImagePaste);
+        this._teamNames = StoresHub.teamStore.getAll().map(t => t.name);        
     }
 
     protected getStores(): BaseStore<any, any, any>[] {
@@ -121,8 +123,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 </MessageBar>
             </div>;
         }
-
-        const allTeams = StoresHub.teamStore.getAll();
+        
         const teamId = item.getFieldValue<string>(BugBashItemFieldNames.TeamId);
         const title = item.getFieldValue<string>(BugBashItemFieldNames.Title);
         const description = item.getFieldValue<string>(BugBashItemFieldNames.Description);
@@ -153,10 +154,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             type: "list",
                             mode: "drop",
                             allowEdit: true,
-                            source: allTeams.map(t => t.name)
+                            source: this._teamNames
                         }} 
                         error={this._getTeamError(teamId, team)}
-                        onChange={this._onTeamChange}/>                    
+                        onChange={this._onTeamChange}/>
                 </div>
 
                 { rejected && 
@@ -242,7 +243,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
             return "Team is required.";
         }
         else if (team == null) {
-            return `${teamId} team does not exist.`
+            return `"${teamId}" team does not exist.`
         }
 
         return null;

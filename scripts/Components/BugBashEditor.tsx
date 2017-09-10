@@ -8,11 +8,12 @@ import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
-import { ComboBox, IComboBoxOption, IComboBoxProps } from "OfficeFabric/ComboBox";
+import { Dropdown, IDropdownOption, IDropdownProps } from "OfficeFabric/Dropdown";
 
 import { WebApiTeam } from "TFS/Core/Contracts";
 import { WorkItemTemplateReference, WorkItemField, WorkItemType, FieldType } from "TFS/WorkItemTracking/Contracts";
 
+import { ComboBox } from "MB/Components/Combobox";
 import { DateUtils } from "MB/Utils/Date";
 import { CoreUtils } from "MB/Utils/Core";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
@@ -37,11 +38,11 @@ export interface IBugBashEditorProps extends IBaseComponentProps {
 }
 
 export interface IBugBashEditorState extends IBaseComponentState {
-    workItemTypes: IComboBoxOption[];
-    htmlFields: IComboBoxOption[];
-    templates: IComboBoxOption[];
-    teams: IComboBoxOption[];
+    templates: IDropdownOption[];
     error?: string;
+    teamNames?: string[];
+    workItemTypeNames?: string[];
+    htmlFieldNames?: string[];
 }
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
@@ -56,10 +57,10 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     protected initializeState() {
         this.state = {
             loading: true,
-            workItemTypes: null,
-            htmlFields: null,
             templates: [],
-            teams: null
+            teamNames: null,
+            workItemTypeNames: null,
+            htmlFieldNames: null
         };
     }
 
@@ -71,37 +72,19 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         let state = {
             loading: StoresHub.workItemTypeStore.isLoading() || StoresHub.workItemFieldStore.isLoading() || StoresHub.teamStore.isLoading(),
             error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.BugBashError)
-        } as IBugBashEditorState;
+        } as IBugBashEditorState;  
 
-        if (StoresHub.workItemTypeStore.isLoaded() && !this.state.workItemTypes) {
-            const workItemTypes: IComboBoxOption[] = StoresHub.workItemTypeStore.getAll().map((workItemType: WorkItemType) => {
-                return {
-                    key: workItemType.name.toLowerCase(),
-                    text: workItemType.name
-                }
-            });
-            state = {...state, workItemTypes: workItemTypes};
+        if (StoresHub.workItemTypeStore.isLoaded() && !this.state.workItemTypeNames) {
+            state = {...state, workItemTypeNames: StoresHub.workItemTypeStore.getAll().map(w => w.name)};
         }
 
-        if (StoresHub.workItemFieldStore.isLoaded() && !this.state.htmlFields) {            
-            const htmlFields: IComboBoxOption[] = StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map((field: WorkItemField) => {
-                return {
-                    key: field.referenceName.toLowerCase(),
-                    text: field.name
-                }
-            });
-            state = {...state, htmlFields: htmlFields};
+        if (StoresHub.workItemFieldStore.isLoaded() && !this.state.htmlFieldNames) {    
+            state = {...state, htmlFieldNames: StoresHub.workItemFieldStore.getAll().filter(f => f.type === FieldType.Html).map(f => f.name)};        
         }
 
-        if (StoresHub.teamStore.isLoaded() && !this.state.teams) {            
-            const teams: IComboBoxOption[] = StoresHub.teamStore.getAll().map((team: WebApiTeam) => {
-                return {
-                    key: team.id.toLowerCase(),
-                    text: team.name
-                }
-            });
-            state = {...state, teams: teams};
-        }
+        if (StoresHub.teamStore.isLoaded() && !this.state.teamNames) {       
+            state = {...state, teamNames: StoresHub.teamStore.getAll().map(t => t.name)};
+        }              
 
         const acceptTemplateTeam = this.props.bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateTeam);
         if (StoresHub.workItemTemplateStore.isLoaded(acceptTemplateTeam)) {
@@ -189,13 +172,17 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     private _renderEditor(): JSX.Element {
         const bugBash = this.props.bugBash;        
         const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title);
-        const workItemType = bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
+        const workItemTypeName = bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
         const bugBashDescription = bugBash.getFieldValue<string>(BugBashFieldNames.Description);
         const startTime = bugBash.getFieldValue<Date>(BugBashFieldNames.StartTime);
         const endTime = bugBash.getFieldValue<Date>(BugBashFieldNames.EndTime);
         const itemDescriptionField = bugBash.getFieldValue<string>(BugBashFieldNames.ItemDescriptionField);
         const acceptTemplateId = bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateId);
-        const acceptTemplateTeam = bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateTeam);
+        const acceptTemplateTeamId = bugBash.getFieldValue<string>(BugBashFieldNames.AcceptTemplateTeam);
+
+        const team = StoresHub.teamStore.getItem(acceptTemplateTeamId);
+        const workItemType = StoresHub.workItemTypeStore.getItem(workItemTypeName);
+        const field = StoresHub.workItemFieldStore.getItem(itemDescriptionField);
 
         return <div className="bugbash-editor-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
             <div className="first-section">                        
@@ -243,28 +230,28 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 { startTime && endTime && DateUtils.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
                 <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
-                <ComboBox 
-                    selectedKey={workItemType.toLowerCase()}
-                    onRenderList={this._onRenderCallout}
-                    className={!workItemType ? "editor-dropdown no-margin" : "editor-dropdown"}
-                    allowFreeform={false}
-                    autoComplete="on"
-                    options={this.state.workItemTypes}                            
-                    onChanged={(option: IComboBoxOption) => this._onChange(BugBashFieldNames.WorkItemType, option.key as string, true)} />
-
-                { !workItemType && <InputError error="A work item type is required." /> }
+                <ComboBox                             
+                    value={workItemType ? workItemType.name : workItemTypeName} 
+                    options={{
+                        type: "list",
+                        mode: "drop",
+                        allowEdit: true,
+                        source: this._workItemTypeNames
+                    }} 
+                    error={this._getWorkItemTypeError(workItemTypeName, workItemType)}
+                    onChange={this._onWorkItemTypeChange}/>
 
                 <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
-                <ComboBox 
-                    selectedKey={itemDescriptionField.toLowerCase()}
-                    onRenderList={this._onRenderCallout}
-                    className={!itemDescriptionField ? "editor-dropdown no-margin" : "editor-dropdown"}
-                    allowFreeform={false}
-                    autoComplete="on"
-                    options={this.state.htmlFields} 
-                    onChanged={(option: IComboBoxOption) => this._onChange(BugBashFieldNames.ItemDescriptionField, option.key as string, true)} />
-
-                { !itemDescriptionField && <InputError error="A description field is required." /> }                
+                <ComboBox                             
+                    value={field ? field.name : itemDescriptionField} 
+                    options={{
+                        type: "list",
+                        mode: "drop",
+                        allowEdit: true,
+                        source: this._htmlFieldNames
+                    }} 
+                    error={this._getFieldError(itemDescriptionField, field)}
+                    onChange={this._onFieldChange}/>
             </div>
             <div className="third-section">
                 <div className="checkbox-container">                            
@@ -278,29 +265,23 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 </div>
 
                 <InfoLabel label="Template Team" info="Select a team to pull its templates." />
-                <ComboBox 
-                    selectedKey={acceptTemplateTeam.toLowerCase()}
-                    allowFreeform={false}
-                    autoComplete="on"
-                    onRenderList={this._onRenderCallout}
-                    className="editor-dropdown"
-                    options={this.state.teams} 
-                    onChanged={(option: IComboBoxOption) => {
-                        this.props.bugBash.setFieldValue<string>(BugBashFieldNames.AcceptTemplateId, "", false);
-                        this._onChange(BugBashFieldNames.AcceptTemplateTeam, option.key as string, true);
-                    }} />
-                    
-                { !acceptTemplateTeam && <InputError error="A template team is required." /> }
+                <ComboBox                             
+                    value={team ? team.name : acceptTemplateTeamId} 
+                    options={{
+                        type: "list",
+                        mode: "drop",
+                        allowEdit: true,
+                        source: this._teamNames
+                    }} 
+                    error={this._getTeamError(acceptTemplateTeamId, team)}
+                    onChange={this._onTeamChange}/>
 
                 <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
-                <ComboBox 
+                <Dropdown 
                     selectedKey={acceptTemplateId.toLowerCase()}
-                    allowFreeform={false}
-                    autoComplete="on"
                     onRenderList={this._onRenderCallout}
-                    className="editor-dropdown"
                     options={this.state.templates} 
-                    onChanged={(option: IComboBoxOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
+                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
 
                 { !acceptTemplateId && <InputError error="A work item template is required." /> }
             </div>
@@ -308,7 +289,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     }
 
     @autobind
-    private _onRenderCallout(props?: IComboBoxProps, defaultRender?: (props?: IComboBoxProps) => JSX.Element): JSX.Element {
+    private _onRenderCallout(props?: IDropdownProps, defaultRender?: (props?: IDropdownProps) => JSX.Element): JSX.Element {
         return <div className="callout-container">
                 {defaultRender(props)}
             </div>;        
@@ -339,5 +320,58 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 this.props.bugBash.setFieldValue<T>(fieldName, fieldValue);
             });
         }
-    }    
+    }
+
+    @autobind
+    private _onTeamChange(newTeamName: string) {
+        this.props.bugBash.setFieldValue<string>(BugBashFieldNames.AcceptTemplateId, "", false);
+
+        const newTeam = StoresHub.teamStore.getItem(newTeamName);
+        this._onChange(BugBashFieldNames.AcceptTemplateTeam, newTeam ? newTeam.id : newTeamName);
+    }
+
+    private _getTeamError(teamId: string, team: WebApiTeam): string {
+        if (teamId == null || teamId.trim() === "") {
+            return "A template team is required.";
+        }
+        else if (team == null) {
+            return `Team "${teamId}" does not exist.`;
+        }
+
+        return null;
+    }
+
+    @autobind
+    private _onFieldChange(newFieldName: string) {
+        const newField = StoresHub.workItemFieldStore.getItem(newFieldName);
+        this._onChange(BugBashFieldNames.ItemDescriptionField, newField ? newField.referenceName : newFieldName);
+    }
+
+    private _getFieldError(fieldRefName: string, field: WorkItemField): string {
+        if (fieldRefName == null || fieldRefName.trim() === "") {
+            return "A description field is required.";
+        }
+        else if (field == null || field.type !== FieldType.Html) {
+            return `Field "${fieldRefName}" does not exist or is not a html field.`;
+        }
+
+        return null;
+    }
+
+    @autobind
+    private _onWorkItemTypeChange(newTypeName: string) {
+        const newWIT = StoresHub.workItemTypeStore.getItem(newTypeName);
+        this._onChange(BugBashFieldNames.WorkItemType, newWIT ? newWIT.name : newTypeName);
+    }
+
+    private _getWorkItemTypeError(workItemTypeName: string, workItemType: WorkItemType): string {
+        if (workItemTypeName == null || workItemTypeName.trim() === "") {
+            return "A work item type is required.";
+        }
+        else if (workItemType == null) {
+            return `Work item type "${workItemTypeName}" does not exist.`;
+        }
+
+        return null;
+    }
 }

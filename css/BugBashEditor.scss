@@ -4,6 +4,10 @@
         display: flex;
         flex-direction: row;        
 
+        .combobox {
+            margin-bottom: 5px;
+        }
+
         .first-section {
             flex: 2;
         }
@@ -24,11 +28,7 @@
         }
 
         .input-error .error-icon {
-            padding: 0;
-        }
-
-        .editor-dropdown.no-margin {
-            margin-bottom: 5px;
+            padding-top: 2px;
         }
 
         .info-label {

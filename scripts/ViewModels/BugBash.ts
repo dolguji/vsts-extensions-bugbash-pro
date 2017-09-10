@@ -1,9 +1,11 @@
 import { IBugBash } from "../Interfaces";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashFieldNames, SizeLimits } from "../Constants";
+import { StoresHub } from "../Stores/StoresHub";
 
 import { StringUtils } from "MB/Utils/String";
 import { DateUtils } from "MB/Utils/Date";
+import { FieldType } from "TFS/WorkItemTracking/Contracts";
 
 export class BugBash {
     public static getNewBugBashModel(): IBugBash {
@@ -113,12 +115,22 @@ export class BugBash {
     public isValid(): boolean {
         const updatedModel: IBugBash = {...this._originalModel, ...this._updates};
 
-        return updatedModel.title.trim().length > 0
+        let dataValid = updatedModel.title.trim().length > 0
             && updatedModel.title.length <= SizeLimits.TitleFieldMaxLength
             && updatedModel.workItemType.trim().length > 0
             && updatedModel.itemDescriptionField.trim().length > 0
             && updatedModel.acceptTemplateId.trim().length > 0
             && updatedModel.acceptTemplateTeam.trim().length > 0
             && (!updatedModel.startTime || !updatedModel.endTime || DateUtils.defaultComparer(updatedModel.startTime, updatedModel.endTime) < 0);
+
+        if (dataValid) {
+            dataValid = dataValid 
+                && StoresHub.teamStore.getItem(updatedModel.acceptTemplateTeam) != null
+                && StoresHub.workItemTypeStore.getItem(updatedModel.workItemType) != null
+                && StoresHub.workItemFieldStore.getItem(updatedModel.itemDescriptionField) != null
+                && StoresHub.workItemFieldStore.getItem(updatedModel.itemDescriptionField).type === FieldType.Html
+        }
+
+        return dataValid;
     }
 }
