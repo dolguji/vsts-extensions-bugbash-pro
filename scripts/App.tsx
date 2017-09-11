@@ -72,6 +72,18 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
         } as IAppState;
     }
 
+    public shouldComponentUpdate(_nextProps: Readonly<IBaseComponentProps>, nextState: Readonly<IAppState>) {
+        if (this.state.appViewMode !== nextState.appViewMode
+            || this.state.bugBashId !== nextState.bugBashId
+            || this.state.userSettingsAvailable !== nextState.userSettingsAvailable
+            || this.state.loading !== nextState.loading) {
+
+            return true;
+        }
+
+        return false;
+    }
+
     public render(): JSX.Element {
         let view;
 
@@ -111,7 +123,7 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
     }
     
     private _renderBadge(): JSX.Element {
-        if (this.state.userSettingsAvailable) {
+        if (!this.state.userSettingsAvailable) {
             return <Badge className="bugbash-badge" notificationCount={1}>
                 <div className="bugbash-badge-callout">
                     <div className="badge-callout-header">
