@@ -11,11 +11,15 @@ import { autobind } from "OfficeFabric/Utilities";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { Loading } from "MB/Components/Loading";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
+import { Badge } from "MB/Components/Badge";
+import { BaseStore } from "MB/Flux/Stores/BaseStore";
 
 import { UrlActions } from "./Constants";
 import { BugBashView } from "./Components/BugBashView";
 import * as AllBugBashesView_Async from "./Components/AllBugBashesView";
 import { navigate } from "./Helpers";
+import { StoresHub } from "./Stores/StoresHub";
+import { SettingsActions } from "./Actions/SettingsActions";
 
 export enum AppViewMode {
     All,
@@ -29,6 +33,7 @@ export enum AppViewMode {
 export interface IAppState extends IBaseComponentState {
     appViewMode: AppViewMode;
     bugBashId?: string;
+    userSettingsAvailable?: boolean;
 }
 
 const AsyncAllBugBashView = getAsyncLoadedComponent(
@@ -41,18 +46,30 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
 
     protected initializeState() {
         this.state = {
-            appViewMode: null
+            appViewMode: null,
+            userSettingsAvailable: true
         };
+    }
+
+    protected getStores(): BaseStore<any, any, any>[] {
+        return [StoresHub.userSettingsStore];
     }
 
     public componentDidMount() { 
         super.componentDidMount();
         this._initialize();
+        SettingsActions.initializeUserSettings();
     }
 
     public componentWillUnmount() { 
         super.componentWillUnmount();
         this._detachNavigate();
+    }
+
+    protected getStoresState(): IAppState {
+        return {            
+            userSettingsAvailable: StoresHub.userSettingsStore.isLoading() ? true : StoresHub.userSettingsStore.getItem(VSS.getWebContext().user.email) != null
+        } as IAppState;
     }
 
     public render(): JSX.Element {
@@ -87,10 +104,36 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
 
         return (
             <Fabric className="fabric-container bowtie-fabric">
-                {view}
+                { this._renderBadge() }
+                { view }
             </Fabric>
         );
-    }    
+    }
+    
+    private _renderBadge(): JSX.Element {
+        if (this.state.userSettingsAvailable) {
+            return <Badge className="bugbash-badge" notificationCount={1}>
+                <div className="bugbash-badge-callout">
+                    <div className="badge-callout-header">
+                        Don't forget to set your associated team!!
+                    </div>
+                    <div className="badge-callout-inner">
+                        <div>
+                            You can set a team associated with you in the current project by clicking on "Settings" link in the Bug Bash home page.
+                        </div>
+                        <div>
+                            If you have set a team associated with you, any bug bash item created by you will also count towards your team.
+                        </div>
+                        <div>
+                            This will be reflected in the "Created By" chart in a Bug Bash.
+                        </div>
+                    </div>
+                </div>
+            </Badge>;
+        }
+
+        return null;
+    }
 
     private async _initialize() {
         this._navigationService = await VSS.getService(VSS.ServiceIds.Navigation) as HostNavigationService;

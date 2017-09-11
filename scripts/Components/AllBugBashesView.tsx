@@ -16,7 +16,6 @@ import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Comp
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
 import { Hub } from "MB/Components/Hub";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
-import { Badge } from "MB/Components/Badge";
 import { DateUtils } from "MB/Utils/Date";
 import { StringUtils } from "MB/Utils/String";
 
@@ -27,7 +26,6 @@ import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 import * as SettingsPanel_Async from "./SettingsPanel";
 import { BugBash } from "../ViewModels/BugBash";
-import { SettingsActions } from "../Actions/SettingsActions";
 
 interface IAllBugBashesViewState extends IBaseComponentState {
     pastBugBashes: BugBash[];
@@ -35,8 +33,7 @@ interface IAllBugBashesViewState extends IBaseComponentState {
     upcomingBugBashes: BugBash[];
     settingsPanelOpen: boolean;
     selectedPivot?: string;
-    error?: string;
-    userSettingsAvailable?: boolean;
+    error?: string;    
 }
 
 const AsyncSettingsPanel = getAsyncLoadedComponent(
@@ -46,7 +43,7 @@ const AsyncSettingsPanel = getAsyncLoadedComponent(
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
     protected getStores(): BaseStore<any, any, any>[] {
-        return [StoresHub.bugBashStore, StoresHub.bugBashErrorMessageStore, StoresHub.userSettingsStore];
+        return [StoresHub.bugBashStore, StoresHub.bugBashErrorMessageStore];
     }
 
     protected initializeState() {
@@ -57,15 +54,13 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             loading: true,
             selectedPivot: "ongoing",
             settingsPanelOpen: false,
-            error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError),
-            userSettingsAvailable: true
+            error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError)
         };
     }
 
     public componentDidMount() {
         super.componentDidMount();
-        BugBashActions.initializeAllBugBashes(); 
-        SettingsActions.initializeUserSettings();
+        BugBashActions.initializeAllBugBashes();     
     }
 
     public componentWillUnmount() {
@@ -83,15 +78,13 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             currentBugBashes: this._getCurrentBugBashes(allBugBashes, currentTime),
             upcomingBugBashes: this._getUpcomingBugBashes(allBugBashes, currentTime),
             loading: StoresHub.bugBashStore.isLoading(),
-            error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError),
-            userSettingsAvailable: StoresHub.userSettingsStore.isLoading() ? true : StoresHub.userSettingsStore.getItem(VSS.getWebContext().user.email) != null
+            error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError)
         } as IAllBugBashesViewState;
     }
 
     public render(): JSX.Element {
         return (
-            <div className="all-view">
-                { this._renderBadge() }
+            <div className="all-view">                
                 { this.state.error && 
                     <MessageBar 
                         className="bugbash-error"
@@ -150,31 +143,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     @autobind
     private _dismissSettingsPanel() {
         this.updateState({settingsPanelOpen: false} as IAllBugBashesViewState);
-    }
-
-    private _renderBadge(): JSX.Element {
-        if (!this.state.userSettingsAvailable) {
-            return <Badge className="bugbash-badge" notificationCount={1}>
-                <div className="bugbash-badge-callout">
-                    <div className="badge-callout-header">
-                        Don't forget to set your associated team!!
-                    </div>
-                    <div className="badge-callout-inner">
-                        <div>
-                            You can set a team associated with you in the current project by clicking on "Settings" link in the Bug Bash home page.
-                        </div>
-                        <div>
-                            If you have set a team associated with you, any bug bash item created by you will also count towards your team.
-                        </div>
-                        <div>
-                            This will be reflected in the "Created By" chart in a Bug Bash.
-                        </div>
-                    </div>
-                </div>
-            </Badge>;
-        }
-
-        return null;
     }
 
     @autobind

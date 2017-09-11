@@ -48,38 +48,48 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<BugBashItem[
         });        
 
         BugBashItemActionsHub.InitializeBugBashItems.addListener((data: IBugBashItemsActionData) => {
-            this._refreshBugBashItems(data.bugBashId, data.bugBashItemModels);
+            this._refreshBugBashItems(data);
             this.emitChanged();
         });
 
         BugBashItemActionsHub.RefreshBugBashItems.addListener((data: IBugBashItemsActionData) => {
-            this._refreshBugBashItems(data.bugBashId, data.bugBashItemModels);
+            this._refreshBugBashItems(data);
             this.emitChanged();
         });
 
         BugBashItemActionsHub.RefreshBugBashItem.addListener((data: IBugBashItemActionData) => {
-            this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            if (data) {
+                this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            }
             this.emitChanged();
         });
 
         BugBashItemActionsHub.CreateBugBashItem.addListener((data: IBugBashItemActionData) => {
-            this._newBugBashItem.reset(false);
-            this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            if (data) {
+                this._newBugBashItem.reset(false);
+                this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            }            
             this.emitChanged();
         });
 
         BugBashItemActionsHub.UpdateBugBashItem.addListener((data: IBugBashItemActionData) => {
-            this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            if (data) {
+                this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            }
             this.emitChanged();
         });
 
         BugBashItemActionsHub.DeleteBugBashItem.addListener((data: IBugBashItemIdActionData) => {
-            this._removeBugBashItem(data.bugBashId, data.bugBashItemId);
+            if (data) {
+                this._removeBugBashItem(data.bugBashId, data.bugBashItemId);
+            }
             this.emitChanged();
         });
 
         BugBashItemActionsHub.AcceptBugBashItem.addListener((data: IBugBashItemActionData) => {
-            this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            if (data) {
+                this._addBugBashItem(data.bugBashId, data.bugBashItemModel);
+            }
             this.emitChanged();
         });        
     } 
@@ -92,8 +102,11 @@ export class BugBashItemStore extends BaseStore<IDictionaryStringTo<BugBashItem[
         return key;
     }
 
-    private _refreshBugBashItems(bugBashId: string, bugBashItemModels: IBugBashItem[]) {
-        if (bugBashItemModels) {
+    private _refreshBugBashItems(data: IBugBashItemsActionData) {
+        if (data && data.bugBashId && data.bugBashItemModels) {
+            const bugBashId = data.bugBashId;
+            const bugBashItemModels = data.bugBashItemModels;
+
             this.items[bugBashId.toLowerCase()] = [];
             this._itemsIdMap[bugBashId.toLowerCase()] = {};
             for (const bugBashItemModel of bugBashItemModels) {
