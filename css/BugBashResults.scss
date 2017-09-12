@@ -36,27 +36,28 @@
                     margin-right: 10px;
                 }
 
-                .identity-view {
-                    font-size: 13px;
-                    height: 20px;
-                    line-height: 20px;
-                    margin-right: 0;
-                    overflow: visible;
-                    
-                    .ms-Persona-details {
-                        padding: 0 0 0 5px;
-                    }
-
-                    .ms-Persona-primaryText {
-                        font-size: 13px;
-                    }
-                }
-
                 .item-grid-cell {
                     padding: 0;
                     margin: 0;
                     display: inline;
                     font-size: 13px;
+
+                    &.identity-view {
+                        font-size: 13px;
+                        height: 20px;
+                        line-height: 20px;
+                        margin-right: 0;
+                        overflow: visible;
+                        display: flex;
+                        
+                        .ms-Persona-details {
+                            padding: 0 0 0 5px;
+                        }
+    
+                        .ms-Persona-primaryText {
+                            font-size: 13px;
+                        }
+                    }
 
                     &.is-dirty {
                         font-weight: bold;
@@ -73,7 +74,7 @@
                     &.is-invalid {
                         color: red;
 
-                        .identity-view {
+                        &.identity-view {
                             .ms-Persona-primaryText {
                                 color: red;
                             }

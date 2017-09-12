@@ -484,7 +484,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(bugBashItem)}`}>
+                            <Label className={getCellClassName(bugBashItem)}>
                                 {`${bugBashItem.isDirty() ? "* " : ""}${title}`}
                             </Label>
                         </TooltipHost>
@@ -514,7 +514,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(bugBashItem)}`}>
+                            <Label className={getCellClassName(bugBashItem)}>
                                 {team ? team.name : teamId}
                             </Label>
                         </TooltipHost>
@@ -551,7 +551,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <IdentityView className={`${getCellClassName(bugBashItem)}`} identityDistinctName={createdBy} />
+                            <IdentityView className={getCellClassName(bugBashItem)} identityDistinctName={createdBy} />
                         </TooltipHost>
                     )
                 },
@@ -577,7 +577,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(bugBashItem)}`}>
+                            <Label className={getCellClassName(bugBashItem)}>
                                 {DateUtils.friendly(createdDate)}
                             </Label>
                         </TooltipHost>
@@ -607,7 +607,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <IdentityView identityDistinctName={rejectedBy} />
+                            <IdentityView className={getCellClassName(bugBashItem)} identityDistinctName={rejectedBy} />
                         </TooltipHost>
                     )
                 },
@@ -634,7 +634,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             overflowMode={TooltipOverflowMode.Parent}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <Label className={`${getCellClassName(bugBashItem)}`}>
+                            <Label className={getCellClassName(bugBashItem)}>
                                 {rejectReason}
                             </Label>
                         </TooltipHost>
