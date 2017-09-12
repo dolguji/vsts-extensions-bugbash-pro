@@ -551,7 +551,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             delay={TooltipDelay.medium}
                             directionalHint={DirectionalHint.bottomLeftEdge}>
 
-                            <IdentityView identityDistinctName={createdBy} />
+                            <IdentityView className={`${getCellClassName(bugBashItem)}`} identityDistinctName={createdBy} />
                         </TooltipHost>
                     )
                 },

@@ -104,33 +104,43 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
     public render() {
         if (this.state.loading) {
             return <Loading />;
-        }
+        }        
 
         if (this.state.allBugBashItems.length === 0) {
             return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
-                No items created yet.
+                No items created yet
             </MessageBar>;            
         }
 
-        let bugBashItems: any = this.state.allBugBashItems;
+        let bugBashItems: BugBashItem[] = this.state.allBugBashItems;
+        let emptyMessage = "No items created yet";
         if (this.props.view === ChartsView.AcceptedItemsOnly) {
             bugBashItems = this.state.acceptedBugBashItems;
+            emptyMessage = "No item has been accepted yet.";
         }
         else if (this.props.view === ChartsView.RejectedItemsOnly) {
             bugBashItems = this.state.rejectedBugBashItems;
+            emptyMessage = "No item has been rejected yet.";
         }
         else if (this.props.view === ChartsView.PendingItemsOnly) {
             bugBashItems = this.state.pendingBugBashItems;
+            emptyMessage = "No pending items left.";
         }
         
+        if (bugBashItems.length === 0) {
+            return <MessageBar messageBarType={MessageBarType.info} className="message-panel">
+                {emptyMessage}
+            </MessageBar>;            
+        }
+
         let assignedToTeamCounts: IDictionaryStringTo<number> = {};
         let createdByCounts: IDictionaryStringTo<{count: number, members: IDictionaryStringTo<number>}> = {};
         let assignedToTeamData: INameValuePair[] = [];
         let createdByData: INameValuePair[] = [];
 
         for (const model of bugBashItems) {
-            const teamId = model.teamId;
-            const createdBy = model.createdBy;
+            const teamId = model.getFieldValue<string>(BugBashItemFieldNames.TeamId, true);
+            const createdBy = model.getFieldValue<string>(BugBashItemFieldNames.CreatedBy, true);
             const createdByUser = parseUniquefiedIdentityName(createdBy);
             const userSetting = StoresHub.userSettingsStore.getItem(createdByUser.uniqueName);
             const associatedTeamId = userSetting ? userSetting.associatedTeam : "";
