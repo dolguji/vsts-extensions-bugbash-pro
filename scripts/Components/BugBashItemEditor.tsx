@@ -83,6 +83,8 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>) {
         if (this.props.bugBashItem.id !== nextProps.bugBashItem.id) {
+            this._dismissErrorMessage();
+
             if (nextProps.bugBashItem.id && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
                 this.updateState({
                     comments: StoresHub.bugBashItemCommentStore.getItem(nextProps.bugBashItem.id),
@@ -106,7 +108,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     }
 
     public componentWillUnmount() {
+        super.componentWillUnmount();
         $(window).off("imagepasted", this._imagePastedHandler);
+        this._dismissErrorMessage();
     }    
 
     public render(): JSX.Element {
@@ -272,9 +276,16 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         return null;
     }
 
-    private _onImagePaste(_event, args) {
-        const gitPath = StoresHub.bugBashStore.getItem(this.props.bugBashId).getFieldValue<string>(BugBashFieldNames.Title, true).replace(" ", "_")
-        copyImageToGitRepo(args.data, gitPath, args.callback);        
+    private async _onImagePaste(_event, args) {
+        const gitPath = StoresHub.bugBashStore.getItem(this.props.bugBashId).getFieldValue<string>(BugBashFieldNames.Title, true).replace(" ", "_");
+
+        try {
+            const imageUrl = await copyImageToGitRepo(args.data, gitPath);
+            args.callback(imageUrl);
+        }
+        catch (e) {
+            BugBashErrorMessageActions.showErrorMessage(e, ErrorKeys.BugBashItemError);
+        }
     }   
 
     @autobind

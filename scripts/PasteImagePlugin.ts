@@ -19,9 +19,6 @@
                                             if (imageUrl) {
                                                 trumbowyg.execCmd('insertImage', imageUrl, undefined, true);
                                             }
-                                            else {
-                                                trumbowyg.execCmd('insertImage', data, undefined, true);
-                                            }
                                         }});
                                     };
                                     reader.readAsDataURL(items[i].getAsFile());

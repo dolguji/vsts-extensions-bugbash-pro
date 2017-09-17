@@ -52,6 +52,11 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
         GitRepoActions.initializeGitRepos();
     }
 
+    public componentWillUnmount() {
+        super.componentWillUnmount();
+        this._dismissErrorMessage();
+    }
+
     protected getStoresState(): ISettingsPanelState {
         const isLoading = StoresHub.bugBashSettingsStore.isLoading() || StoresHub.gitRepoStore.isLoading() || StoresHub.teamStore.isLoading() || StoresHub.userSettingsStore.isLoading();
         const bugBashSettings = StoresHub.bugBashSettingsStore.getAll();

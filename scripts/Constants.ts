@@ -22,6 +22,7 @@ export namespace ResultsView {
 export namespace ErrorKeys {
     export const DirectoryPageError = "DirectoryPageError";
     export const BugBashError = "BugBashError";
+    export const BugBashDetailsError = "BugBashDetailsError";
     export const BugBashItemError = "BugBashItemError";
     export const BugBashSettingsError = "BugBashSettingsError";
 }

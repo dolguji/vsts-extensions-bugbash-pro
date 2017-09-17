@@ -19,9 +19,10 @@ import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
+import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames, ErrorKeys } from "../Constants";
 import { BugBash } from "../ViewModels/BugBash";
 import { BugBashClientActionsHub } from "../Actions/ActionsHub";
+import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 import * as BugBashEditor_Async from "./BugBashEditor";
 import * as BugBashResults_Async from "./BugBashResults";
 import * as BugBashCharts_Async from "./BugBashCharts";
@@ -107,16 +108,24 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         }
 
         StoresHub.bugBashItemStore.getNewBugBashItem().reset(false);
+
+        BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashError);
+        BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashItemError);
+        BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashDetailsError);
     }
     
     public componentWillReceiveProps(nextProps: Readonly<IBugBashViewProps>) {
         if (nextProps.bugBashId !== this.props.bugBashId) {
+            BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashError);
+            BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashItemError);
+            BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashDetailsError);
+
             if (!nextProps.bugBashId) {
                 this.updateState({
                     bugBash: StoresHub.bugBashStore.getNewBugBash(),
                     loading: false,
                     selectedPivot: nextProps.pivotKey
-                });                
+                });
             }
             else if (StoresHub.bugBashStore.getItem(nextProps.bugBashId)) {
                 this.updateState({

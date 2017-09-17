@@ -39,7 +39,7 @@ export async function confirmAction(condition: boolean, msg: string): Promise<bo
     return true;
 }
 
-export async function copyImageToGitRepo(imageData: any, gitFolderSuffix: string, callback) {
+export async function copyImageToGitRepo(imageData: any, gitFolderSuffix: string): Promise<string> {
     const settings = StoresHub.bugBashSettingsStore.getAll();
     if (settings && settings.gitMediaRepo) {
         const dataStartIndex = imageData.indexOf(",") + 1;
@@ -57,15 +57,14 @@ export async function copyImageToGitRepo(imageData: any, gitFolderSuffix: string
             const pushModel = buildGitPush(gitPath, gitItem.commitId, VersionControlChangeType.Add, dataPart, ItemContentType.Base64Encoded);
             await gitClient.createPush(pushModel, settings.gitMediaRepo, projectId);
 
-            const imageUrl = `${VSS.getWebContext().collection.uri}/${VSS.getWebContext().project.id}/_api/_versioncontrol/itemContent?repositoryId=${settings.gitMediaRepo}&path=${gitPath}&version=GBmaster&contentOnly=true`;
-            callback(imageUrl);
+            return `${VSS.getWebContext().collection.uri}/${VSS.getWebContext().project.id}/_api/_versioncontrol/itemContent?repositoryId=${settings.gitMediaRepo}&path=${gitPath}&version=GBmaster&contentOnly=true`;
         }
         catch (e) {
-            callback(null);
+            throw e.message;
         }
     }
     else {
-        callback(null);
+        throw "No Git repo setup to store image files. Please setup a git repo in Bug Bash settings to store media and attachments.";
     }
 }
 

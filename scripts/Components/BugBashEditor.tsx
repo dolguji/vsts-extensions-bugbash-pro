@@ -292,11 +292,17 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
     private _onRenderCallout(props?: IDropdownProps, defaultRender?: (props?: IDropdownProps) => JSX.Element): JSX.Element {
         return <div className="callout-container">
                 {defaultRender(props)}
-            </div>;        
+            </div>;
     }
 
-    private _onImagePaste(_event, args) {
-        copyImageToGitRepo(args.data, "Description", args.callback);        
+    private async _onImagePaste(_event, args) {
+        try {
+            const imageUrl = await copyImageToGitRepo(args.data, "Description");   
+            args.callback(imageUrl);
+        }
+        catch (e) {
+            BugBashErrorMessageActions.showErrorMessage(e, ErrorKeys.BugBashError);
+        }
     }    
     
     @autobind
