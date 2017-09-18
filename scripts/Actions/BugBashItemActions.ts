@@ -4,6 +4,7 @@ import { WorkItemTemplateItemActions } from "MB/Flux/Actions/WorkItemTemplateIte
 import { TeamFieldActions } from "MB/Flux/Actions/TeamFieldActions";
 import { WorkItemActions } from "MB/Flux/Actions/WorkItemActions";
 import { DateUtils } from "MB/Utils/Date";
+import { StringUtils } from "MB/Utils/String";
 
 import { WorkItem, WorkItemTemplate } from "TFS/WorkItemTracking/Contracts";
 
@@ -125,7 +126,6 @@ export module BugBashItemActions {
         if (!StoresHub.bugBashItemStore.isLoading(bugBashId)) {
             try {
                 let cloneBugBashItemModel = {...bugBashItemModel};
-                cloneBugBashItemModel.id = `${bugBashId}_${Date.now().toString()}`;
                 cloneBugBashItemModel.bugBashId = bugBashId;
                 cloneBugBashItemModel.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
                 cloneBugBashItemModel.createdDate = new Date(Date.now());
@@ -200,7 +200,7 @@ export module BugBashItemActions {
     }    
 
     function getBugBashCollectionKey(bugBashId: string): string {
-        return `BugBashCollection_${bugBashId}`;
+        return StringUtils.isGuid(bugBashId) ? `Items_${bugBashId}` : `BugBashCollection_${bugBashId}`;
     }
 
     function preProcessModel(bugBashItem: IBugBashItem) {

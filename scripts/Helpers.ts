@@ -64,7 +64,7 @@ export async function copyImageToGitRepo(imageData: any, gitFolderSuffix: string
         }
     }
     else {
-        throw "No Git repo setup to store image files. Please setup a git repo in Bug Bash settings to store media and attachments.";
+        throw "Image copy failed. No Git repo is setup yet to store image files. Please setup a git repo in Bug Bash settings to store media and attachments.";
     }
 }
 

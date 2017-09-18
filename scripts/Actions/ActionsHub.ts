@@ -1,6 +1,6 @@
 import { Action } from "MB/Flux/Actions/Action";
 
-import { IUserSettings, IBugBashSettings, IBugBash, IBugBashItemComment, IBugBashItemActionData, IBugBashItemsActionData, IBugBashItemIdActionData } from "../Interfaces";
+import { ILongText, IUserSettings, IBugBashSettings, IBugBash, IBugBashItemComment, IBugBashItemActionData, IBugBashItemsActionData, IBugBashItemIdActionData } from "../Interfaces";
 
 export namespace BugBashClientActionsHub {
     export const SelectedBugBashItemChanged = new Action<string>();
@@ -45,4 +45,9 @@ export namespace BugBashItemActionsHub {
 export namespace BugBashErrorMessageActionsHub {
     export const PushErrorMessage = new Action<{errorMessage: string, errorKey: string}>();
     export const DismissErrorMessage = new Action<string>();
+}
+
+export namespace LongTextActionsHub {
+    export const AddOrUpdateLongText = new Action<ILongText>();
+    export const FireStoreChange = new Action<void>();
 }

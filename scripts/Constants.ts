@@ -35,7 +35,6 @@ export enum BugBashFieldNames {
     ProjectId = "projectId",
     ItemDescriptionField = "itemDescriptionField",
     AutoAccept = "autoAccept",
-    Description = "description",
     StartTime = "startTime",
     EndTime = "endTime",
     AcceptTemplateTeam = "acceptTemplateTeam",

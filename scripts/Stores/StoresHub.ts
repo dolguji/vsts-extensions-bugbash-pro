@@ -15,16 +15,18 @@ import { BugBashItemStore } from "./BugBashItemStore";
 import { BugBashItemCommentStore } from "./BugBashItemCommentStore";
 import { BugBashSettingsStore } from "./BugBashSettingsStore";
 import { UserSettingsStore } from "./UserSettingsStore";
+import { LongTextStore } from "./LongTextStore";
 
 export namespace StoresHub {
-    export const workItemStore: WorkItemStore = StoreFactory.getInstance<WorkItemStore>(WorkItemStore);
     export const bugBashSettingsStore: BugBashSettingsStore = StoreFactory.getInstance<BugBashSettingsStore>(BugBashSettingsStore);
     export const userSettingsStore: UserSettingsStore = StoreFactory.getInstance<UserSettingsStore>(UserSettingsStore);
     export const bugBashStore: BugBashStore = StoreFactory.getInstance<BugBashStore>(BugBashStore);
     export const bugBashItemStore: BugBashItemStore = StoreFactory.getInstance<BugBashItemStore>(BugBashItemStore);
     export const bugBashErrorMessageStore: BugBashErrorMessageStore = StoreFactory.getInstance<BugBashErrorMessageStore>(BugBashErrorMessageStore);
     export const bugBashItemCommentStore: BugBashItemCommentStore = StoreFactory.getInstance<BugBashItemCommentStore>(BugBashItemCommentStore);
+    export const longTextStore: LongTextStore = StoreFactory.getInstance<LongTextStore>(LongTextStore);
 
+    export const workItemStore: WorkItemStore = StoreFactory.getInstance<WorkItemStore>(WorkItemStore);
     export const gitRepoStore: GitRepoStore = StoreFactory.getInstance<GitRepoStore>(GitRepoStore);
     export const teamStore: TeamStore = StoreFactory.getInstance<TeamStore>(TeamStore);
     export const teamFieldStore: TeamFieldStore = StoreFactory.getInstance<TeamFieldStore>(TeamFieldStore);

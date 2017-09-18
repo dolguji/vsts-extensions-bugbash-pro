@@ -1,12 +1,11 @@
 export interface IBugBash {
-    id: string;
-    readonly __etag: number;
+    id?: string;
+    readonly __etag?: number;
     title: string;
     workItemType: string;
     projectId: string;
     itemDescriptionField: string;
     autoAccept: boolean;
-    description?: string;    
     startTime?: Date;
     endTime?: Date;
     acceptTemplateTeam?: string;
@@ -14,9 +13,9 @@ export interface IBugBash {
 }
 
 export interface IBugBashItem {
-    id: string;
+    id?: string;
+    readonly __etag?: number;
     bugBashId: string;
-    readonly __etag: number;
     title: string;
     workItemId: number;    
     teamId: string;
@@ -29,8 +28,8 @@ export interface IBugBashItem {
 }
 
 export interface IBugBashItemComment {
-    id: string;
-    readonly __etag: number;
+    id?: string;
+    readonly __etag?: number;
     content: string;
     createdDate: Date;
     createdBy: string;
@@ -42,7 +41,7 @@ export interface IBugBashSettings {
 
 export interface IUserSettings {
     id: string;
-    readonly __etag: number;
+    readonly __etag?: number;
     associatedTeam: string;
 }
 
@@ -65,4 +64,10 @@ export interface IBugBashItemActionData {
 export interface IBugBashItemIdActionData {
     bugBashId: string;
     bugBashItemId: string;
+}
+
+export interface ILongText {
+    id?: string;
+    readonly __etag?: number;
+    text: string;
 }

@@ -69,7 +69,6 @@ export class SettingsPanel extends BaseComponent<IBaseComponentProps, ISettingsP
             if (userSetting == null) {
                 userSetting = {
                     id: VSS.getWebContext().user.email,
-                    __etag: 0,
                     associatedTeam: null
                 }
             }

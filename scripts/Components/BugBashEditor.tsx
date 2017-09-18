@@ -4,7 +4,6 @@ import * as React from "react";
 
 import { TextField } from "OfficeFabric/TextField";
 import { DatePicker } from "OfficeFabric/DatePicker";
-import { Label } from "OfficeFabric/Label";
 import { autobind } from "OfficeFabric/Utilities";
 import { Checkbox } from "OfficeFabric/Checkbox";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
@@ -27,11 +26,9 @@ import { WorkItemTemplateActions } from "MB/Flux/Actions/WorkItemTemplateActions
 import { TeamActions } from "MB/Flux/Actions/TeamActions";
 
 import { StoresHub } from "../Stores/StoresHub";
-import { RichEditorComponent } from "./RichEditorComponent";
 import { BugBash } from "../ViewModels/BugBash";
 import { ErrorKeys, BugBashFieldNames, SizeLimits } from "../Constants";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
-import { copyImageToGitRepo } from "../Helpers";
 
 export interface IBugBashEditorProps extends IBaseComponentProps {
     bugBash: BugBash;
@@ -46,13 +43,7 @@ export interface IBugBashEditorState extends IBaseComponentState {
 }
 
 export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEditorState>  {
-    private _imagePastedHandler: (event, data) => void;    
     private _updateBugBashDelayedFunction: CoreUtils.DelayedFunction;
-
-    constructor(props: IBugBashEditorProps, context?: any) {
-        super(props, context);
-        this._imagePastedHandler = CoreUtils.delegate(this, this._onImagePaste);
-    }
 
     protected initializeState() {
         this.state = {
@@ -103,8 +94,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
 
     public componentDidMount() {
         super.componentDidMount();
-        $(window).off("imagepasted", this._imagePastedHandler);
-        $(window).on("imagepasted", this._imagePastedHandler);    
     
         WorkItemFieldActions.initializeWorkItemFields();
         WorkItemTypeActions.initializeWorkItemTypes();
@@ -139,11 +128,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         }
     }
 
-    public componentWillUnmount() {
-        super.componentWillUnmount();
-        $(window).off("imagepasted", this._imagePastedHandler);
-    }
-
     public render(): JSX.Element {
         if (this.state.loading) {
             return <Loading />;
@@ -173,7 +157,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         const bugBash = this.props.bugBash;        
         const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title);
         const workItemTypeName = bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType);
-        const bugBashDescription = bugBash.getFieldValue<string>(BugBashFieldNames.Description);
         const startTime = bugBash.getFieldValue<Date>(BugBashFieldNames.StartTime);
         const endTime = bugBash.getFieldValue<Date>(BugBashFieldNames.EndTime);
         const itemDescriptionField = bugBash.getFieldValue<string>(BugBashFieldNames.ItemDescriptionField);
@@ -185,7 +168,7 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
         const field = StoresHub.workItemFieldStore.getItem(itemDescriptionField);
 
         return <div className="bugbash-editor-contents" onKeyDown={this._onEditorKeyDown} tabIndex={0}>
-            <div className="first-section">                        
+            <div className="title-container">
                 <TextField 
                     label="Title"
                     value={bugBashTitle} 
@@ -193,97 +176,82 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 
                 { (bugBashTitle == null || bugBashTitle.trim() === "") && <InputError error="Title is required." /> }
                 { bugBashTitle && bugBashTitle.length > SizeLimits.TitleFieldMaxLength && <InputError error={`The length of the title should be less than 257 characters, actual is ${bugBashTitle.length}.`} /> }
-
-                <Label>Description</Label>
-                <RichEditorComponent 
-                    containerId="bugbash-description-editor" 
-                    data={bugBashDescription} 
-                    editorOptions={{
-                        svgPath: `${VSS.getExtensionContext().baseUri}/css/libs/icons.png`,
-                        btns: [
-                            ['formatting'],
-                            ['bold', 'italic'], 
-                            ['link'],
-                            ['insertImage'],
-                            'btnGrp-lists',
-                            ['removeformat'],
-                            ['fullscreen']
-                        ]
-                    }}
-                    onChange={(newValue: string) => this._onChange(BugBashFieldNames.Description, newValue)} />
             </div>
-            <div className="second-section">                
-                <DatePicker 
-                    label="Start Date" 
-                    allowTextInput={true} 
-                    isRequired={false} 
-                    value={startTime}
-                    onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.StartTime, newValue)} />
 
-                <DatePicker 
-                    label="Finish Date" 
-                    allowTextInput={true}
-                    isRequired={false} 
-                    value={endTime} 
-                    onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.EndTime, newValue)} />
+            <div className="section-container">                
+                <div className="first-section">                
+                    <DatePicker 
+                        label="Start Date" 
+                        allowTextInput={true} 
+                        isRequired={false} 
+                        value={startTime}
+                        onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.StartTime, newValue)} />
 
-                { startTime && endTime && DateUtils.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
+                    <DatePicker 
+                        label="Finish Date" 
+                        allowTextInput={true}
+                        isRequired={false} 
+                        value={endTime} 
+                        onSelectDate={(newValue: Date) => this._onChange(BugBashFieldNames.EndTime, newValue)} />
 
-                <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
-                <ComboBox                             
-                    value={workItemType ? workItemType.name : workItemTypeName} 
-                    options={{
-                        type: "list",
-                        mode: "drop",
-                        allowEdit: true,
-                        source: this.state.workItemTypeNames
-                    }} 
-                    error={this._getWorkItemTypeError(workItemTypeName, workItemType)}
-                    onChange={this._onWorkItemTypeChange}/>
+                    { startTime && endTime && DateUtils.defaultComparer(startTime, endTime) >= 0 &&  <InputError error="Bugbash end time cannot be a date before bugbash start time." />}
 
-                <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
-                <ComboBox                             
-                    value={field ? field.name : itemDescriptionField} 
-                    options={{
-                        type: "list",
-                        mode: "drop",
-                        allowEdit: true,
-                        source: this.state.htmlFieldNames
-                    }} 
-                    error={this._getFieldError(itemDescriptionField, field)}
-                    onChange={this._onFieldChange}/>
-            </div>
-            <div className="third-section">
-                <div className="checkbox-container">                            
-                    <Checkbox 
-                        className="auto-accept"
-                        label=""
-                        checked={bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept)}
-                        onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._onChange(BugBashFieldNames.AutoAccept, isChecked, true) } />
+                    <InfoLabel label="Work item type" info="Select a work item type which would be used to create work items for each bug bash item" />
+                    <ComboBox                             
+                        value={workItemType ? workItemType.name : workItemTypeName} 
+                        options={{
+                            type: "list",
+                            mode: "drop",
+                            allowEdit: true,
+                            source: this.state.workItemTypeNames
+                        }} 
+                        error={this._getWorkItemTypeError(workItemTypeName, workItemType)}
+                        onChange={this._onWorkItemTypeChange}/>
 
-                    <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
+                    <InfoLabel label="Description field" info="Select a HTML field that you would want to set while creating a workitem for each bug bash item" />
+                    <ComboBox                             
+                        value={field ? field.name : itemDescriptionField} 
+                        options={{
+                            type: "list",
+                            mode: "drop",
+                            allowEdit: true,
+                            source: this.state.htmlFieldNames
+                        }} 
+                        error={this._getFieldError(itemDescriptionField, field)}
+                        onChange={this._onFieldChange}/>
                 </div>
+                <div className="second-section">
+                    <div className="checkbox-container">                            
+                        <Checkbox 
+                            className="auto-accept"
+                            label=""
+                            checked={bugBash.getFieldValue<boolean>(BugBashFieldNames.AutoAccept)}
+                            onChange={(_ev: React.FormEvent<HTMLElement>, isChecked: boolean) => this._onChange(BugBashFieldNames.AutoAccept, isChecked, true) } />
 
-                <InfoLabel label="Template Team" info="Select a team to pull its templates." />
-                <ComboBox                             
-                    value={team ? team.name : acceptTemplateTeamId} 
-                    options={{
-                        type: "list",
-                        mode: "drop",
-                        allowEdit: true,
-                        source: this.state.teamNames
-                    }} 
-                    error={this._getTeamError(acceptTemplateTeamId, team)}
-                    onChange={this._onTeamChange}/>
+                        <InfoLabel label="Auto Accept?" info="Auto create work items on creation of a bug bash item" />
+                    </div>
 
-                <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
-                <Dropdown 
-                    selectedKey={acceptTemplateId.toLowerCase()}
-                    onRenderList={this._onRenderCallout}
-                    options={this.state.templates} 
-                    onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
+                    <InfoLabel label="Template Team" info="Select a team to pull its templates." />
+                    <ComboBox                             
+                        value={team ? team.name : acceptTemplateTeamId} 
+                        options={{
+                            type: "list",
+                            mode: "drop",
+                            allowEdit: true,
+                            source: this.state.teamNames
+                        }} 
+                        error={this._getTeamError(acceptTemplateTeamId, team)}
+                        onChange={this._onTeamChange}/>
 
-                { !acceptTemplateId && <InputError error="A work item template is required." /> }
+                    <InfoLabel label="Work item template" info="Select a work item template that would be applied during work item creation." />
+                    <Dropdown 
+                        selectedKey={acceptTemplateId.toLowerCase()}
+                        onRenderList={this._onRenderCallout}
+                        options={this.state.templates} 
+                        onChanged={(option: IDropdownOption) => this._onChange(BugBashFieldNames.AcceptTemplateId, option.key as string, true)} />
+
+                    { !acceptTemplateId && <InputError error="A work item template is required." /> }
+                </div>
             </div>
         </div>;
     }
@@ -294,16 +262,6 @@ export class BugBashEditor extends BaseComponent<IBugBashEditorProps, IBugBashEd
                 {defaultRender(props)}
             </div>;
     }
-
-    private async _onImagePaste(_event, args) {
-        try {
-            const imageUrl = await copyImageToGitRepo(args.data, "Description");   
-            args.callback(imageUrl);
-        }
-        catch (e) {
-            BugBashErrorMessageActions.showErrorMessage(e, ErrorKeys.BugBashError);
-        }
-    }    
     
     @autobind
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {

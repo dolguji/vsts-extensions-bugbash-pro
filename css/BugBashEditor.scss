@@ -2,25 +2,29 @@
     .bugbash-editor-contents {
         outline: none;
         display: flex;
-        flex-direction: row;        
+        flex-direction: column;        
+
+        .title-container {
+            margin-bottom: 10px;
+        }
+
+        .section-container {
+            flex: 1;
+            display: flex;
+
+            .first-section {
+                flex: 1;
+            }
+    
+            .second-section {
+                flex: 1;
+                margin-left: 30px;
+                margin-top: 23px;
+            }
+        }
 
         .combobox {
             margin-bottom: 5px;
-        }
-
-        .first-section {
-            flex: 2;
-        }
-
-        .second-section {
-            flex: 1;
-            margin-left: 30px;
-        }
-
-        .third-section {
-            flex: 1;
-            margin-left: 30px;
-            margin-top: 22px;
         }
 
         .ms-DatePicker {
@@ -46,19 +50,6 @@
             .info-label {
                 padding-top: 7px;
             }
-        }
-
-        .trumbowyg-box {
-            margin: 0;
-
-            &.trumbowyg-fullscreen {
-                border: 1px solid #DDD !important;
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
-            }
-        }
+        }        
     }
 }

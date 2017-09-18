@@ -157,10 +157,7 @@ export module BugBashActions {
             StoresHub.bugBashStore.setLoading(true);
 
             try {
-                let cloneBugBashModel = {...bugBashModel};
-                cloneBugBashModel.id = Date.now().toString();
-
-                const createdBugBashModel = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", cloneBugBashModel, false);
+                const createdBugBashModel = await ExtensionDataManager.createDocument<IBugBash>("bugbashes", bugBashModel, false);
                 preProcessModel(createdBugBashModel);            
                 
                 BugBashActionsHub.CreateBugBash.invoke(createdBugBashModel);

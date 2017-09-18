@@ -10,14 +10,11 @@ import { FieldType } from "TFS/WorkItemTracking/Contracts";
 export class BugBash {
     public static getNewBugBashModel(): IBugBash {
         return {
-            id: "",
             title: "New Bug Bash",
-            __etag: 0,
             projectId: VSS.getWebContext().project.id,
             workItemType: "",
             itemDescriptionField: "",
             autoAccept: false,
-            description: "",
             acceptTemplateTeam: VSS.getWebContext().team.id,
             acceptTemplateId: ""
         };
@@ -102,7 +99,6 @@ export class BugBash {
 
         return !StringUtils.equals(updatedModel.title, this._originalModel.title)
             || !StringUtils.equals(updatedModel.workItemType, this._originalModel.workItemType, true)
-            || !StringUtils.equals(updatedModel.description, this._originalModel.description)
             || !DateUtils.equals(updatedModel.startTime, this._originalModel.startTime)
             || !DateUtils.equals(updatedModel.endTime, this._originalModel.endTime)
             || !StringUtils.equals(updatedModel.itemDescriptionField, this._originalModel.itemDescriptionField, true)
@@ -123,7 +119,7 @@ export class BugBash {
             && updatedModel.acceptTemplateTeam.trim().length > 0
             && (!updatedModel.startTime || !updatedModel.endTime || DateUtils.defaultComparer(updatedModel.startTime, updatedModel.endTime) < 0);
 
-        if (dataValid) {
+        if (dataValid && StoresHub.teamStore.isLoaded() && StoresHub.workItemTypeStore.isLoaded() && StoresHub.workItemFieldStore.isLoaded()) {
             dataValid = dataValid 
                 && StoresHub.teamStore.getItem(updatedModel.acceptTemplateTeam) != null
                 && StoresHub.workItemTypeStore.getItem(updatedModel.workItemType) != null

@@ -1,4 +1,5 @@
 import { ExtensionDataManager } from "MB/Utils/ExtensionDataManager";
+import { StringUtils } from "MB/Utils/String";
 
 import { BugBashItemCommentActionsHub } from "./ActionsHub";
 import { IBugBashItemComment } from "../Interfaces";
@@ -45,9 +46,7 @@ export module BugBashItemCommentActions {
             StoresHub.bugBashItemCommentStore.setLoading(true, bugBashItemId);
 
             try {
-                let bugBashItemComment: IBugBashItemComment = {
-                    id: `${bugBashItemId}_${Date.now().toString()}`,
-                    __etag: 0,
+                let bugBashItemComment: IBugBashItemComment = {                    
                     createdBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`,
                     createdDate: new Date(Date.now()),
                     content: commentString
@@ -67,7 +66,7 @@ export module BugBashItemCommentActions {
     }
 
     function getBugBashItemCollectionKey(bugBashItemId: string): string {
-        return `BugBashItemCollection_${bugBashItemId}`;
+        return StringUtils.isGuid(bugBashItemId) ? `Comments_${bugBashItemId}` : `BugBashItemCollection_${bugBashItemId}`;
     }
 
     function preProcessModel(bugBashItemComment: IBugBashItemComment) {

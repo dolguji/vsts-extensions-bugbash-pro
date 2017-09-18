@@ -83,7 +83,9 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
     public componentWillReceiveProps(nextProps: Readonly<IBugBashItemEditorProps>) {
         if (this.props.bugBashItem.id !== nextProps.bugBashItem.id) {
-            this._dismissErrorMessage();
+            CoreUtils.delay(this, 0, () => {
+                this._dismissErrorMessage();
+            });
 
             if (nextProps.bugBashItem.id && StoresHub.bugBashItemCommentStore.isLoaded(nextProps.bugBashItem.id)) {
                 this.updateState({

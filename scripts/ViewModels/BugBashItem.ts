@@ -8,9 +8,7 @@ import { BugBashItemFieldNames, SizeLimits } from "../Constants";
 export class BugBashItem {
     public static getNewBugBashItemModel(bugBashId?: string): IBugBashItem {
         return {
-            id: "",
             bugBashId: bugBashId,
-            __etag: 0,
             title: "",
             description: "",
             teamId: "",

@@ -72,11 +72,11 @@
                     }
 
                     &.is-invalid {
-                        color: red;
+                        color: #a80000;
 
                         &.identity-view {
                             .ms-Persona-primaryText {
-                                color: red;
+                                color: #a80000;
                             }
                         }
                     }                    
