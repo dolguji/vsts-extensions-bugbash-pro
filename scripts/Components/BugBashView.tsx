@@ -104,6 +104,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     public componentWillUnmount() {
         super.componentWillUnmount();
+
         if (this.state.bugBash) {
             this.state.bugBash.reset(false);
         }
@@ -114,6 +115,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         }
 
         StoresHub.bugBashItemStore.getNewBugBashItem().reset(false);
+
+        if (this.state.bugBashDetails) {
+            this.state.bugBashDetails.reset();
+        }
 
         BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashError);
         BugBashErrorMessageActions.dismissErrorMessage(ErrorKeys.BugBashItemError);
@@ -186,9 +191,8 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     onClick={async (e: React.MouseEvent<HTMLElement>) => {
                         if (!e.ctrlKey) {
                             e.preventDefault();
-                            const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId || "") || [];
-                            const isAnyBugBashItemDirty = items.some(item => item.isDirty());
-                            const confirm = await confirmAction(bugBash.isDirty() || isAnyBugBashItemDirty || StoresHub.bugBashItemStore.getNewBugBashItem().isDirty(), 
+                            
+                            const confirm = await confirmAction(this._isAnyProviderDirty(), 
                                 "You have unsaved changes in the bug bash. Navigating to Home will revert your changes. Are you sure you want to do that?");
 
                             if (confirm) {
@@ -205,6 +209,13 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
         )
     }
 
+    private _isAnyProviderDirty(): boolean {
+        const bugBash = this.state.bugBash;
+        const items = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId || "") || [];
+        const isAnyBugBashItemDirty = items.some(item => item.isDirty());
+        return bugBash.isDirty() || isAnyBugBashItemDirty || StoresHub.bugBashItemStore.getNewBugBashItem().isDirty() || (this.state.bugBashDetails && this.state.bugBashDetails.isDirty());
+    }
+
     private _renderHub(): React.ReactNode {
         return <Hub 
             className="bugbash-hub"
@@ -216,13 +227,14 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 },
                 initialSelectedKey: this.state.selectedPivot,
                 onRenderPivotContent: (key: string) => {
+                    const extraCss = this.state.bugBash.isNew() ? "new-bugbash" : "";
+
                     switch (key) {
                         case "edit":
                             return <div className="bugbash-hub-contents bugbash-editor-hub-contents">
                                 {this._renderEditor()}
                             </div>;
                         case "results":
-                            const extraCss = this.state.bugBash.isNew() ? "new-bugbash" : "";
                             return <div className={`bugbash-hub-contents bugbash-results-hub-contents ${extraCss}`}>
                                 {this._renderResults()}
                             </div>;
@@ -231,7 +243,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                                 {this._renderCharts()}
                             </div>;
                         case "details":
-                        return <div className="bugbash-hub-contents bugbash-details-hub-contents">
+                            return <div className={`bugbash-hub-contents bugbash-details-hub-contents ${extraCss}`}>
                                 {this._renderDetails()}
                             </div>;
                     }

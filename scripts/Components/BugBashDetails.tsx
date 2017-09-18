@@ -66,7 +66,8 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
     }
 
     public componentWillUnmount() {
-        super.componentWillUnmount();
+        super.componentWillUnmount();        
+
         $(window).off("imagepasted", this._imagePastedHandler);
         this._dismissErrorMessage();
     }
@@ -111,7 +112,7 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
                 }
 
                 { !this.props.isEditMode && 
-                    <div dangerouslySetInnerHTML={{__html: this.state.longText.Text}}></div>
+                    <div className="bugbash-details-html" dangerouslySetInnerHTML={{__html: this.state.longText.Text}}></div>
                 }
             </div>
         </div>;
@@ -128,8 +129,9 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
             this._updateDelayedFunction.cancel();
         }
 
+        let longText = this.state.longText;
         this._updateDelayedFunction = CoreUtils.delay(this, 200, () => {
-            this.state.longText.setDetails(newValue);
+            longText.setDetails(newValue);
         });
     }
 

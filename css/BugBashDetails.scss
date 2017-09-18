@@ -1,3 +1,33 @@
 .bugbash-details {
-    margin: 0 10px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+
+    .message-panel {
+        margin-bottom: 10px;
+    }
+    
+    .bugbash-details-contents {
+        flex: 1;
+
+        .bugbash-details-html {
+            p {
+                margin: 0;
+            }
+        }
+    
+        .trumbowyg-box {
+            margin: 0;
+            height: 100%;
+    
+            &.trumbowyg-fullscreen {
+                border: 1px solid #DDD !important;
+                right: 0;
+                left: 0;
+                width: inherit;
+            }
+        }    
+    }
 }

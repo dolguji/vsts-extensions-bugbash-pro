@@ -1,5 +1,16 @@
 .bugbash-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+
+    .message-panel {
+        margin-bottom: 10px;
+    }
+    
     .bugbash-editor-contents {
+        flex: 1;
         outline: none;
         display: flex;
         flex-direction: column;        

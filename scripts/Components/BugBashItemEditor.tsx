@@ -113,7 +113,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         super.componentWillUnmount();
         $(window).off("imagepasted", this._imagePastedHandler);
         this._dismissErrorMessage();
-    }    
+    }
 
     public render(): JSX.Element {
         const item = this.props.bugBashItem;
@@ -302,13 +302,14 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         if (this._updateBugBashItemDelayedFunction) {
             this._updateBugBashItemDelayedFunction.cancel();
         }
+        let bugBashItem = this.props.bugBashItem;
 
         if (immediate) {
-            this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
+            bugBashItem.setFieldValue<T>(fieldName, fieldValue);
         }
         else {
             this._updateBugBashItemDelayedFunction = CoreUtils.delay(this, 200, () => {
-                this.props.bugBashItem.setFieldValue<T>(fieldName, fieldValue);
+                bugBashItem.setFieldValue<T>(fieldName, fieldValue);
             });
         }
     } 
@@ -318,9 +319,10 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
         if (this._updateBugBashItemDelayedFunction) {
             this._updateBugBashItemDelayedFunction.cancel();
         }
+        let bugBashItem = this.props.bugBashItem;
 
         this._updateBugBashItemDelayedFunction = CoreUtils.delay(this, 200, () => {
-            this.props.bugBashItem.setComment(newComment);
+            bugBashItem.setComment(newComment);
         });        
     }
 
