@@ -60,7 +60,7 @@ export async function copyImageToGitRepo(imageData: any, gitFolderSuffix: string
             return `${VSS.getWebContext().collection.uri}/${VSS.getWebContext().project.id}/_api/_versioncontrol/itemContent?repositoryId=${settings.gitMediaRepo}&path=${gitPath}&version=GBmaster&contentOnly=true`;
         }
         catch (e) {
-            throw e.message;
+            throw `Image copy failed: ${e.message}`;
         }
     }
     else {
