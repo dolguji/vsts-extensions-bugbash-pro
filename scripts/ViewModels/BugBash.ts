@@ -35,6 +35,10 @@ export class BugBash {
         return this._originalModel.__etag;
     }
 
+    get isAutoAccept(): boolean {
+        return this._originalModel.autoAccept;
+    }
+
     constructor(model?: IBugBash) {
         const bugBashModel = model || BugBash.getNewBugBashModel();
         this._originalModel = {...bugBashModel};

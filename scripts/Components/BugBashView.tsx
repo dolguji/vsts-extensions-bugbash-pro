@@ -83,10 +83,12 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     protected getStoresState(): IBugBashViewState {
         const bugBashItems = StoresHub.bugBashItemStore.getBugBashItems(this.props.bugBashId || "");
+        const bugBash = this.props.bugBashId ? StoresHub.bugBashStore.getItem(this.props.bugBashId) : StoresHub.bugBashStore.getNewBugBash();
 
         return {
             loading: this.props.bugBashId ? StoresHub.bugBashStore.isLoading(this.props.bugBashId) : StoresHub.bugBashStore.isLoading(),
-            bugBash: this.props.bugBashId ? StoresHub.bugBashStore.getItem(this.props.bugBashId) : StoresHub.bugBashStore.getNewBugBash(),
+            bugBash: bugBash,
+            selectedResultsView: bugBash && bugBash.isAutoAccept ? ResultsView.AcceptedItemsOnly : this.state.selectedResultsView,
             bugBashDetails: this.props.bugBashId ? StoresHub.longTextStore.getItem(this.props.bugBashId) : null,
             pendingItemsCount: bugBashItems ? bugBashItems.filter(b => !b.isAccepted && !b.getFieldValue<boolean>(BugBashItemFieldNames.Rejected, true)).length : 0,
             acceptedItemsCount: bugBashItems ? bugBashItems.filter(b => b.isAccepted).length : 0,
@@ -417,11 +419,14 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     }
 
     private _getResultViewFarCommands(): IContextualMenuItem[] {
-        return [
+        let menuItems: IContextualMenuItem[] = [
             {
                 key:"resultCount", name: `${this._getResultCount()} results`
-            },
-            {
+            }
+        ];
+            
+        if (!this.state.bugBash.isAutoAccept) {
+            menuItems.push({
                 key: "resultsview", name: this.state.selectedResultsView || ResultsView.PendingItemsOnly, 
                 iconProps: { iconName: "Equalizer" },
                 disabled: this.state.bugBash.isNew(),
@@ -442,8 +447,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     ],
                     onItemClick: this._onChangeResultsView
                 }
-            }
-        ];
+            });
+        }
+        return menuItems;
     }
 
     private _getChartsViewCommands(): IContextualMenuItem[] {

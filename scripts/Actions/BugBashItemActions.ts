@@ -129,9 +129,16 @@ export module BugBashItemActions {
                 cloneBugBashItemModel.bugBashId = bugBashId;
                 cloneBugBashItemModel.createdBy = `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`;
                 cloneBugBashItemModel.createdDate = new Date(Date.now());
-                
-                let createdBugBashItemModel = await ExtensionDataManager.createDocument(getBugBashCollectionKey(bugBashId), cloneBugBashItemModel, false);
-                preProcessModel(createdBugBashItemModel);         
+                const bugBash = StoresHub.bugBashStore.getItem(bugBashId);
+                let createdBugBashItemModel: IBugBashItem;
+
+                if (bugBash.isAutoAccept) {
+                    createdBugBashItemModel = await acceptItem(cloneBugBashItemModel, newComment);
+                }
+                else {
+                    createdBugBashItemModel = await ExtensionDataManager.createDocument(getBugBashCollectionKey(bugBashId), cloneBugBashItemModel, false);
+                }                
+                preProcessModel(createdBugBashItemModel);
                 
                 BugBashItemActionsHub.CreateBugBashItem.invoke({
                     bugBashId: bugBashId,
@@ -179,15 +186,16 @@ export module BugBashItemActions {
 
             try {
                 let acceptedBugBashItemModel = await acceptItem(bugBashItemModel);
-                
+                preProcessModel(acceptedBugBashItemModel);
+
                 BugBashItemActionsHub.AcceptBugBashItem.invoke({
                     bugBashId: bugBashId,
                     bugBashItemModel: acceptedBugBashItemModel
                 });
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
-                BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);
 
                 BugBashClientActionsHub.SelectedBugBashItemChanged.invoke(acceptedBugBashItemModel.id);
+                BugBashErrorMessageActionsHub.DismissErrorMessage.invoke(ErrorKeys.BugBashItemError);                
             }
             catch (e) {
                 StoresHub.bugBashItemStore.setLoading(false, bugBashItemModel.id);
@@ -216,10 +224,10 @@ export module BugBashItemActions {
         bugBashItem.teamId = bugBashItem.teamId || "";
     }    
 
-    async function acceptItem(bugBashItem: IBugBashItem): Promise<IBugBashItem> {
-        let updatedBugBashItem: IBugBashItem;
+    async function acceptItem(bugBashItemModel: IBugBashItem, newComment?: string): Promise<IBugBashItem> {
+        let updatedBugBashItemModel: IBugBashItem;
         let savedWorkItem: WorkItem;
-        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItemModel.bugBashId);
         let acceptTemplate: WorkItemTemplate;
 
         // read bug bash wit template
@@ -237,27 +245,32 @@ export module BugBashItemActions {
         }
 
         try {
-            await TeamFieldActions.initializeTeamFields(bugBashItem.teamId);
+            await TeamFieldActions.initializeTeamFields(bugBashItemModel.teamId);
         }
         catch (e) {
-            throw `Cannot read team field value for team: ${bugBashItem.teamId}.`;
+            throw `Cannot read team field value for team: ${bugBashItemModel.teamId}.`;
         }
 
-        try {
-            // first do a empty save to check if its the latest version of the item
-            updatedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashItem.bugBashId), bugBashItem, false);
+        if (bugBashItemModel.__etag) {
+            try {
+                // first do a empty save to check if its the latest version of the item
+                updatedBugBashItemModel = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(bugBashItemModel.bugBashId), bugBashItemModel, false);
+            }
+            catch (e) {
+                throw "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
+            }
         }
-        catch (e) {
-            throw "This item has been modified by some one else. Please refresh the item to get the latest version and try updating it again.";
+        else {
+            updatedBugBashItemModel = {...bugBashItemModel}; // For auto accept scenario
         }
 
         const itemDescriptionField = bugBash.getFieldValue<string>(BugBashFieldNames.ItemDescriptionField, true);
         const workItemType = bugBash.getFieldValue<string>(BugBashFieldNames.WorkItemType, true);
-        const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedBugBashItem.teamId);
+        const teamFieldValue = StoresHub.teamFieldStore.getItem(updatedBugBashItemModel.teamId);
 
         let fieldValues = acceptTemplate ? {...acceptTemplate.fields} : {};
-        fieldValues["System.Title"] = updatedBugBashItem.title;
-        fieldValues[itemDescriptionField] = updatedBugBashItem.description;            
+        fieldValues["System.Title"] = updatedBugBashItemModel.title;
+        fieldValues[itemDescriptionField] = updatedBugBashItemModel.description;            
         fieldValues[teamFieldValue.field.referenceName] = teamFieldValue.defaultValue;        
 
         if (fieldValues["System.Tags-Add"]) {
@@ -272,40 +285,50 @@ export module BugBashItemActions {
             savedWorkItem = await WorkItemActions.createWorkItem(workItemType, fieldValues);
         }
         catch (e) {
-            BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItem.bugBashId, bugBashItemModel: updatedBugBashItem});
+            BugBashItemActionsHub.UpdateBugBashItem.invoke({bugBashId: updatedBugBashItemModel.bugBashId, bugBashItemModel: updatedBugBashItemModel});
             throw e;
         }
         
         // associate work item with bug bash item
-        updatedBugBashItem.workItemId = savedWorkItem.id;
-        updatedBugBashItem.rejected = false;
-        updatedBugBashItem.rejectedBy = "";
-        updatedBugBashItem.rejectReason = "";
-        updatedBugBashItem = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(updatedBugBashItem.bugBashId), updatedBugBashItem, false);
+        updatedBugBashItemModel.workItemId = savedWorkItem.id;
+        updatedBugBashItemModel.rejected = false;
+        updatedBugBashItemModel.rejectedBy = "";
+        updatedBugBashItemModel.rejectReason = "";
 
-        addExtraFieldsToWorkitem(savedWorkItem.id, updatedBugBashItem);
+        if (updatedBugBashItemModel.__etag) {
+            updatedBugBashItemModel = await ExtensionDataManager.updateDocument(getBugBashCollectionKey(updatedBugBashItemModel.bugBashId), updatedBugBashItemModel, false);
+        }
+        else {
+            updatedBugBashItemModel = await ExtensionDataManager.createDocument(getBugBashCollectionKey(updatedBugBashItemModel.bugBashId), updatedBugBashItemModel, false);
+        }
 
-        return updatedBugBashItem;
+        addExtraFieldsToWorkitem(savedWorkItem.id, updatedBugBashItemModel, newComment);
+
+        return updatedBugBashItemModel;
     }
 
-    function addExtraFieldsToWorkitem(workItemId: number, bugBashItem: IBugBashItem) {
+    function addExtraFieldsToWorkitem(workItemId: number, bugBashItemModel: IBugBashItem, newComment?: string) {
         let fieldValues: IDictionaryStringTo<string> = {};
-        const bugBash = StoresHub.bugBashStore.getItem(bugBashItem.bugBashId);
+        const bugBash = StoresHub.bugBashStore.getItem(bugBashItemModel.bugBashId);
 
-        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItem);
+        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItemModel, newComment);
 
         WorkItemActions.updateWorkItem(workItemId, fieldValues);
     }
 
-    function getAcceptedItemComment(bugBash: BugBash, bugBashItem: IBugBashItem): string {
-        const entity = parseUniquefiedIdentityName(bugBashItem.createdBy);
+    function getAcceptedItemComment(bugBash: BugBash, bugBashItemModel: IBugBashItem, newComment?: string): string {
+        const entity = parseUniquefiedIdentityName(bugBashItemModel.createdBy);
         const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title, true);
 
         let commentToSave = `
             Created from <a href='${getBugBashUrl(bugBash.id, UrlActions.ACTION_RESULTS)}' target='_blank'>${bugBashTitle}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
 
-        let discussionComments = StoresHub.bugBashItemCommentStore.getItem(bugBashItem.id);
+        let discussionComments = newComment ? [{
+            content: newComment,
+            createdDate: new Date(Date.now()),
+            createdBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`
+        }] : StoresHub.bugBashItemCommentStore.getItem(bugBashItemModel.id);
 
         if (discussionComments && discussionComments.length > 0) {
             discussionComments = discussionComments.slice();
