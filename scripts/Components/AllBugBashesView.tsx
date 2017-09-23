@@ -11,7 +11,7 @@ import { Panel, PanelType } from "OfficeFabric/Panel";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
 import { Loading } from "MB/Components/Loading";
-import { Grid, IContextMenuProps, GridColumn } from "MB/Components/Grid";
+import { Grid, GridColumn } from "MB/Components/Grid";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
 import { Hub } from "MB/Components/Hub";
@@ -40,6 +40,8 @@ const AsyncSettingsPanel = getAsyncLoadedComponent(
     ["scripts/SettingsPanel"],
     (m: typeof SettingsPanel_Async) => m.SettingsPanel,
     () => <Loading />);
+
+class BugBashGrid extends Grid<BugBash> {};
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
     protected getStores(): BaseStore<any, any, any>[] {
@@ -177,16 +179,16 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             </MessageBar>
         }
 
-        return <Grid
+        return <BugBashGrid
             className={"instance-list"}
             items={bugBashes}
             columns={this._getGridColumns()}
             selectionMode={SelectionMode.none}
-            contextMenuProps={this._getGridContextMenuProps()}
+            getContextMenuItems={this._getGridContextMenuItems}
         />;                    
     }
 
-    private _getGridColumns(): GridColumn[] {        
+    private _getGridColumns(): GridColumn<BugBash>[] {        
         return [
             {
                 key: "title",
@@ -244,39 +246,36 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         ];
     }
 
-    private _getGridContextMenuProps(): IContextMenuProps {
-        return {
-            menuItems: (selectedItems: BugBash[]) => {
-                if (selectedItems.length !== 1) {
-                    return [];
-                }
-
-                const bugBash = selectedItems[0];
-                return [
-                    {
-                        key: "open", name: "View results", iconProps: {iconName: "ShowResults"}, 
-                        onClick: () => {                    
-                            navigate(UrlActions.ACTION_RESULTS, {id: bugBash.id});
-                        }
-                    },
-                    {
-                        key: "edit", name: "Edit", iconProps: {iconName: "Edit"}, 
-                        onClick: () => {                    
-                            navigate(UrlActions.ACTION_EDIT, {id: bugBash.id});
-                        }
-                    },
-                    {
-                        key: "delete", name: "Delete", iconProps: {iconName: "Cancel", style: { color: "#da0a00", fontWeight: "bold" }}, 
-                        onClick: async () => {                    
-                            const confirm = await confirmAction(true, "Are you sure you want to delete this bug bash instance?");
-                            if (confirm) {
-                                bugBash.delete();
-                            }   
-                        }
-                    },
-                ];
-            }
+    @autobind
+    private _getGridContextMenuItems(selectedItems: BugBash[]): IContextualMenuItem[] {
+        if (selectedItems.length !== 1) {
+            return [];
         }
+
+        const bugBash = selectedItems[0];
+        return [
+            {
+                key: "open", name: "View results", iconProps: {iconName: "ShowResults"}, 
+                onClick: () => {                    
+                    navigate(UrlActions.ACTION_RESULTS, {id: bugBash.id});
+                }
+            },
+            {
+                key: "edit", name: "Edit", iconProps: {iconName: "Edit"}, 
+                onClick: () => {                    
+                    navigate(UrlActions.ACTION_EDIT, {id: bugBash.id});
+                }
+            },
+            {
+                key: "delete", name: "Delete", iconProps: {iconName: "Cancel", style: { color: "#da0a00", fontWeight: "bold" }}, 
+                onClick: async () => {                    
+                    const confirm = await confirmAction(true, "Are you sure you want to delete this bug bash instance?");
+                    if (confirm) {
+                        bugBash.delete();
+                    }   
+                }
+            },
+        ];
     }
 
     private _getCommandBarItems(): IContextualMenuItem[] {

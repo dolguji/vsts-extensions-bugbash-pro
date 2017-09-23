@@ -49,6 +49,8 @@ interface IBugBashResultsProps extends IBaseComponentProps {
     view?: string;
 }
 
+class BugBashItemGrid extends Grid<BugBashItem> {};
+
 export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBashResultsState> {
     private _itemInvokedDelayedFunction: CoreUtils.DelayedFunction;
     private _selection: ISelection;
@@ -189,8 +191,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 />;                
                 break;
             case ResultsView.RejectedItemsOnly:
-                pivotContent = <Grid
-                    filterText={this.props.filterText}
+                pivotContent = <BugBashItemGrid
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-rejected-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
@@ -203,8 +204,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 />;
                 break;
             default:
-                pivotContent = <Grid
-                    filterText={this.props.filterText}
+                pivotContent = <BugBashItemGrid
                     selectionPreservedOnEmptyClick={true}
                     setKey={`bugbash-pending-item-grid-${this.state.gridKeyCounter}`}
                     className="bugbash-item-grid"
@@ -396,13 +396,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                             </TooltipHost>
                         );
                     },
-                    sortFunction: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {
+                    comparer: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {
                         const createdBy1 = workItemIdToItemMap[workItem1.id].getFieldValue<string>(BugBashItemFieldNames.CreatedBy, true);
                         const createdBy2 = workItemIdToItemMap[workItem2.id].getFieldValue<string>(BugBashItemFieldNames.CreatedBy, true);
                         let compareValue = StringUtils.ignoreCaseComparer(createdBy1, createdBy2);
                         return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                    },
-                    filterFunction: (workItem: WorkItem, filterText: string) => StringUtils.caseInsensitiveContains(workItemIdToItemMap[workItem.id].getFieldValue<string>(BugBashItemFieldNames.CreatedBy, true), filterText)
+                    }
                 }
             }
         ];
@@ -454,7 +453,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
         }
     }
 
-    private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn[] {
+    private _getBugBashItemGridColumns(isRejectedGrid: boolean): GridColumn<BugBashItem>[] {
         const gridCellClassName = "item-grid-cell";
         const getCellClassName = (bugBashItem: BugBashItem) => {
             let className = gridCellClassName;
@@ -468,7 +467,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             return className;
         }                
 
-        let columns: GridColumn[] = [
+        let columns: GridColumn<BugBashItem>[] = [
             {
                 key: "title",
                 name: "Title",
@@ -490,8 +489,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
-                filterFunction: (bugBashItem: BugBashItem, filterText: string) => StringUtils.caseInsensitiveContains(bugBashItem.getFieldValue<string>(BugBashItemFieldNames.Title), filterText),
-                sortFunction: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
+                comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const title1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.Title);
                     const title2 = bugBashItem2.getFieldValue<string>(BugBashItemFieldNames.Title);
                     let compareValue = StringUtils.ignoreCaseComparer(title1, title2);
@@ -520,7 +518,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
-                sortFunction: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
+                comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const teamId1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.TeamId);
                     const teamId2 = bugBashItem2.getFieldValue<string>(BugBashItemFieldNames.TeamId);
                     const team1 = StoresHub.teamStore.getItem(teamId1);
@@ -530,11 +528,6 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
 
                     let compareValue = StringUtils.ignoreCaseComparer(team1Name, team2Name);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (bugBashItem: BugBashItem, filterText: string) =>  {
-                    const teamId = bugBashItem.getFieldValue<string>(BugBashItemFieldNames.TeamId);
-                    const team = StoresHub.teamStore.getItem(teamId);
-                    return StringUtils.caseInsensitiveContains(team ? team.name : teamId, filterText);
                 }
             },
             {
@@ -555,13 +548,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
-                sortFunction: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
+                comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const createdBy1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.CreatedBy);
                     const createdBy2 = bugBashItem2.getFieldValue<string>(BugBashItemFieldNames.CreatedBy);
                     let compareValue = StringUtils.ignoreCaseComparer(createdBy1, createdBy2);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (bugBashItem: BugBashItem, filterText: string) => StringUtils.caseInsensitiveContains(bugBashItem.getFieldValue<string>(BugBashItemFieldNames.CreatedBy), filterText)
+                }
             },
             {
                 key: "createddate",
@@ -583,7 +575,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
-                sortFunction: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
+                comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const createdDate1 = bugBashItem1.getFieldValue<Date>(BugBashItemFieldNames.CreatedDate);
                     const createdDate2 = bugBashItem2.getFieldValue<Date>(BugBashItemFieldNames.CreatedDate);
                     let compareValue = DateUtils.defaultComparer(createdDate1, createdDate2);
@@ -611,13 +603,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
-                sortFunction: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
+                comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const rejectedBy1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.RejectedBy);
                     const rejectedBy2 = bugBashItem2.getFieldValue<string>(BugBashItemFieldNames.RejectedBy);
                     let compareValue = StringUtils.ignoreCaseComparer(rejectedBy1, rejectedBy2);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (bugBashItem: BugBashItem, filterText: string) => StringUtils.caseInsensitiveContains(bugBashItem.getFieldValue<string>(BugBashItemFieldNames.RejectedBy), filterText)
+                }
             }, 
             {
                 key: "rejectreason",
@@ -640,13 +631,12 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         </TooltipHost>
                     )
                 },
-                sortFunction: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
+                comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const rejectReason1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.RejectReason);
                     const rejectReason2 = bugBashItem2.getFieldValue<string>(BugBashItemFieldNames.RejectReason);
                     let compareValue = StringUtils.ignoreCaseComparer(rejectReason1, rejectReason2);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (bugBashItem: BugBashItem, filterText: string) => StringUtils.caseInsensitiveContains(bugBashItem.getFieldValue<string>(BugBashItemFieldNames.RejectReason), filterText)
+                }
             });
         }
 
