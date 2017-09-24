@@ -188,6 +188,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                                 ['bold', 'italic'], 
                                 ['link'],
                                 ['insertImage'],
+                                ['upload'],
                                 'btnGrp-lists',
                                 ['removeformat'],
                                 ['fullscreen']

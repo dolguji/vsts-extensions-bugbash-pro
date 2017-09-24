@@ -103,6 +103,7 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
                                 ['bold', 'italic'], 
                                 ['link'],
                                 ['insertImage'],
+                                ['upload'],
                                 'btnGrp-lists',
                                 ['removeformat'],
                                 ['fullscreen']
