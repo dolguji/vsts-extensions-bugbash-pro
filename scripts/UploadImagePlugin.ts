@@ -44,7 +44,7 @@
                                         $(window).trigger("imagepasted", { data: data, callback: (imageUrl: string) => {
                                             if (imageUrl) {
                                                 trumbowyg.execCmd("insertImage", imageUrl, undefined, true);
-                                                $(['img[src="' + imageUrl + '"]:not([alt])'].join(''), trumbowyg.$box).css("width", "auto").css("height", "400px");
+                                                $(['img[src="' + imageUrl + '"]:not([alt])'].join(''), trumbowyg.$box).css("width", "auto").css("max-height", "400px");
                                             }
                                             setTimeout(function () {
                                                 trumbowyg.closeModal();
