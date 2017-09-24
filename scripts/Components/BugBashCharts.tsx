@@ -101,7 +101,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
         SettingsActions.initializeUserSettings();
     }  
 
-    public render() {
+    public render(): JSX.Element {
         if (this.state.loading) {
             return <Loading />;
         }        
@@ -243,7 +243,7 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                         </ResponsiveContainer>
                     </div>
                 </div>
-            </div>
+            </div>;
     }
 
     private _getTeamName(teamId: string): string {

@@ -25,6 +25,7 @@ import { LongText } from "../ViewModels/LongText";
 import { BugBashClientActionsHub } from "../Actions/ActionsHub";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
 import { BugBashDetails } from "./BugBashDetails";
+import { BugBashResultCount } from "./BugBashResultCount";
 import * as BugBashEditor_Async from "./BugBashEditor";
 import * as BugBashResults_Async from "./BugBashResults";
 import * as BugBashCharts_Async from "./BugBashCharts";
@@ -421,7 +422,10 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
     private _getResultViewFarCommands(): IContextualMenuItem[] {
         let menuItems: IContextualMenuItem[] = [
             {
-                key:"resultCount", name: `${this._getResultCount()} results`
+                key:"resultCount", 
+                onRender:() => {
+                    return <BugBashResultCount count={this._getResultCount()} />;
+                }
             }
         ];
             
