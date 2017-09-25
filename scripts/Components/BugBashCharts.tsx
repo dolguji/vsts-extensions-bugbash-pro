@@ -7,7 +7,6 @@ import { Loading } from "MB/Components/Loading";
 import { parseUniquefiedIdentityName } from "MB/Components/IdentityView";
 import { TeamActions } from "MB/Flux/Actions/TeamActions";
 
-import { PrimaryButton } from "OfficeFabric/Button";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 import { Label } from "OfficeFabric/Label";
 import { Checkbox } from "OfficeFabric/Checkbox";
@@ -16,10 +15,9 @@ import { Bar, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContaine
 import { INameValuePair } from "../Interfaces";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { ChartsView, BugBashFieldNames, BugBashItemFieldNames } from "../Constants";
+import { ChartsView, BugBashItemFieldNames } from "../Constants";
 import { SettingsActions } from "../Actions/SettingsActions";
 import { BugBash } from "../ViewModels/BugBash";
-import * as ExcelExporter_Async from "../ExcelExporter";
 import { BugBashItem } from "../ViewModels/BugBashItem";
 
 interface IBugBashChartsState extends IBaseComponentState {
@@ -190,13 +188,6 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                 <div className="chart-view-container">
                     <div className="header-container">
                         <Label className="header">{`Assigned to team (${bugBashItems.length})`}</Label>
-                         <PrimaryButton className="export-excel" onClick={() => {
-                            requirejs(["scripts/ExcelExporter"], (ExcelExporter: typeof ExcelExporter_Async) => {
-                                new ExcelExporter.ExcelExporter(assignedToTeamData).export(`${this.props.bugBash.getFieldValue<string>(BugBashFieldNames.Title, true)} - Assigned To Team.xlsx`);          
-                            })
-                        }}>
-                            Export
-                        </PrimaryButton> 
                     </div>
                     <div className="chart-view">
                         <ResponsiveContainer>
@@ -222,13 +213,6 @@ export class BugBashCharts extends BaseComponent<IBugBashChartsProps, IBugBashCh
                                 this.updateState({groupedByTeam: !this.state.groupedByTeam} as IBugBashChartsState);
                             }}
                         />
-                         <PrimaryButton className="export-excel" onClick={() => {
-                            requirejs(["scripts/ExcelExporter"], (ExcelExporter: typeof ExcelExporter_Async) => {
-                                new ExcelExporter.ExcelExporter(createdByData).export(`${this.props.bugBash.getFieldValue<string>(BugBashFieldNames.Title, true)} - Created By.xlsx`);          
-                            })
-                        }}>
-                            Export
-                        </PrimaryButton> 
                     </div>
                     <div className="chart-view">
                         <ResponsiveContainer>

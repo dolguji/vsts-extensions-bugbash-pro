@@ -115,7 +115,7 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
         }
 
         return (
-            <Fabric className="fabric-container bowtie-fabric">
+            <Fabric className="fabric-container">
                 { this._renderBadge() }
                 { view }
             </Fabric>

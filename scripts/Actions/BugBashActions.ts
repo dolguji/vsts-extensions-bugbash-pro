@@ -218,5 +218,9 @@ export module BugBashActions {
 
             delete bugBashModel["acceptTemplate"];
         }
+
+        if (bugBashModel["description"] != null) {
+            delete bugBashModel["description"];
+        }
     }  
 }

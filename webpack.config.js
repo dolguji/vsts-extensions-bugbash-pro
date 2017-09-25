@@ -11,8 +11,7 @@ module.exports = {
         BugBashEditor: "./scripts/Components/BugBashEditor.tsx",
         BugBashResults: "./scripts/Components/BugBashResults.tsx",
         BugBashCharts: "./scripts/Components/BugBashCharts.tsx",
-        SettingsPanel: "./scripts/Components/SettingsPanel.tsx",
-        ExcelExporter: "./scripts/ExcelExporter.ts"
+        SettingsPanel: "./scripts/Components/SettingsPanel.tsx"
     },
     output: {
         filename: "scripts/[name].js",
