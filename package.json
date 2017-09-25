@@ -38,10 +38,8 @@
         "es6-promise": "4.1.1",
         "vss-web-extension-sdk": "3.121.0",
         "office-ui-fabric-react": "4.50.0",
-        "trumbowyg": "2.8.0",
-        "vsts-extension-react-widgets": "1.0.19",
+        "vsts-extension-react-widgets": "1.0.20",
         "recharts": "0.22.4",
-        "rc-split-layout": "1.0.0",
-        "@xkeshi/image-compressor": "0.5.1"
+        "rc-split-layout": "1.0.0"
     }
 }

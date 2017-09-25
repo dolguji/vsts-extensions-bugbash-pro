@@ -14,6 +14,7 @@ import { Checkbox } from "OfficeFabric/Checkbox";
 import { DateUtils } from "MB/Utils/Date";
 import { StringUtils } from "MB/Utils/String";
 import { CoreUtils } from "MB/Utils/Core";
+import { LocalSettingsService, WebSettingsScope } from "MB/Utils/LocalSettingsService";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
 import { TeamActions } from "MB/Flux/Actions/TeamActions";
@@ -160,11 +161,13 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                         primaryIndex={0}
                         primaryMinSize={500}
                         secondaryMinSize={400}
-                        secondaryInitialSize={500}
-                        onChange={() => {
+                        secondaryInitialSize={parseInt(LocalSettingsService.readLocalSetting("itemeditorinitialsize", WebSettingsScope.User, "500"))}
+                        onChange={(itemEditorSize: number) => {
                             let evt = document.createEvent('UIEvents');
                             evt.initUIEvent('resize', true, false, window, 0);
                             window.dispatchEvent(evt);
+
+                            LocalSettingsService.writeLocalSetting("itemeditorinitialsize", `${itemEditorSize}`, WebSettingsScope.User);
                         }} >                        
                         { this._renderGrids() }
                         { this._renderItemEditor() }
@@ -494,7 +497,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
             },
             {
                 key: "team",
-                name: "Team",
+                name: "Assigned to team",
                 minWidth: isRejectedGrid ? 100 : 200,
                 maxWidth: isRejectedGrid ? 200 : 300,
                 resizable: true,

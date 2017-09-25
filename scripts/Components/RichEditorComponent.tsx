@@ -8,9 +8,6 @@ import { Loading } from "MB/Components/Loading";
 import { StoresHub } from "../Stores/StoresHub";
 import { SettingsActions } from "../Actions/SettingsActions";
 
-import "../PasteImagePlugin";
-import "../UploadImagePlugin";
-
 export class RichEditorComponent extends BaseComponent<IRichEditorProps, IBaseComponentState> {
     protected getStores(): BaseStore<any, any, any>[] {
         return [StoresHub.bugBashSettingsStore];

@@ -152,7 +152,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                 { this._renderTitleError(title) }
 
                 <div className="item-team-container">
-                    <Label required={true}>Team</Label>
+                    <Label required={true}>Assigned to team</Label>
 
                     <ComboBox                             
                         value={team ? team.name : teamId} 
