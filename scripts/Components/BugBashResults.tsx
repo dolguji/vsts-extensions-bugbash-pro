@@ -388,15 +388,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                     resizable: true,
                     onRenderCell: (workItem: WorkItem) => {
                         const createdBy = workItemIdToItemMap[workItem.id].getFieldValue<string>(BugBashItemFieldNames.CreatedBy, true);
-                        return (
-                            <TooltipHost 
-                                content={createdBy}
-                                delay={TooltipDelay.medium}
-                                directionalHint={DirectionalHint.bottomLeftEdge}>
-
-                                <IdentityView identityDistinctName={createdBy} />
-                            </TooltipHost>
-                        );
+                        return <IdentityView identityDistinctName={createdBy} />;
                     },
                     comparer: (workItem1: WorkItem, workItem2: WorkItem, sortOrder: SortOrder) => {
                         const createdBy1 = workItemIdToItemMap[workItem1.id].getFieldValue<string>(BugBashItemFieldNames.CreatedBy, true);
@@ -547,15 +539,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 resizable: true,
                 onRenderCell: (bugBashItem: BugBashItem) => {
                     const createdBy = bugBashItem.getFieldValue<string>(BugBashItemFieldNames.CreatedBy);
-                    return (
-                        <TooltipHost 
-                            content={createdBy}
-                            delay={TooltipDelay.medium}
-                            directionalHint={DirectionalHint.bottomLeftEdge}>
-
-                            <IdentityView className={getCellClassName(bugBashItem)} identityDistinctName={createdBy} />
-                        </TooltipHost>
-                    )
+                    return <IdentityView className={getCellClassName(bugBashItem)} identityDistinctName={createdBy} />;                
                 },
                 comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const createdBy1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.CreatedBy);
@@ -603,15 +587,7 @@ export class BugBashResults extends BaseComponent<IBugBashResultsProps, IBugBash
                 resizable: true,
                 onRenderCell: (bugBashItem: BugBashItem) => {
                     const rejectedBy = bugBashItem.getFieldValue<string>(BugBashItemFieldNames.RejectedBy);
-                    return (
-                        <TooltipHost 
-                            content={rejectedBy}
-                            delay={TooltipDelay.medium}
-                            directionalHint={DirectionalHint.bottomLeftEdge}>
-
-                            <IdentityView className={getCellClassName(bugBashItem)} identityDistinctName={rejectedBy} />
-                        </TooltipHost>
-                    )
+                    return <IdentityView className={getCellClassName(bugBashItem)} identityDistinctName={rejectedBy} />;
                 },
                 comparer: (bugBashItem1: BugBashItem, bugBashItem2: BugBashItem, sortOrder: SortOrder) => {
                     const rejectedBy1 = bugBashItem1.getFieldValue<string>(BugBashItemFieldNames.RejectedBy);
