@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "bugbashpro",
-    "version": "2.0.14",
+    "version": "3.0.2",
     "name": "Bug Bash Pro",
     "description": "Easier way to manage bug bashes",
     "publisher": "mohitbagra",
@@ -18,6 +18,10 @@
     "targets": [
         {
             "id": "Microsoft.VisualStudio.Services.Cloud"
+        },
+        {
+            "id": "Microsoft.TeamFoundation.Server",
+            "version": "[15.1,)"
         }
     ],
     "tags": [
