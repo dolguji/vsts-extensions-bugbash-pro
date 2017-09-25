@@ -311,12 +311,12 @@ export module BugBashItemActions {
         let fieldValues: IDictionaryStringTo<string> = {};
         const bugBash = StoresHub.bugBashStore.getItem(bugBashItemModel.bugBashId);
 
-        fieldValues["System.History"] = getAcceptedItemComment(bugBash, bugBashItemModel, newComment);
+        fieldValues["System.History"] = newComment || getAcceptedItemComment(bugBash, bugBashItemModel);
 
         WorkItemActions.updateWorkItem(workItemId, fieldValues);
     }
 
-    function getAcceptedItemComment(bugBash: BugBash, bugBashItemModel: IBugBashItem, newComment?: string): string {
+    function getAcceptedItemComment(bugBash: BugBash, bugBashItemModel: IBugBashItem): string {
         const entity = parseUniquefiedIdentityName(bugBashItemModel.createdBy);
         const bugBashTitle = bugBash.getFieldValue<string>(BugBashFieldNames.Title, true);
 
@@ -324,11 +324,7 @@ export module BugBashItemActions {
             Created from <a href='${getBugBashUrl(bugBash.id, UrlActions.ACTION_RESULTS)}' target='_blank'>${bugBashTitle}</a> bug bash on behalf of <a href='mailto:${entity.uniqueName || entity.displayName || ""}' data-vss-mention='version:1.0'>@${entity.displayName}</a>
         `;
 
-        let discussionComments = newComment ? [{
-            content: newComment,
-            createdDate: new Date(Date.now()),
-            createdBy: `${VSS.getWebContext().user.name} <${VSS.getWebContext().user.uniqueName}>`
-        }] : StoresHub.bugBashItemCommentStore.getItem(bugBashItemModel.id);
+        let discussionComments = StoresHub.bugBashItemCommentStore.getItem(bugBashItemModel.id);
 
         if (discussionComments && discussionComments.length > 0) {
             discussionComments = discussionComments.slice();

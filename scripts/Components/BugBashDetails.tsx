@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { autobind } from "OfficeFabric/Utilities";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
+import { Label } from "OfficeFabric/Label";
 
 import { CoreUtils } from "MB/Utils/Core";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
@@ -112,7 +113,11 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
                         onChange={this._onChange} />
                 }
 
-                { !this.props.isEditMode && 
+                { !this.props.isEditMode && !this.state.longText.Text &&
+                    <Label className="bugbash-details-nodata">No details have been added to this Bug bash. Click Edit to enter details.</Label>
+                }
+
+                { !this.props.isEditMode && this.state.longText.Text &&
                     <div className="bugbash-details-html" dangerouslySetInnerHTML={{__html: this.state.longText.Text}}></div>
                 }
             </div>
@@ -148,7 +153,7 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
     
     @autobind
     private _onEditorKeyDown(e: React.KeyboardEvent<any>) {
-        if (e.ctrlKey && e.keyCode === 83) {
+        if (e.ctrlKey && e.keyCode === 83 && this.props.isEditMode) {
             e.preventDefault();
             this.state.longText.save();
         }

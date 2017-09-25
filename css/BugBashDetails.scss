@@ -11,6 +11,15 @@
     
     .bugbash-details-contents {
         flex: 1;
+        outline: none;
+
+        .bugbash-details-nodata {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 18px;
+        }
 
         .bugbash-details-html {
             p {
