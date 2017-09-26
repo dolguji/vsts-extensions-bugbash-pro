@@ -27,6 +27,7 @@ export interface IBugBashDetailsProps extends IBaseComponentProps {
 export interface IBugBashDetailsState extends IBaseComponentState {
     error: string;
     longText: LongText;
+    imageProgress?: boolean;
 }
 
 export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBashDetailsState>  {
@@ -92,6 +93,8 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
                 className="bugbash-details-contents" 
                 onKeyDown={this._onEditorKeyDown} 
                 tabIndex={0}>
+                
+                <div className="progress-indicator" style={{visibility: this.state.imageProgress ? "visible" : "hidden"}} />
 
                 { this.props.isEditMode && 
                     <RichEditorComponent 
@@ -103,7 +106,6 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
                                 ['formatting'],
                                 ['bold', 'italic'], 
                                 ['link'],
-                                ['insertImage'],
                                 ['upload'],
                                 'btnGrp-lists',
                                 ['removeformat'],
@@ -142,11 +144,16 @@ export class BugBashDetails extends BaseComponent<IBugBashDetailsProps, IBugBash
     }
 
     private async _onImagePaste(_event, args) {
+        this.updateState({imageProgress: true} as IBugBashDetailsState);
+
         try {
             const imageUrl = await copyImageToGitRepo(args.data, "Details");   
             args.callback(imageUrl);
+            this.updateState({imageProgress: false} as IBugBashDetailsState);
         }
         catch (e) {
+            args.callback(null);
+            this.updateState({imageProgress: false} as IBugBashDetailsState);
             BugBashErrorMessageActions.showErrorMessage(e, ErrorKeys.BugBashDetailsError);
         }
     }    

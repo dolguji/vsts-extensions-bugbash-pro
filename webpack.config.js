@@ -48,7 +48,7 @@ module.exports = {
                 ]
             },
             {
-                test: /\.(otf|eot|svg|ttf|woff|woff2)(\?.+)?$/,
+                test: /\.(otf|eot|svg|ttf|woff|woff2|gif)(\?.+)?$/,
                 use: "url-loader?limit=4096&name=[name].[ext]"
             }
         ]

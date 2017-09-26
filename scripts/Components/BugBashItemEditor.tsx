@@ -36,6 +36,7 @@ export interface IBugBashItemEditorState extends IBaseComponentState {
     comments?: IBugBashItemComment[];
     commentsLoading?: boolean;
     error?: string;
+    imageProgress?: boolean;
 }
 
 export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IBugBashItemEditorState> {
@@ -140,7 +141,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
         return (
             <div className="item-editor" onKeyDown={this._onEditorKeyDown} tabIndex={0}>                    
-                { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay>}
+                { this.state.loading && <Overlay className="loading-overlay"><Loading /></Overlay>}                
                 { this.state.error && <MessageBar messageBarType={MessageBarType.error} onDismiss={this._dismissErrorMessage} className="message-panel">{this.state.error}</MessageBar> }
 
                 <TextField label="Title" 
@@ -179,6 +180,7 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
 
                 <div className="item-description-container">
                     <Label>Description</Label>
+                    <div className="progress-indicator" style={{visibility: this.state.imageProgress ? "visible" : "hidden"}} />
                     <RichEditorComponent 
                         containerId="description-editor" 
                         data={description} 
@@ -187,7 +189,6 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
                             btns: [
                                 ['bold', 'italic'], 
                                 ['link'],
-                                ['insertImage'],
                                 ['upload'],
                                 'btnGrp-lists',
                                 ['removeformat'],
@@ -282,11 +283,15 @@ export class BugBashItemEditor extends BaseComponent<IBugBashItemEditorProps, IB
     private async _onImagePaste(_event, args) {
         const gitPath = StoresHub.bugBashStore.getItem(this.props.bugBashId).getFieldValue<string>(BugBashFieldNames.Title, true).replace(" ", "_");
 
+        this.updateState({imageProgress: true});
         try {
             const imageUrl = await copyImageToGitRepo(args.data, gitPath);
             args.callback(imageUrl);
+            this.updateState({imageProgress: false});
         }
         catch (e) {
+            args.callback(null);
+            this.updateState({imageProgress: false});
             BugBashErrorMessageActions.showErrorMessage(e, ErrorKeys.BugBashItemError);
         }
     }   
