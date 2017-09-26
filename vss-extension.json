@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "bugbashpro",
-    "version": "3.0.2",
+    "version": "3.0.3",
     "name": "Bug Bash Pro",
     "description": "Easier way to manage bug bashes",
     "publisher": "mohitbagra",
@@ -61,6 +61,10 @@
         },
         {
             "path": "index.html",
+            "addressable": true
+        },
+        {
+            "path": "progress.gif",
             "addressable": true
         },
         {
