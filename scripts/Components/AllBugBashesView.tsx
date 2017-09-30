@@ -11,13 +11,14 @@ import { Panel, PanelType } from "OfficeFabric/Panel";
 import { MessageBar, MessageBarType } from "OfficeFabric/MessageBar";
 
 import { Loading } from "MB/Components/Loading";
-import { Grid, GridColumn } from "MB/Components/Grid";
+import { Grid, GridColumn, SortOrder } from "MB/Components/Grid";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
-import { Hub } from "MB/Components/Hub";
+import { Hub, FilterPosition } from "MB/Components/Hub";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 import { DateUtils } from "MB/Utils/Date";
 import { StringUtils } from "MB/Utils/String";
+import { CoreUtils } from "MB/Utils/Core";
 
 import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
 import { UrlActions, ErrorKeys, BugBashFieldNames } from "../Constants";
@@ -33,7 +34,8 @@ interface IAllBugBashesViewState extends IBaseComponentState {
     upcomingBugBashes: BugBash[];
     settingsPanelOpen: boolean;
     selectedPivot?: string;
-    error?: string;    
+    error?: string;   
+    filterText?: string; 
 }
 
 const AsyncSettingsPanel = getAsyncLoadedComponent(
@@ -44,6 +46,8 @@ const AsyncSettingsPanel = getAsyncLoadedComponent(
 class BugBashGrid extends Grid<BugBash> {};
 
 export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
+    private _filterChangeDelayedFunction: CoreUtils.DelayedFunction;
+    
     protected getStores(): BaseStore<any, any, any>[] {
         return [StoresHub.bugBashStore, StoresHub.bugBashErrorMessageStore];
     }
@@ -109,19 +113,34 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                                 key: "ongoing",
                                 text: "Ongoing",
                                 itemCount: this.state.currentBugBashes ? this.state.currentBugBashes.length : null,
-                                commands: this._getCommandBarItems()
+                                commands: this._getCommandBarItems(),
+                                filterProps: {
+                                    showFilter: true,
+                                    onFilterChange: this._onFilterTextChange,
+                                    filterPosition: FilterPosition.Left
+                                }
                             },
                             {
                                 key: "upcoming",
                                 text: "Upcoming",
                                 itemCount: this.state.upcomingBugBashes ? this.state.upcomingBugBashes.length : null,
-                                commands: this._getCommandBarItems()
+                                commands: this._getCommandBarItems(),
+                                filterProps: {
+                                    showFilter: true,
+                                    onFilterChange: this._onFilterTextChange,
+                                    filterPosition: FilterPosition.Left
+                                }
                             },
                             {
                                 key: "past",
                                 text: "Past",
                                 itemCount: this.state.pastBugBashes ? this.state.pastBugBashes.length : null,
-                                commands: this._getCommandBarItems()
+                                commands: this._getCommandBarItems(),
+                                filterProps: {
+                                    showFilter: true,
+                                    onFilterChange: this._onFilterTextChange,
+                                    filterPosition: FilterPosition.Left
+                                }
                             }                        
                         ]
                     }}
@@ -141,6 +160,18 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             </div>
         );
     }
+
+    @autobind
+    private _onFilterTextChange(filterText: string) {
+        if (this._filterChangeDelayedFunction) {
+            this._filterChangeDelayedFunction.cancel();
+        }
+
+        this._filterChangeDelayedFunction = CoreUtils.delay(this, 200, () => {
+            this.updateState({filterText: filterText} as IAllBugBashesViewState);
+        });        
+    }
+
 
     @autobind
     private _dismissSettingsPanel() {
@@ -182,6 +213,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         return <BugBashGrid
             className={"instance-list"}
             items={bugBashes}
+            filterText={this.state.filterText}
             columns={this._getGridColumns()}
             selectionMode={SelectionMode.none}
             getContextMenuItems={this._getGridContextMenuItems}
@@ -206,7 +238,14 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                             <a href={getBugBashUrl(bugBash.id, UrlActions.ACTION_RESULTS)} onClick={(e: React.MouseEvent<HTMLElement>) => this._onRowClick(e, bugBash)}>{ title }</a>
                         </Label>
                     </TooltipHost>;
-                }
+                },
+                comparer: (bugBash1: BugBash, bugBash2: BugBash, sortOrder: SortOrder) => {
+                    const title1 = bugBash1.getFieldValue<string>(BugBashFieldNames.Title, true);
+                    const title2 = bugBash2.getFieldValue<string>(BugBashFieldNames.Title, true);
+                    let compareValue = StringUtils.ignoreCaseComparer(title1, title2);
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
+                filterFunction: (bugBash: BugBash, filterText: string) => StringUtils.caseInsensitiveContains(bugBash.getFieldValue<string>(BugBashFieldNames.Title, true), filterText),
             },
             {
                 key: "startDate",
@@ -223,7 +262,13 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         directionalHint={DirectionalHint.bottomLeftEdge}>
                         <Label className="bugbash-grid-cell">{label}</Label>
                     </TooltipHost>;
-                }
+                },
+                comparer: (bugBash1: BugBash, bugBash2: BugBash, sortOrder: SortOrder) => {
+                    const startDate1 = bugBash1.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
+                    const startDate2 = bugBash2.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
+                    let compareValue = DateUtils.defaultComparer(startDate1, startDate2);
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
             },
             {
                 key: "endDate",
@@ -241,7 +286,13 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                         directionalHint={DirectionalHint.bottomLeftEdge}>
                         <Label className="bugbash-grid-cell">{label}</Label>
                     </TooltipHost>;
-                }
+                },
+                comparer: (bugBash1: BugBash, bugBash2: BugBash, sortOrder: SortOrder) => {
+                    const endDate1 = bugBash1.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
+                    const endDate2 = bugBash2.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
+                    let compareValue = DateUtils.defaultComparer(endDate1, endDate2);
+                    return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
+                },
             }
         ];
     }
@@ -315,7 +366,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         }).sort((b1: BugBash, b2: BugBash) => {
             const endTime1 = b1.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
             const endTime2 = b2.getFieldValue<Date>(BugBashFieldNames.EndTime, true);
-            return DateUtils.defaultComparer(endTime1, endTime2);
+            return -1 * DateUtils.defaultComparer(endTime1, endTime2); // most latest past bug bash first
         });
     }
 
@@ -339,7 +390,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         }).sort((b1: BugBash, b2: BugBash) => {
             const startTime1 = b1.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
             const startTime2 = b2.getFieldValue<Date>(BugBashFieldNames.StartTime, true);
-            return DateUtils.defaultComparer(startTime1, startTime2);
+            return -1 * DateUtils.defaultComparer(startTime1, startTime2);
         });
     }
 

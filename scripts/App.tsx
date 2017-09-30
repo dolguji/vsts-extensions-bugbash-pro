@@ -7,6 +7,7 @@ import { HostNavigationService } from "VSS/SDK/Services/Navigation";
 
 import { Fabric } from "OfficeFabric/Fabric";
 import { autobind } from "OfficeFabric/Utilities";
+import { initializeIcons } from "@uifabric/icons";
 
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { Loading } from "MB/Components/Loading";
@@ -206,5 +207,6 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
 }
 
 export function init() {
+    initializeIcons();    
     ReactDOM.render(<App />, $("#ext-container")[0]);
 }
