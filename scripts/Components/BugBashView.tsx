@@ -2,12 +2,12 @@ import "../../css/BugBashView.scss";
 
 import * as React from "react";
 
-import { CoreUtils } from "MB/Utils/Core";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { Loading } from "MB/Components/Loading";
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
-import { Hub, FilterPosition } from "MB/Components/Hub";
+import { Hub } from "MB/Components/Hub";
+import { IFilterInputProps } from "MB/Components/FilterInput";
 
 import { autobind } from "OfficeFabric/Utilities";
 import { Link } from "OfficeFabric/Link";
@@ -64,8 +64,6 @@ const AsyncBugBashCharts = getAsyncLoadedComponent(
     () => <Loading />);
 
 export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewState> {
-    private _filterChangeDelayedFunction: CoreUtils.DelayedFunction;
-
     protected initializeState() {
         this.state = {
             bugBash: this.props.bugBashId ? null : StoresHub.bugBashStore.getNewBugBash(),
@@ -257,11 +255,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                         text: "Results",
                         commands: this._getResultViewCommands(),
                         farCommands: this._getResultViewFarCommands(),
-                        filterProps: {
-                            showFilter: true,
-                            onFilterChange: this._onFilterTextChange,
-                            filterPosition: FilterPosition.Left
-                        }
+                        filterProps: this._getFilterProps()
                     },
                     {
                         key: "edit",
@@ -283,6 +277,16 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             }}
         />;
     }    
+
+    private _getFilterProps(): IFilterInputProps {
+        return {
+            delay: 200,
+            placeholder: "Filter by keyword",
+            onChange: this._onFilterTextChange,
+            onSearch: this._onFilterTextChange,
+            onClear: () => this._onFilterTextChange("")
+        }
+    }
 
     private _renderEditor(): JSX.Element {
         return <AsyncBugBashEditor
@@ -509,13 +513,9 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
 
     @autobind
     private _onFilterTextChange(filterText: string) {
-        if (this._filterChangeDelayedFunction) {
-            this._filterChangeDelayedFunction.cancel();
-        }
-
-        this._filterChangeDelayedFunction = CoreUtils.delay(this, 200, () => {
+        if (filterText !== this.state.filterText) {
             this.updateState({filterText: filterText} as IBugBashViewState);
-        });        
+        }   
     }
 
     @autobind

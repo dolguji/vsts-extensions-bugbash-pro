@@ -14,11 +14,11 @@ import { Loading } from "MB/Components/Loading";
 import { Grid, GridColumn, SortOrder } from "MB/Components/Grid";
 import { BaseComponent, IBaseComponentProps, IBaseComponentState } from "MB/Components/BaseComponent";
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
-import { Hub, FilterPosition } from "MB/Components/Hub";
+import { Hub } from "MB/Components/Hub";
+import { IFilterInputProps } from "MB/Components/FilterInput";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 import { DateUtils } from "MB/Utils/Date";
 import { StringUtils } from "MB/Utils/String";
-import { CoreUtils } from "MB/Utils/Core";
 
 import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
 import { UrlActions, ErrorKeys, BugBashFieldNames } from "../Constants";
@@ -45,9 +45,7 @@ const AsyncSettingsPanel = getAsyncLoadedComponent(
 
 class BugBashGrid extends Grid<BugBash> {};
 
-export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {
-    private _filterChangeDelayedFunction: CoreUtils.DelayedFunction;
-    
+export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBugBashesViewState> {    
     protected getStores(): BaseStore<any, any, any>[] {
         return [StoresHub.bugBashStore, StoresHub.bugBashErrorMessageStore];
     }
@@ -75,8 +73,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
     }
 
     protected getStoresState(): IAllBugBashesViewState {        
-        const allBugBashes = (StoresHub.bugBashStore.getAll() || [])
-            .filter(bugBash => StringUtils.equals(VSS.getWebContext().project.id, bugBash.projectId, true));
+        const allBugBashes = this._getFilteredBugBashes(this.state.filterText);
         const currentTime = new Date();
         
         return {
@@ -86,6 +83,16 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             loading: StoresHub.bugBashStore.isLoading(),
             error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError)
         } as IAllBugBashesViewState;
+    }
+
+    private _getFilteredBugBashes(filterText: string): BugBash[] {
+        let allBugBashes = (StoresHub.bugBashStore.getAll() || [])
+            .filter(bugBash => {
+                return StringUtils.equals(VSS.getWebContext().project.id, bugBash.projectId, true) &&
+                    (StringUtils.isNullOrEmpty(filterText) || StringUtils.caseInsensitiveContains(bugBash.getFieldValue<string>(BugBashFieldNames.Title, true), filterText));
+            });
+
+        return allBugBashes;
     }
 
     public render(): JSX.Element {
@@ -114,34 +121,22 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                                 text: "Ongoing",
                                 itemCount: this.state.currentBugBashes ? this.state.currentBugBashes.length : null,
                                 commands: this._getCommandBarItems(),
-                                filterProps: {
-                                    showFilter: true,
-                                    onFilterChange: this._onFilterTextChange,
-                                    filterPosition: FilterPosition.Left
-                                }
+                                filterProps: this._getFilterProps()
                             },
                             {
                                 key: "upcoming",
                                 text: "Upcoming",
                                 itemCount: this.state.upcomingBugBashes ? this.state.upcomingBugBashes.length : null,
                                 commands: this._getCommandBarItems(),
-                                filterProps: {
-                                    showFilter: true,
-                                    onFilterChange: this._onFilterTextChange,
-                                    filterPosition: FilterPosition.Left
-                                }
+                                filterProps: this._getFilterProps()
                             },
                             {
                                 key: "past",
                                 text: "Past",
                                 itemCount: this.state.pastBugBashes ? this.state.pastBugBashes.length : null,
                                 commands: this._getCommandBarItems(),
-                                filterProps: {
-                                    showFilter: true,
-                                    onFilterChange: this._onFilterTextChange,
-                                    filterPosition: FilterPosition.Left
-                                }
-                            }                        
+                                filterProps: this._getFilterProps()
+                            }
                         ]
                     }}
                 />                
@@ -161,15 +156,29 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         );
     }
 
+    private _getFilterProps(): IFilterInputProps {
+        return {
+            delay: 200,
+            placeholder: "Filter by title",
+            onChange: this._onFilterTextChange,
+            onSearch: this._onFilterTextChange,
+            onClear: () => this._onFilterTextChange("")
+        }
+    }
+
     @autobind
     private _onFilterTextChange(filterText: string) {
-        if (this._filterChangeDelayedFunction) {
-            this._filterChangeDelayedFunction.cancel();
-        }
+        if (filterText !== this.state.filterText) {
+            const allBugBashes = this._getFilteredBugBashes(filterText);
+            const currentTime = new Date();        
 
-        this._filterChangeDelayedFunction = CoreUtils.delay(this, 200, () => {
-            this.updateState({filterText: filterText} as IAllBugBashesViewState);
-        });        
+            this.updateState({
+                filterText: filterText,
+                pastBugBashes: this._getPastBugBashes(allBugBashes, currentTime),
+                currentBugBashes: this._getCurrentBugBashes(allBugBashes, currentTime),
+                upcomingBugBashes: this._getUpcomingBugBashes(allBugBashes, currentTime)
+            } as IAllBugBashesViewState);
+        }
     }
 
 
@@ -213,7 +222,6 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         return <BugBashGrid
             className={"instance-list"}
             items={bugBashes}
-            filterText={this.state.filterText}
             columns={this._getGridColumns()}
             selectionMode={SelectionMode.none}
             getContextMenuItems={this._getGridContextMenuItems}
@@ -244,8 +252,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                     const title2 = bugBash2.getFieldValue<string>(BugBashFieldNames.Title, true);
                     let compareValue = StringUtils.ignoreCaseComparer(title1, title2);
                     return sortOrder === SortOrder.DESC ? -1 * compareValue : compareValue;
-                },
-                filterFunction: (bugBash: BugBash, filterText: string) => StringUtils.caseInsensitiveContains(bugBash.getFieldValue<string>(BugBashFieldNames.Title, true), filterText),
+                }
             },
             {
                 key: "startDate",
