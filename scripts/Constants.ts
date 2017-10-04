@@ -60,3 +60,16 @@ export namespace SizeLimits {
     export const TitleFieldMaxLength = 255;
     export const RejectFieldMaxLength = 128;
 }
+
+export enum DirectoryPagePivotKeys {
+    Ongoing = "ongoing",
+    Upcoming = "upcoming",
+    Past = "past"
+}
+
+export enum BugBashViewPivotKeys {
+    Results = "results",
+    Edit = "edit",
+    Charts = "charts",
+    Details = "details"
+}

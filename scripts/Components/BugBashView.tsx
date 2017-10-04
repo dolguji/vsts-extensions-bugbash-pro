@@ -19,7 +19,7 @@ import { StoresHub } from "../Stores/StoresHub";
 import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashItemActions } from "../Actions/BugBashItemActions";
-import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames, ErrorKeys } from "../Constants";
+import { UrlActions, ChartsView, ResultsView, BugBashFieldNames, BugBashItemFieldNames, ErrorKeys, BugBashViewPivotKeys } from "../Constants";
 import { BugBash } from "../ViewModels/BugBash";
 import { LongText } from "../ViewModels/LongText";
 import { BugBashClientActionsHub } from "../Actions/ActionsHub";
@@ -32,13 +32,13 @@ import * as BugBashCharts_Async from "./BugBashCharts";
 
 export interface IBugBashViewProps extends IBaseComponentProps {
     bugBashId?: string;
-    pivotKey: string;
+    pivotKey: BugBashViewPivotKeys;
 }
 
 export interface IBugBashViewState extends IBaseComponentState {
     bugBash: BugBash;
     bugBashDetails?: LongText;
-    selectedPivot?: string;
+    selectedPivot?: BugBashViewPivotKeys;
     filterText?: string;
     selectedChartsView?: string;
     isDetailsInEditMode?: boolean;
@@ -222,7 +222,7 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
             className="bugbash-hub"
             onTitleRender={this._onTitleRender}
             pivotProps={{
-                onPivotClick: (selectedPivotKey: string) => {
+                onPivotClick: (selectedPivotKey: BugBashViewPivotKeys) => {
                     this.updateState({selectedPivot: selectedPivotKey} as IBugBashViewState);
                     navigate(selectedPivotKey, null, false, true, null, true);                  
                 },
@@ -231,19 +231,19 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                     const extraCss = this.state.bugBash.isNew() ? "new-bugbash" : "";
 
                     switch (key) {
-                        case "edit":
+                        case BugBashViewPivotKeys.Edit:
                             return <div className="bugbash-hub-contents bugbash-editor-hub-contents">
                                 {this._renderEditor()}
                             </div>;
-                        case "results":
+                        case BugBashViewPivotKeys.Results:
                             return <div className={`bugbash-hub-contents bugbash-results-hub-contents ${extraCss}`}>
                                 {this._renderResults()}
                             </div>;
-                        case "charts":
+                        case BugBashViewPivotKeys.Charts:
                             return <div className="bugbash-hub-contents bugbash-charts-hub-contents">
                                 {this._renderCharts()}
                             </div>;
-                        case "details":
+                        case BugBashViewPivotKeys.Details:
                             return <div className={`bugbash-hub-contents bugbash-details-hub-contents ${extraCss}`}>
                                 {this._renderDetails()}
                             </div>;
@@ -251,25 +251,25 @@ export class BugBashView extends BaseComponent<IBugBashViewProps, IBugBashViewSt
                 },
                 pivots: [
                     {
-                        key: "results",
+                        key: BugBashViewPivotKeys.Results,
                         text: "Results",
                         commands: this._getResultViewCommands(),
                         farCommands: this._getResultViewFarCommands(),
                         filterProps: this._getFilterProps()
                     },
                     {
-                        key: "edit",
+                        key: BugBashViewPivotKeys.Edit,
                         text: "Editor",
                         commands: this._getEditorViewCommands(),
                     },
                     {
-                        key: "charts",
+                        key: BugBashViewPivotKeys.Charts,
                         text: "Charts",
                         commands: this._getChartsViewCommands(),
                         farCommands: this._getChartsViewFarCommands()
                     },
                     {
-                        key: "details",
+                        key: BugBashViewPivotKeys.Details,
                         text: "Details",
                         commands: this._getDetailsViewCommands()
                     }

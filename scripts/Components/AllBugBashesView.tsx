@@ -19,9 +19,10 @@ import { IFilterInputProps } from "MB/Components/FilterInput";
 import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 import { DateUtils } from "MB/Utils/Date";
 import { StringUtils } from "MB/Utils/String";
+import { LocalSettingsService, WebSettingsScope } from "MB/Utils/LocalSettingsService";
 
 import { confirmAction, getBugBashUrl, navigate } from "../Helpers";
-import { UrlActions, ErrorKeys, BugBashFieldNames } from "../Constants";
+import { UrlActions, ErrorKeys, BugBashFieldNames, DirectoryPagePivotKeys } from "../Constants";
 import { StoresHub } from "../Stores/StoresHub";
 import { BugBashActions } from "../Actions/BugBashActions";
 import { BugBashErrorMessageActions } from "../Actions/BugBashErrorMessageActions";
@@ -33,7 +34,7 @@ interface IAllBugBashesViewState extends IBaseComponentState {
     currentBugBashes: BugBash[];
     upcomingBugBashes: BugBash[];
     settingsPanelOpen: boolean;
-    selectedPivot?: string;
+    selectedPivot?: DirectoryPagePivotKeys;
     error?: string;   
     filterText?: string; 
 }
@@ -56,7 +57,7 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
             currentBugBashes: [],
             upcomingBugBashes: [],
             loading: true,
-            selectedPivot: "ongoing",
+            selectedPivot: LocalSettingsService.readLocalSetting("directorypivotkey", WebSettingsScope.User, DirectoryPagePivotKeys.Ongoing) as DirectoryPagePivotKeys,
             settingsPanelOpen: false,
             error: StoresHub.bugBashErrorMessageStore.getItem(ErrorKeys.DirectoryPageError)
         };
@@ -111,27 +112,28 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
                     title="Bug Bashes"          
                     pivotProps={{
                         initialSelectedKey: this.state.selectedPivot,
-                        onPivotClick: (selectedPivotKey: string) => {
+                        onPivotClick: (selectedPivotKey: DirectoryPagePivotKeys) => {
+                            LocalSettingsService.writeLocalSetting("directorypivotkey", selectedPivotKey, WebSettingsScope.User);
                             this.updateState({selectedPivot: selectedPivotKey} as IAllBugBashesViewState);
                         },
                         onRenderPivotContent: (key: string) => this._getContents(key),
                         pivots: [
                             {
-                                key: "ongoing",
+                                key: DirectoryPagePivotKeys.Ongoing,
                                 text: "Ongoing",
                                 itemCount: this.state.currentBugBashes ? this.state.currentBugBashes.length : null,
                                 commands: this._getCommandBarItems(),
                                 filterProps: this._getFilterProps()
                             },
                             {
-                                key: "upcoming",
+                                key: DirectoryPagePivotKeys.Upcoming,
                                 text: "Upcoming",
                                 itemCount: this.state.upcomingBugBashes ? this.state.upcomingBugBashes.length : null,
                                 commands: this._getCommandBarItems(),
                                 filterProps: this._getFilterProps()
                             },
                             {
-                                key: "past",
+                                key: DirectoryPagePivotKeys.Past,
                                 text: "Past",
                                 itemCount: this.state.pastBugBashes ? this.state.pastBugBashes.length : null,
                                 commands: this._getCommandBarItems(),
@@ -200,11 +202,11 @@ export class AllBugBashesView extends BaseComponent<IBaseComponentProps, IAllBug
         let bugBashes: BugBash[];
         let missingItemsMsg = "";
 
-        if (key === "past") {
+        if (key === DirectoryPagePivotKeys.Past) {
             bugBashes = this.state.pastBugBashes;
             missingItemsMsg = "No past bug bashes.";
         }
-        else if (key === "ongoing") {
+        else if (key === DirectoryPagePivotKeys.Ongoing) {
             bugBashes = this.state.currentBugBashes;
             missingItemsMsg = "No ongoing bug bashes.";
         }

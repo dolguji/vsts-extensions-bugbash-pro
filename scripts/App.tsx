@@ -15,7 +15,7 @@ import { getAsyncLoadedComponent } from "MB/Components/AsyncLoadedComponent";
 import { Badge } from "MB/Components/Badge";
 import { BaseStore } from "MB/Flux/Stores/BaseStore";
 
-import { UrlActions } from "./Constants";
+import { UrlActions, BugBashViewPivotKeys } from "./Constants";
 import { BugBashView } from "./Components/BugBashView";
 import * as AllBugBashesView_Async from "./Components/AllBugBashesView";
 import { navigate } from "./Helpers";
@@ -98,16 +98,16 @@ export class App extends BaseComponent<IBaseComponentProps, IAppState> {
                     break;
                 case AppViewMode.New:
                 case AppViewMode.Edit:
-                    view = <BugBashView pivotKey={UrlActions.ACTION_EDIT} bugBashId={this.state.bugBashId} />;
+                    view = <BugBashView pivotKey={BugBashViewPivotKeys.Edit} bugBashId={this.state.bugBashId} />;
                     break;
                 case AppViewMode.Results:
-                    view = <BugBashView pivotKey={UrlActions.ACTION_RESULTS} bugBashId={this.state.bugBashId} />;
+                    view = <BugBashView pivotKey={BugBashViewPivotKeys.Results} bugBashId={this.state.bugBashId} />;
                     break;
                 case AppViewMode.Charts:
-                    view = <BugBashView pivotKey={UrlActions.ACTION_CHARTS} bugBashId={this.state.bugBashId} />;
+                    view = <BugBashView pivotKey={BugBashViewPivotKeys.Charts} bugBashId={this.state.bugBashId} />;
                     break;
                 case AppViewMode.Details:
-                    view = <BugBashView pivotKey={UrlActions.ACTION_DETAILS} bugBashId={this.state.bugBashId} />;
+                    view = <BugBashView pivotKey={BugBashViewPivotKeys.Details} bugBashId={this.state.bugBashId} />;
                     break;
                 default:
                     view = <Loading />;
